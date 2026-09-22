@@ -1,239 +1,198 @@
-# Sahel / ساحل — Mobile App (Flutter)
+# ساحل / Sahel — تطبيق الموبايل (Flutter)
 
-تطبيق **Flutter** المخصص لمنصة خدمات ساحل (العميل + مقدم الخدمة فقط — واجهة الإدارة تبقى على الويب).
-
----
-
-## 1. المتطلبات الأساسية (تثبيت Flutter SDK)
-
-> ⚠️ Flutter SDK **غير مثبت حالياً على الجهاز**. قم بالتثبيت أولاً بالخطوات التالية:
-
-### على Windows:
-1. حمل Flutter SDK (Stable) من:  
-   https://docs.flutter.dev/get-started/install/windows
-2. استخراج الأرشيف إلى مسار ثابت مثل: `C:\src\flutter`
-3. أضف `C:\src\flutter\bin` إلى **System PATH** (بيانات النظام المتقدمة → متغيرات البيئة).
-4. افتح **Terminal جديد** و شغّل:
-   ```bash
-   flutter doctor
-   ```
-5. أكمل التبعيات المطلوبة:
-   ```bash
-   flutter doctor --android-licenses
-   ```
-   واتبع التعليمات لتثبيت Android Studio (للـ Android SDK Platform / Build Tools).
+تطبيق Flutter لمنصة خدمات ساحل — يشمل دورَي **العميل** و**مقدم الخدمة** في تطبيق واحد
+مع توجيه تلقائي حسب الدور بعد تسجيل الدخول.
 
 ---
 
-## 2. أول تشغيل للمشروع
+## 1. المتطلبات
+
+| الأداة | الإصدار المطلوب | ملاحظات |
+|---|---|---|
+| Flutter SDK | **3.47.5** (stable) أو `>=3.47.4` | يأتي معه Dart — لا حاجة لتثبيت Dart منفصلاً |
+| Dart | `>=3.13.3 <4.0.0` | مدمج في Flutter |
+| Android Studio | أي إصدار حديث | للـ Android SDK + Platform Tools + المحاكيات |
+| PHP + Composer | PHP `>=8.2` | لتشغيل الـ Backend (Laravel 11) |
+| Git | أي إصدار | لسحب المشروع |
+
+> ⚠️ `pubspec.yaml` يفرض `Flutter >=3.47.4` — أي إصدار أقدم سيرفض `flutter pub get`.
+
+### تثبيت Flutter (Windows)
+
+1. حمّل النسخة: https://docs.flutter.dev/get-started/install/windows
+   (أو استخدم الملف `flutter_windows_3.47.5-stable.zip` إذا توفر لديك)
+2. فك الضغط في مسار ثابت مثل `C:\flutter-sdk\flutter`
+3. أضف `C:\flutter-sdk\flutter\bin` إلى متغير البيئة `PATH`
+4. افتح طرفية جديدة ونفّذ:
 
 ```bash
-cd e:\saber\mobile
+flutter doctor
+flutter doctor --android-licenses
+```
 
-# 1. تنزيل التبعيات
+---
+
+## 2. سحب المشروع وتشغيله
+
+```bash
+git clone https://github.com/shahedalgmrh-sys/mobile.git
+cd mobile
+
+# 1) تنزيل التبعيات
 flutter pub get
 
-# 2. توليد الملفات التلقائية (Drift, Retrofit, json_serializable, freezed)
-dart run build_runner build --delete-conflicting-outputs
+# 2) فحص سريع
+flutter analyze
 
-# 3. فحص static analysis
-dart analyze
-
-# 4. تشغيل التطبيق على محاكي أو جهاز (عميل)
-flutter run -t lib/main_customer.dart
-
-# 5. تشغيل نسخة مقدم الخدمة
-flutter run -t lib/main_provider.dart
+# 3) تشغيل على جهاز/محاكي متصل
+flutter run
 ```
 
-> **ملاحظة**: إذا أردت بناء release:
-> ```bash
-> flutter build apk --flavor customer -t lib/main_customer.dart
-> flutter build apk --flavor provider -t lib/main_provider.dart
-> ```
+أول بناء Android يستغرق ~30–40 دقيقة (ينزّل Android NDK 28 + CMake ويبني كل الإضافات) — طبيعي تماماً، البناءات التالية أسرع بكثير.
+
+> الأدوات مضبوطة مسبقاً في المشروع: **AGP 8.11.1 · Kotlin 2.2.20 · Gradle 8.14**
+> ولا تحتاج أي إعداد يدوي.
 
 ---
 
-## 3. الربط مع الباك-إند (Laravel)
+## 3. تشغيل الـ Backend (Laravel)
 
-السيرفر المحلي يعمل حالياً على `http://127.0.0.1:8000`.
+التطبيق يحتاج خادم الـ API ليعمل. مشروع الويب/الباك-إند في مستودع مستقل
+(`SaberWeb-main` — Laravel 11 + Sanctum + SQLite افتراضياً):
 
-| الملف | المكان | قيمة base URL |
-|-------|--------|---------------|
-| AppConfig | [app/config/app_config.dart](lib/app/config/app_config.dart) | `http://127.0.0.1:8000/api/mobile` |
+```bash
+cd <مسار-الباك-إند>
 
-### ⚠️ مهم جداً — مسارات `/api/mobile/*`
+composer install
+cp .env.example .env
+php artisan key:generate
 
-مجموعة الـ routes الجديدة **لم تُضاف بعد** إلى Laravel. قبل إجراء أي استدعاء API من الموبايل، قم بإضافة هذا الـ group إلى `e:\saber\saber\routes\api.php`:
+# إنشاء قاعدة SQLite وزرع البيانات التجريبية
+type nul > database\database.sqlite     # Windows
+php artisan migrate --seed --force
 
-```php
-use App\Http\Middleware\EnsureCustomer;
-use App\Http\Middleware\EnsureProvider;
-use Illuminate\Support\Facades\Route;
-
-/* ===========================================================
-   Mobile API v1 — Prefix: /api/mobile
-   =========================================================== */
-Route::prefix('mobile')->group(static function () {
-
-    Route::middleware(['throttle:90,1'])->group(static function () {
-        // 1. Auth (No Sanctum)
-        Route::post('/auth/login', [MobileAuthController::class, 'login']);
-        Route::post('/auth/verify-otp', [MobileAuthController::class, 'verifyOtp']);
-        Route::post('/auth/register', [MobileAuthController::class, 'register']);
-        Route::post('/auth/refresh', [MobileAuthController::class, 'refresh']);
-    });
-
-    // ----- Sanctum protected -----
-    Route::middleware(['auth:sanctum', 'abilities:*', 'throttle:120,1'])->group(static function () {
-
-        Route::post('/auth/logout', [MobileAuthController::class, 'logout']);
-        Route::get('/me', [MobileAuthController::class, 'me']);
-        Route::post('/me/profile-setup', [MobileAuthController::class, 'profileSetup']);
-
-        // --- Customer ---
-        Route::middleware(EnsureCustomer::class)->prefix('c')->group(static function () {
-            Route::get('/home', [MobileCustomerController::class, 'home']);
-            Route::get('/search', [MobileCustomerController::class, 'search']);
-            Route::get('/services/{slug}', [MobileCustomerController::class, 'serviceDetails']);
-            Route::get('/providers/{id}', [MobileCustomerController::class, 'providerProfile']);
-
-            Route::get('/bookings', [MobileBookingController::class, 'indexCustomer']);
-            Route::post('/bookings', [MobileBookingController::class, 'createBooking']);
-            Route::get('/bookings/{id}', [MobileBookingController::class, 'showCustomer']);
-            Route::post('/bookings/{id}/cancel', [MobileBookingController::class, 'cancelBooking']);
-            Route::get('/bookings/{id}/track', [MobileBookingController::class, 'trackCustomer']);
-
-            Route::post('/reviews', [MobileCustomerController::class, 'submitReview']);
-            Route::post('/complaints', [MobileCustomerController::class, 'submitComplaint']);
-            Route::get('/favorites', [MobileCustomerController::class, 'favoritesIndex']);
-            Route::post('/favorites/{providerId}', [MobileCustomerController::class, 'toggleFavorite']);
-            Route::get('/wallet', [MobileCustomerController::class, 'walletIndex']);
-            Route::get('/notifications', [MobileNotificationController::class, 'index']);
-            Route::get('/chat/threads', [MobileChatController::class, 'threadsIndex']);
-            Route::get('/chat/threads/{id}/messages', [MobileChatController::class, 'threadMessages']);
-            Route::post('/chat/threads/{id}/messages', [MobileChatController::class, 'sendMessage']);
-            Route::get('/addresses', [MobileCustomerController::class, 'addressesIndex']);
-        });
-
-        // --- Provider ---
-        Route::middleware(EnsureProvider::class)->prefix('p')->group(static function () {
-            Route::get('/dashboard', [MobileProviderController::class, 'dashboard']);
-            Route::get('/requests', [MobileProviderBookingController::class, 'requestsFeed']);
-            Route::post('/bookings/{id}/accept', [MobileProviderBookingController::class, 'accept']);
-            Route::post('/bookings/{id}/reject', [MobileProviderBookingController::class, 'reject']);
-            Route::post('/bookings/{id}/start', [MobileProviderBookingController::class, 'start']);
-            Route::post('/bookings/{id}/complete', [MobileProviderBookingController::class, 'complete']);
-            Route::post('/bookings/{id}/upload-proof', [MobileProviderBookingController::class, 'uploadWorkProof']);
-
-            Route::get('/bookings', [MobileProviderBookingController::class, 'indexProvider']);
-            Route::get('/bookings/{id}', [MobileProviderBookingController::class, 'showProvider']);
-
-            Route::get('/earnings', [MobileProviderController::class, 'earningsIndex']);
-            Route::post('/withdraw', [MobileProviderController::class, 'requestWithdraw']);
-            Route::get('/services', [MobileProviderController::class, 'servicesCatalog']);
-            Route::post('/services/{id}/toggle', [MobileProviderController::class, 'toggleServiceActive']);
-            Route::get('/kyc', [MobileProviderController::class, 'kycStatus']);
-            Route::post('/kyc/{step}/submit', [MobileProviderController::class, 'submitKycStep']);
-            Route::get('/calendar', [MobileProviderController::class, 'calendarIndex']);
-            Route::get('/inbox/threads', [MobileChatController::class, 'providerThreads']);
-            Route::get('/notifications', [MobileNotificationController::class, 'providerIndex']);
-        });
-    });
-});
+# التشغيل — مهم: 0.0.0.0 ليقبل اتصالات الأجهزة الأخرى
+php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-ثم قم بإنشاء الـ Controllers المذكورة أعلاه وربطها بـ **Service Classes** الموجودة حالياً في `app/Modules/` (لا تكتب أي منطق تجاري داخل Controllers).
+تحقق أنه يعمل:
 
----
-
-## 4. الـ Flavors (نسخ التطبيق)
-
-| Entry Point | الدور | AppFlavor |
-|---|---|---|
-| `lib/main_customer.dart` | العميل | `AppFlavor.customer` |
-| `lib/main_provider.dart` | مقدم الخدمة | `AppFlavor.provider` |
-| `lib/main.dart` | افتراضي (اختبار) | `AppFlavor.customer` |
-
----
-
-## 5. الـ Custom Headers (الـ 6 headers المطلوبة في المواصفات)
-
-يتم ضخهم تلقائياً من داخل [api_client.dart](lib/core/network/api_client.dart):
-```
-Accept-Language   → ar / en
-X-Currency        → yer / sar / usd
-X-Device-ID       → UUID (Secure Storage)
-X-App-Version     → 1.0.0
-X-Client-Type     → customer-app / provider-app
-Authorization     → Bearer {sanctum_token}
+```bash
+curl http://127.0.0.1:8000/api/health
+# {"status":"ok","service":"sahel-home-services",...}
 ```
 
----
+> ملاحظة: الـ seeder `LoadTestSeeder` يستخدم صيغة MySQL ويفشل على SQLite —
+> هذا متوقع وغير مؤثر؛ كل البيانات الأساسية تُزرع قبله.
 
-## 6. هيكل الكود (109 ملفات Dart + 27 مجلد)
-
-```
-lib/
-├─ main.dart / main_customer.dart / main_provider.dart
-├─ app/
-│  ├─ config/app_config.dart                    # AppFlavor + apiBaseUrl
-│  ├─ router/app_router.dart                    # GoRouter + Auth Guard + 74 Route
-│  ├─ theme/{sahel_colors, sahel_theme}.dart    # 6 ألوان + 5 elevations + 4 radii + 7 button variants
-│  └─ sahel_app.dart                            # MaterialApp.router + Theme
-├─ core/
-│  ├─ constants/{api_endpoints, app_headers, enums}.dart
-│  ├─ network/api_client.dart                   # Dio Interceptor → 401, 422, 500 Failures
-│  ├─ storage/{secure_storage, offline_db}.dart # SecureStorage + Drift Schema
-│  └─ errors/failures.dart                      # Sealed Failure subtypes
-├─ data/
-│  ├─ models/{user, booking, service, provider, review, wallet, chat, complaint}_model.dart
-│  └─ repositories/i_{auth, booking, service, wallet}_repository.dart
-├─ shared/widgets/
-│    ├─ sahel_button.dart         # 7 variants: filled / gradient / soft / outline / ghost / danger / amber
-│    ├─ status_pill.dart / booking_status_pill.dart
-│    ├─ booking_stepper.dart / booking_status_stepper.dart
-│    ├─ service_card.dart / provider_mini_card.dart / review_card.dart
-│    ├─ shimmer_card.dart / empty_state.dart / category_tile.dart / sahel_bottom_nav_item.dart
-├─ modules/auth/screens/         # splash, onboarding, language, login, otp, register, profile_setup
-├─ modules/customer/screens/     # 43 شاشة (home, search, bookings wizard + stepper + tracking, wallet, notifications, ...)
-└─ modules/provider/screens/     # 31 شاشة (dashboard, requests accept/reject, earnings+withdraw, KYC 4-step, calendar, ...)
-```
-
----
-
-## 7. الاختبارات الجاهزة للتنفيذ بعد تثبيت Flutter
-
-| الخطوة | الأمر |
-|---|---|
-| 🔷 تنزيل التبعيات | `flutter pub get` |
-| 🔷 توليد ملفات `.g.dart` | `dart run build_runner build --delete-conflicting-outputs` |
-| 🔷 فحص الأخطاء | `dart analyze` |
-| 🔷 تشغيل الاختبارات | `flutter test` |
-| 🔷 تشغيل التطبيق (عميل) | `flutter run -t lib/main_customer.dart` |
-| 🔷 تشغيل التطبيق (مقدم خدمات) | `flutter run -t lib/main_provider.dart` |
-
----
-
-## 8. البندات المعلقة للمطور القادم
-
-- [ ] **Android flavors**: إضافة `productFlavors { customer / provider }` داخل `android/app/build.gradle` مع `applicationIdSuffix`.
-- [ ] **iOS Schemes**: إنشاء Schemes منفصلة (Customer / Provider) مع Bundle IDs مختلفة في Xcode.
-- [ ] **Network Security Config**: السماح لـ cleartext HTTP لأجل `10.0.2.2` و `127.0.0.1:8000` أثناء التطوير (ملف `network_security_config.xml`).
-- [ ] **Concrete Repository implementations**: كتابة الـ Classes الفعلية التي تنفذ `IAuthRepository`, `IBookingRepository`, ... وتربط Dio + SecureStorage + Drift.
-- [ ] **Riverpod Notifier binding**: استبدال الـ placeholder lists داخل الشاشات بـ `ref.watch(...)` مع `AsyncValue` (loading → shimmer, data, error).
-- [ ] **FCM setup**: ربط ملفات `google-services.json` + `GoogleService-Info.plist` لكل Flavor.
-- [ ] **Laravel Mobile Routes**: تنفيذ الـ Route group أعلاه (الفقرة 3) + Controllers داخل الباك-إند.
-
----
-
-## 9. بيانات الاعتماد للتجربة
+### حسابات تجريبية (بعد الـ seed)
 
 | الدور | البريد | كلمة المرور |
 |---|---|---|
-| Admin (web فقط) | `admin@sahel.com` | `Password123!` |
-| Provider | `provider@sahel.com` | `Password123!` |
-| Customer | `customer@sahel.com` | `Password123!` |
+| عميل | `customer@sahel.com` | `Password123!` |
+| مقدم خدمة | `provider@sahel.com` | `Password123!` |
+| عملاء إضافيون | `customer1@sahel.com` … `customer10@sahel.com` | `Password123!` |
+| مزودون إضافيون | `provider1@sahel.com` … `provider10@sahel.com` | `Password123!` |
 
-Web: http://127.0.0.1:8000  
-Mobile API (مستقبلاً): http://127.0.0.1:8000/api/mobile
+---
+
+## 4. عنوان الـ API حسب بيئة التشغيل
+
+يُمرَّر العنوان عبر `--dart-define=API_BASE_URL=...`:
+
+| البيئة | القيمة |
+|---|---|
+| **محاكي Android** | `http://10.0.2.2:8000/api` (الافتراضي — لا حاجة لتمرير شيء) |
+| **جهاز حقيقي عبر USB** | `http://127.0.0.1:8000/api` + أمر `adb reverse` (الأسفل) |
+| **جهاز حقيقي عبر WiFi** | `http://<IP-الكمبيوتر>:8000/api` |
+
+### الجهاز الحقيقي — أسهل طريقة (USB، بدون جدار حماية)
+
+```bash
+# مرة واحدة بعد وصل الجهاز
+adb reverse tcp:8000 tcp:8000
+
+# ثم شغّل
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+`adb reverse` يوجّه `localhost:8000` في الجوال إلى `localhost:8000` في الكمبيوتر
+عبر كيبل USB — لا يحتاج WiFi ولا تعديل جدار الحماية.
+
+### الجهاز الحقيقي عبر WiFi (نفس الشبكة)
+
+```bash
+# 1) اعرف IP الكمبيوتر: ipconfig → مثلاً 192.168.0.102
+# 2) اسمح بالمنفذ في جدار Windows (PowerShell كمسؤول):
+netsh advfirewall firewall add rule name="Laravel API 8000" dir=in action=allow protocol=TCP localport=8000
+
+# 3) تحقق من متصفح الجوال: http://192.168.0.102:8000/api/health
+# 4) شغّل
+flutter run -d <device-id> --dart-define=API_BASE_URL=http://192.168.0.102:8000/api
+```
+
+### بناء APK للمشاركة
+
+```bash
+flutter build apk --debug --dart-define=API_BASE_URL=http://192.168.0.102:8000/api
+# الناتج: build\app\outputs\flutter-apk\app-debug.apk
+```
+
+---
+
+## 5. هيكل المشروع
+
+```
+lib/
+├─ main.dart                       # نقطة الدخول (توجيه حسب الدور)
+├─ app/
+│  ├─ router/app_router.dart       # GoRouter + حارس المصادقة + توجيه الدور
+│  ├─ theme/                       # الثيم والألوان
+│  └─ sahel_app.dart               # MaterialApp.router
+├─ core/
+│  ├─ constants/api_endpoints.dart # كل مسارات الـ API
+│  ├─ network/api_client.dart      # Dio + التوكن + الترويسات
+│  ├─ providers.dart               # شجرة الـ DI (Riverpod)
+│  └─ storage/                     # التخزين الآمن + SQLite
+├─ data/
+│  ├─ sources/remote_sources.dart  # استدعاءات الـ HTTP
+│  └─ repositories/                # auth / catalog / customer / provider + parsers
+├─ providers/                      # auth_provider + data_providers + settings_provider
+├─ modules/
+│  ├─ auth/screens/                # splash, login, register, otp, kyc
+│  ├─ customer/screens/            # شاشات العميل (~25)
+│  └─ provider/screens/            # شاشات مقدم الخدمة (~15)
+└─ shared/widgets/                 # مكونات مشتركة
+```
+
+## 6. الـ API
+
+- Base prefixes: `/api` (عام) · `/api/auth` · `/api/customer` · `/api/provider`
+- غلاف الاستجابة: `{status, message, data}` — يُفك عبر `apiData()` في `parsers.dart`
+- الترويسات المرسلة تلقائياً: `Authorization: Bearer`, `Accept-Language`,
+  `X-Currency`, `X-Device-ID`, `X-App-Version`, `X-Client-Type`
+- المرجع الكامل: `mobile-api-operations-spec.md`
+
+---
+
+## 7. استكشاف الأخطاء
+
+| المشكلة | الحل |
+|---|---|
+| `pub get` يرفض الإصدار | ثبّت Flutter `>=3.47.4` — لا تستخدم نسخاً قديمة |
+| "تعذر الاتصال بالخادم" على الجوال | نفّذ `adb reverse tcp:8000 tcp:8000` وتأكد أن الخادم يعمل على `0.0.0.0` |
+| الخادم لا يستجيب عبر IP الشبكة | جدار Windows يحجب المنفذ — أضف القاعدة (قسم 4) أو استخدم `adb reverse` |
+| المحاكي: "Not enough disk space" | حرّر مساحة على قرص `C:` أو انقل الـ AVD لقرص آخر وحدّث `ANDROID_AVD_HOME` |
+| فشل Kotlin incremental عبر قرصين | مضبوط مسبقاً: `kotlin.incremental=false` في `gradle.properties` |
+| بطء أول build | طبيعي — تنزيل NDK/CMake وترجمة كل الإضافات لأول مرة |
+
+## 8. أوامر سريعة
+
+```bash
+flutter pub get        # تبعيات
+flutter analyze        # تحليل ثابت
+flutter test           # الاختبارات
+flutter run            # تشغيل debug
+flutter build apk --debug          # APK تجريبي
+flutter build apk --release        # APK نهائي
+```
