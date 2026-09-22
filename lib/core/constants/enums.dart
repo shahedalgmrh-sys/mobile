@@ -5,6 +5,7 @@ enum BookingStatus {
   pending,
   accepted,
   inProgress,
+  paid,
   completed,
   rejected,
   rescheduled,
@@ -21,6 +22,8 @@ extension BookingStatusX on BookingStatus {
         return 'accepted';
       case BookingStatus.inProgress:
         return 'in_progress';
+      case BookingStatus.paid:
+        return 'paid';
       case BookingStatus.completed:
         return 'completed';
       case BookingStatus.rejected:
@@ -42,6 +45,8 @@ extension BookingStatusX on BookingStatus {
         return BookingStatus.accepted;
       case 'in_progress':
         return BookingStatus.inProgress;
+      case 'paid':
+        return BookingStatus.paid;
       case 'completed':
         return BookingStatus.completed;
       case 'rejected':
@@ -75,6 +80,8 @@ extension BookingStatusX on BookingStatus {
         return 'مقبول';
       case BookingStatus.inProgress:
         return 'قيد التنفيذ';
+      case BookingStatus.paid:
+        return 'مدفوع';
       case BookingStatus.completed:
         return 'مكتمل';
       case BookingStatus.rejected:
@@ -96,6 +103,8 @@ extension BookingStatusX on BookingStatus {
         return Colors.teal;
       case BookingStatus.inProgress:
         return SahelColors.violet;
+      case BookingStatus.paid:
+        return SahelColors.emerald;
       case BookingStatus.completed:
         return SahelColors.emerald;
       case BookingStatus.rejected:

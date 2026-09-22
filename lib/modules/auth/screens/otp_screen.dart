@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pinput/pinput.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
-  final String phone;
-  const OtpScreen({super.key, required this.phone});
+  const OtpScreen({super.key});
 
   @override
   ConsumerState<OtpScreen> createState() => _OtpScreenState();
@@ -36,7 +34,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     });
   }
 
-  void _resend() {
+  Future<void> _resend() async {
+    await ref.read(authNotifierProvider.notifier).resendOtp();
+    if (!mounted) return;
     setState(() {
       _countdown = 60;
       _pinController.clear();
@@ -49,15 +49,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     setState(() => _isLoading = true);
     final ok =
         await ref.read(authNotifierProvider.notifier).verifyOtp(_pinController.text);
+    if (!mounted) return;
     setState(() => _isLoading = false);
-    if (ok && mounted) {
-      final authState = ref.read(authNotifierProvider);
-      if (authState.isProfileComplete) {
-        context.go('/home');
-      } else {
-        context.go('/profile-setup');
-      }
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ref.read(authNotifierProvider).errorMessage ?? 'رمز غير صحيح',
+          ),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
     }
+    // On success the router redirect moves the user to their home.
   }
 
   @override
@@ -103,9 +107,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'أرسلنا رمزاً مكوناً من 6 أرقام إلى ${widget.phone}',
-                style: const TextStyle(
+              const Text(
+                'أرسلنا رمزاً مكوناً من 6 أرقام إلى بريدك الإلكتروني',
+                style: TextStyle(
                   fontSize: 15,
                   color: Color(0xFF64748B),
                 ),

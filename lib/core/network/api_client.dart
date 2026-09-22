@@ -4,50 +4,48 @@ import '../constants/app_headers.dart';
 import '../errors/failures.dart';
 import '../storage/secure_storage.dart';
 
-class AppConfig {
+class ApiClient {
+  final Dio dio;
   final String baseUrl;
   final String appVersion;
+  final SecureStorage storage;
   final Duration connectTimeout;
   final Duration receiveTimeout;
 
-  const AppConfig({
-    required this.baseUrl,
-    required this.appVersion,
-    this.connectTimeout = const Duration(seconds: 30),
-    this.receiveTimeout = const Duration(seconds: 60),
-  });
-}
-
-class ApiClient {
-  final Dio dio;
-  final AppConfig config;
-  final SecureStorage storage;
+  /// Current locale/currency sent with every request (spec headers contract).
+  String language;
+  String currency;
 
   ApiClient({
     required this.dio,
-    required this.config,
+    required this.baseUrl,
+    required this.appVersion,
     required this.storage,
+    this.language = 'ar',
+    this.currency = 'yer',
+    this.connectTimeout = const Duration(seconds: 30),
+    this.receiveTimeout = const Duration(seconds: 60),
   }) {
     _setupDio();
   }
 
   void _setupDio() {
-    dio.options.baseUrl = config.baseUrl;
-    dio.options.connectTimeout = config.connectTimeout;
-    dio.options.receiveTimeout = config.receiveTimeout;
+    dio.options.baseUrl = baseUrl;
+    dio.options.connectTimeout = connectTimeout;
+    dio.options.receiveTimeout = receiveTimeout;
     dio.options.contentType = Headers.jsonContentType;
 
     dio.interceptors.add(QueuedInterceptorsWrapper(
       onRequest: (options, handler) async {
-        options.headers[AppHeaders.acceptLanguage] = 'ar';
-        options.headers[AppHeaders.xCurrency] = 'yer';
+        options.headers[AppHeaders.acceptLanguage] = language;
+        options.headers[AppHeaders.xCurrency] = currency;
 
         final deviceId = await storage.readDeviceId();
         if (deviceId != null) {
           options.headers[AppHeaders.xDeviceId] = deviceId;
         }
 
-        options.headers[AppHeaders.xAppVersion] = config.appVersion;
+        options.headers[AppHeaders.xAppVersion] = appVersion;
         options.headers[AppHeaders.xClientType] = 'flutter';
 
         final token = await storage.readToken();

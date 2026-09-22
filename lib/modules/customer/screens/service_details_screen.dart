@@ -1,54 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../shared/widgets/review_card.dart';
-import '../../../shared/widgets/provider_mini_card.dart';
+import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
+import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import '../../../models/service.dart';
-import '../../../models/provider.dart';
-import '../../../models/review.dart';
 import '../../../shared/theme/sahel_colors.dart';
 
-class ServiceDetailsScreen extends StatelessWidget {
+class ServiceDetailsScreen extends ConsumerWidget {
   final String slug;
+  final Service? service;
 
   const ServiceDetailsScreen({
     super.key,
     required this.slug,
+    this.service,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final demo = Service(
-      id: slug,
-      slug: slug,
-      titleAr: 'تنظيف المنازل الشامل',
-      titleEn: 'Full Home Cleaning',
-      basePrice: 1500,
-      currencyCode: 'yer',
-      ratingAvg: 4.8,
-      reviewsCount: 124,
-      categoryId: 'cat1',
-      descriptionAr: 'خدمة تنظيف شامل للمنزل يتضمن غرف النوم، الصالة، المطبخ والحمامات مع فرش وتنظيف متخصص.',
-    );
-    final prov = ProviderModel(
-      id: 'p1',
-      userId: 'u1',
-      businessName: 'فريق ساحل للتنظيف',
-      ratingAvg: 4.9,
-      totalReviews: 312,
-      isVerified: true,
-    );
-    final review = Review(
-      id: 'r1',
-      bookingId: 'b1',
-      reviewerId: 'u2',
-      reviewerName: 'خالد عبدالله',
-      providerId: 'p1',
-      overall: 5,
-      comment: 'خدمة ممتازة وفريق محترف، أنصح بهم بشدة.',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Prefer the Service passed via route extra; otherwise resolve from
+    // the public services list by slug or id.
+    Service? s = service;
+    AsyncValue<List<dynamic>>? listAsync;
+    if (s == null) {
+      listAsync = ref.watch(
+          servicesProvider((q: null, categoryId: null, sort: null)));
+      final list = listAsync?.valueOrNull;
+      if (list != null) {
+        for (final item in list) {
+          if (item is Service && (item.slug == slug || item.id == slug)) {
+            s = item;
+            break;
+          }
+        }
+      }
+    }
+
+    if (s == null && listAsync != null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: listAsync.when(
+          loading: () => ListView(
+            padding: const EdgeInsets.all(16),
+            children: const [
+              ShimmerCard(height: 220),
+              SizedBox(height: 16),
+              ShimmerCard(height: 140),
+            ],
+          ),
+          error: (e, _) => Center(
+            child: TextButton.icon(
+              onPressed: () => ref.invalidate(servicesProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+          ),
+          data: (_) => const Center(
+            child: Text('الخدمة غير موجودة',
+                style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: SahelColors.muted)),
+          ),
+        ),
+      );
+    }
+
+    final svc = s!;
 
     return Scaffold(
       body: CustomScrollView(
@@ -57,10 +76,13 @@ class ServiceDetailsScreen extends StatelessWidget {
             expandedHeight: 240,
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: SahelColors.primary50,
-                child: const Icon(Icons.cleaning_services, size: 80, color: SahelColors.primary300),
-              ),
+              background: svc.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: svc.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _imgPlaceholder(),
+                    )
+                  : _imgPlaceholder(),
             ),
           ),
           SliverToBoxAdapter(
@@ -70,42 +92,50 @@ class ServiceDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    demo.titleAr,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: SahelColors.slate900),
+                    svc.titleAr,
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.slate900),
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.star, size: 16, color: SahelColors.amber500),
+                      const Icon(Icons.star,
+                          size: 16, color: SahelColors.amber500),
                       const SizedBox(width: 4),
-                      Text('${demo.ratingAvg} (${demo.reviewsCount} تقييم)',
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                          '${svc.ratingAvg.toStringAsFixed(1)} (${svc.reviewsCount} تقييم)',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600)),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    demo.descriptionAr ?? '',
-                    style: const TextStyle(color: SahelColors.muted, fontSize: 14, height: 1.6),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('المزود', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () => context.push('/providers/${prov.id}'),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: SahelColors.slate200),
-                      ),
-                      child: ProviderMiniCard(p: prov),
+                  if (svc.descriptionAr != null &&
+                      svc.descriptionAr!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      svc.descriptionAr!,
+                      style: const TextStyle(
+                          color: SahelColors.muted,
+                          fontSize: 14,
+                          height: 1.6),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('التقييمات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  ReviewCard(r: review),
+                  ],
+                  if (svc.durationMinutes != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule,
+                            size: 16, color: SahelColors.muted),
+                        const SizedBox(width: 4),
+                        Text(
+                          'المدة التقريبية: ${svc.durationMinutes} دقيقة',
+                          style: const TextStyle(
+                              color: SahelColors.muted, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 80),
                 ],
               ),
@@ -117,7 +147,12 @@ class ServiceDetailsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, -2))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, -2))
+          ],
         ),
         child: SafeArea(
           child: Row(
@@ -126,10 +161,15 @@ class ServiceDetailsScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('السعر', style: TextStyle(color: SahelColors.muted, fontSize: 12)),
+                  const Text('السعر',
+                      style: TextStyle(
+                          color: SahelColors.muted, fontSize: 12)),
                   Text(
-                    '${demo.basePrice.toStringAsFixed(0)} ﷼',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: SahelColors.primary700),
+                    '${svc.basePrice.toStringAsFixed(0)} ${svc.currencyCode.toUpperCase()}',
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.primary700),
                   ),
                 ],
               ),
@@ -139,7 +179,8 @@ class ServiceDetailsScreen extends StatelessWidget {
                   label: 'احجز هذه الخدمة',
                   variant: SahelButtonVariant.gradient,
                   prefixIcon: Icons.event,
-                  onPressed: () => context.push('/bookings/new'),
+                  onPressed: () =>
+                      context.push('/bookings/new?service_id=${svc.id}'),
                 ),
               ),
             ],
@@ -148,4 +189,10 @@ class ServiceDetailsScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _imgPlaceholder() => Container(
+        color: SahelColors.primary50,
+        child: const Icon(Icons.home_repair_service,
+            size: 80, color: SahelColors.primary300),
+      );
 }

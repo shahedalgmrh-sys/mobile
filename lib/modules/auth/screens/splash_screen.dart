@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/models/booking_status.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -17,11 +18,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(milliseconds: 1800), () async {
         await ref.read(authNotifierProvider.notifier).checkSession();
+        if (!mounted) return;
         final state = ref.read(authNotifierProvider);
-        if (state.isAuthenticated && state.isProfileComplete) {
-          if (mounted) context.go('/home');
+        if (!state.isAuthenticated) {
+          context.go('/login');
+        } else if (!state.isVerified) {
+          context.go('/otp');
+        } else if (state.role == UserRole.provider) {
+          context.go('/p/dashboard');
         } else {
-          if (mounted) context.go('/login');
+          context.go('/home');
         }
       });
     });

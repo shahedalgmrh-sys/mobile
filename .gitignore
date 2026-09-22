@@ -48,3 +48,12 @@ app.*.map.json
 *.freezed.dart
 **/*.g.dart
 **/*.freezed.dart
+
+# Build outputs in subprojects (android/build/, etc.)
+**/build/
+
+# Local SDK archives and debug artifacts
+*.zip
+*.lnk
+screen_*.png
+analyze_*.txt

@@ -15,7 +15,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-  final _cityController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
@@ -24,28 +23,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirm = true;
   bool _isLoading = false;
 
-  final _cities = const ['صنعاء', 'عدن', 'تعز', 'الرياض', 'جدة', 'الدمام', 'أبوظبي', 'دبي'];
-  String? _selectedCity;
+  bool _isEmail(String v) =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim());
 
   Future<void> _register() async {
     setState(() => _isLoading = true);
-    await ref.read(authNotifierProvider.notifier).register(
-          name: _nameController.text,
-          phone: _phoneController.text,
+    final ok = await ref.read(authNotifierProvider.notifier).register(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
           password: _passwordController.text,
-          email: _emailController.text.isEmpty ? null : _emailController.text,
-          city: _selectedCity,
           role: _selectedRole,
         );
+    if (!mounted) return;
     setState(() => _isLoading = false);
-    if (mounted) {
-      context.go('/otp', extra: _phoneController.text);
+    if (ok) {
+      context.go('/otp');
+    } else {
+      final msg = ref.read(authNotifierProvider).errorMessage;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg ?? 'فشل إنشاء الحساب'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
     }
   }
 
   bool get _isValid =>
-      _nameController.text.isNotEmpty &&
-      _phoneController.text.isNotEmpty &&
+      _nameController.text.trim().isNotEmpty &&
+      _isEmail(_emailController.text) &&
       _passwordController.text.length >= 8 &&
       _passwordController.text == _confirmController.text;
 
@@ -167,24 +176,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني (اختياري)',
+                  labelText: 'البريد الإلكتروني',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedCity,
-                decoration: const InputDecoration(
-                  labelText: 'المدينة',
-                  prefixIcon: Icon(Icons.location_city_outlined),
-                ),
-                items: _cities
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (v) => setState(() {
-                  _selectedCity = v;
-                  _cityController.text = v ?? '';
-                }),
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 16),
               TextField(

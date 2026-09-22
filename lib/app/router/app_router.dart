@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import '../../modules/auth/screens/splash_screen.dart';
 import '../../modules/auth/screens/onboarding_screen.dart';
@@ -10,27 +12,29 @@ import '../../modules/auth/screens/otp_screen.dart';
 import '../../modules/auth/screens/register_screen.dart';
 import '../../modules/customer/screens/profile_setup_screen.dart';
 import '../../modules/customer/screens/customer_shell.dart';
-import '../../modules/customer/screens/home_screen.dart';
-import '../../modules/customer/screens/search_screen.dart';
-import '../../modules/customer/screens/bookings_list_screen.dart';
+import '../../modules/customer/screens/home/home_screen.dart';
+import '../../modules/customer/screens/home/search_screen.dart';
+import '../../modules/customer/screens/bookings/bookings_list_screen.dart';
 import '../../modules/customer/screens/messages_list_screen.dart';
-import '../../modules/customer/screens/customer_profile_screen.dart';
+import '../../modules/customer/screens/profile/customer_profile_screen.dart';
 import '../../modules/customer/screens/service_details_screen.dart';
 import '../../modules/customer/screens/provider_profile_screen.dart';
 import '../../modules/customer/screens/favorites_screen.dart';
-import '../../modules/customer/screens/booking_wizard_screen.dart';
-import '../../modules/customer/screens/booking_details_screen.dart';
-import '../../modules/customer/screens/live_tracking_screen.dart';
+import '../../modules/customer/screens/bookings/booking_wizard_screen.dart';
+import '../../modules/customer/screens/bookings/booking_details_screen.dart';
+import '../../modules/customer/screens/bookings/live_tracking_screen.dart';
 import '../../modules/customer/screens/write_review_screen.dart';
 import '../../modules/customer/screens/submit_complaint_screen.dart';
 import '../../modules/customer/screens/chat_screen.dart';
-import '../../modules/customer/screens/notifications_screen.dart';
-import '../../modules/customer/screens/wallet_screen.dart';
+import '../../modules/customer/screens/notifications/notifications_screen.dart';
+import '../../modules/customer/screens/wallet/wallet_screen.dart';
 import '../../modules/customer/screens/settings_screen.dart';
 import '../../modules/customer/screens/language_settings_screen.dart';
 import '../../modules/customer/screens/currency_settings_screen.dart';
 import '../../modules/customer/screens/support_screen.dart';
 import '../../modules/customer/screens/address_book_screen.dart';
+import '../../modules/customer/screens/my_reviews_screen.dart';
+import '../../modules/customer/screens/coupons_screen.dart';
 import '../../modules/provider/screens/provider_shell.dart';
 import '../../modules/provider/screens/provider_dashboard_screen.dart';
 import '../../modules/provider/screens/booking_requests_feed_screen.dart';
@@ -51,14 +55,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     authListenable.value = next;
   });
 
-  final public = [
-    '/splash',
-    '/onboarding',
-    '/language',
-    '/login',
-    '/otp',
-    '/register',
-  ];
+  const public = ['/splash', '/onboarding', '/language', '/login', '/otp', '/register'];
+  const customerRoots = ['/home', '/search', '/bookings', '/inbox', '/profile'];
+  String homeFor(UserRole? role) =>
+      role == UserRole.provider ? '/p/dashboard' : '/home';
 
   return GoRouter(
     initialLocation: '/splash',
@@ -67,11 +67,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final auth = ref.read(authNotifierProvider);
       final loc = state.matchedLocation;
       final isPublic = public.any((p) => loc.startsWith(p));
-      if (!auth.isAuthenticated && !isPublic) return '/login';
+
+      if (!auth.isAuthenticated) {
+        return isPublic ? null : '/login';
+      }
+
+      // Authenticated: keep users inside their role's area.
+      final isProviderArea = loc.startsWith('/p/');
+      if (auth.role == UserRole.provider && customerRoots.any((p) => loc.startsWith(p))) {
+        return '/p/dashboard';
+      }
+      if (auth.role == UserRole.customer && isProviderArea) {
+        return '/home';
+      }
+      if (isPublic && loc != '/splash') {
+        return homeFor(auth.role);
+      }
       if (auth.isAuthenticated &&
           !auth.isProfileComplete &&
-          loc != '/profile-setup' &&
-          !isPublic) {
+          loc != '/profile-setup') {
         return '/profile-setup';
       }
       return null;
@@ -81,17 +95,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/language', builder: (_, __) => const LanguageSelectScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(
-        path: '/otp',
-        builder: (_, s) {
-          final phone = s.extra as String? ?? '';
-          return OtpScreen(phone: phone);
-        },
-      ),
+      GoRoute(path: '/otp', builder: (_, s) => const OtpScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/profile-setup', builder: (_, __) => const ProfileSetupScreen()),
+
+      // ------------------------------------------------ Customer shell
       StatefulShellRoute.indexedStack(
-        builder: (BuildContext _, GoRouterState __, StatefulNavigationShell shell) => CustomerShell(navigationShell: shell),
+        builder: (_, __, shell) => CustomerShell(navigationShell: shell),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
@@ -100,7 +110,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               routes: [
                 GoRoute(
                   path: 'services/:slug',
-                  builder: (_, s) => ServiceDetailsScreen(slug: s.pathParameters['slug'] ?? ''),
+                  builder: (_, s) => ServiceDetailsScreen(
+                    slug: s.pathParameters['slug'] ?? '',
+                    service: s.extra is Service ? s.extra as Service : null,
+                  ),
                 ),
                 GoRoute(
                   path: 'providers/:id',
@@ -121,7 +134,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               path: '/bookings',
               pageBuilder: (_, __) => const NoTransitionPage(child: BookingsListScreen()),
               routes: [
-                GoRoute(path: 'new', builder: (_, __) => const BookingWizardScreen()),
+                GoRoute(
+                  path: 'new',
+                  builder: (_, s) => BookingWizardScreen(
+                    serviceId: s.uri.queryParameters['service_id'],
+                  ),
+                ),
                 GoRoute(
                   path: ':id',
                   builder: (_, s) => BookingDetailsScreen(id: s.pathParameters['id'] ?? ''),
@@ -175,8 +193,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/support', builder: (_, __) => const SupportScreen()),
       GoRoute(path: '/addresses', builder: (_, __) => const AddressBookScreen()),
+      GoRoute(path: '/profile/reviews', builder: (_, __) => const MyReviewsScreen()),
+      GoRoute(path: '/profile/coupons', builder: (_, __) => const CouponsScreen()),
+
+      // ------------------------------------------------ Provider shell
       StatefulShellRoute.indexedStack(
-        builder: (BuildContext _, GoRouterState __, StatefulNavigationShell shell) => ProviderShell(navigationShell: shell),
+        builder: (_, __, shell) => ProviderShell(navigationShell: shell),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
@@ -232,4 +254,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 }, name: 'routerProvider');
-

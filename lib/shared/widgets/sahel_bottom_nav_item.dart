@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 
 class SahelBottomNavItem extends BottomNavigationBarItem {
   final IconData activeIconData;

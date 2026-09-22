@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'package:saber_flutter/core/constants/enums.dart';
 
 enum KycStepStatus { pending, uploaded, approved, rejected }
 

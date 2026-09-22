@@ -1,5 +1,3 @@
-import 'booking_status.dart';
-
 class ProviderModel {
   final String id;
   final String userId;

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'package:saber_flutter/core/constants/enums.dart';
 
 class EarningsAndPayoutScreen extends StatefulWidget {
   const EarningsAndPayoutScreen({super.key});

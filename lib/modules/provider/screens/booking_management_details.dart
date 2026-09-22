@@ -5,7 +5,6 @@ import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import '../../../shared/widgets/booking_status_pill.dart';
 import '../../../shared/widgets/booking_status_stepper.dart';
-import '../../../shared/widgets/provider_mini_card.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
 

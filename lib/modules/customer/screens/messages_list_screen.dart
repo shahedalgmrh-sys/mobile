@@ -1,41 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/empty_state.dart';
+import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
-class MessagesListScreen extends StatelessWidget {
+class MessagesListScreen extends ConsumerWidget {
   const MessagesListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final convs = ref.watch(customerConversationsProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('الرسائل')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            ListTile(
-              leading: const CircleAvatar(child: Text('م')),
-              title: const Text('محمد الفني - تنظيف', style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: const Text('شكراً لك، سأكون في الموعد المحدد'),
-              trailing: const Text('2:30 م', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-              onTap: () => context.push('/inbox/thread_123'),
+        child: convs.when(
+          loading: () => ListView(
+            padding: const EdgeInsets.all(16),
+            children: const [
+              ShimmerCard(height: 64),
+              SizedBox(height: 8),
+              ShimmerCard(height: 64),
+              SizedBox(height: 8),
+              ShimmerCard(height: 64),
+            ],
+          ),
+          error: (e, _) => Center(
+            child: TextButton.icon(
+              onPressed: () =>
+                  ref.invalidate(customerConversationsProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
             ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const CircleAvatar(child: Text('أ')),
-              title: const Text('أحمد السباك', style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: const Text('أحتاج صورة للمشكلة من فضلك'),
-              trailing: const Text('أمس', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-              onTap: () => context.push('/inbox/thread_456'),
-            ),
-            const Divider(height: 1),
-            const SizedBox(height: 40),
-            const EmptyState(
-              title: 'لا توجد رسائل أخرى',
-              subtitle: 'تبدأ المحادثة مع مزود الخدمة بعد الحجز',
-              icon: Icons.chat_outlined,
-            ),
-          ],
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return const Center(
+                child: EmptyState(
+                  title: 'لا توجد رسائل بعد',
+                  subtitle: 'تبدأ المحادثة مع مزود الخدمة بعد الحجز',
+                  icon: Icons.chat_outlined,
+                ),
+              );
+            }
+            return RefreshIndicator(
+              onRefresh: () async =>
+                  ref.invalidate(customerConversationsProvider),
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (ctx, i) {
+                  final c = items[i];
+                  final other = asMap(c['other_party'] ??
+                      c['provider'] ??
+                      c['participant']);
+                  final otherUser = asMap(other['user']);
+                  final name = str(other['business_name'] ??
+                      otherUser['name'] ??
+                      c['title'],
+                      'محادثة');
+                  final lastMsg = asMap(c['last_message']);
+                  final preview = str(
+                      lastMsg['body'] ?? c['last_message_preview']);
+                  final at = str(lastMsg['created_at'] ??
+                      c['last_message_at'] ??
+                      c['updated_at']);
+                  final unread = toInt(c['unread_count']);
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      child: Text(name.isNotEmpty ? name[0] : '؟'),
+                    ),
+                    title: Text(name,
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w700)),
+                    subtitle: Text(
+                      preview.isEmpty ? '—' : preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (at.isNotEmpty)
+                          Text(
+                            at.length > 10 ? at.substring(0, 10) : at,
+                            style: const TextStyle(
+                                fontSize: 11, color: Color(0xFF64748B)),
+                          ),
+                        if (unread > 0)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0D9488),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '$unread',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                      ],
+                    ),
+                    onTap: () =>
+                        context.push('/inbox/${c['id']}'),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );

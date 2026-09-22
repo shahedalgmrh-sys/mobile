@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'package:saber_flutter/core/constants/enums.dart';
 
 class ServiceCatalogManagementScreen extends StatefulWidget {
   const ServiceCatalogManagementScreen({super.key});
@@ -111,7 +110,7 @@ class _ServiceCatalogManagementScreenState extends State<ServiceCatalogManagemen
                                         value: s.active,
                                         onChanged: (v) => setState(() => s.active = v),
                                         activeTrackColor: SahelColors.success.withOpacity(0.4),
-                                        activeColor: SahelColors.success,
+                                        activeThumbColor: SahelColors.success,
                                         inactiveTrackColor: SahelColors.textSoft.withOpacity(0.3),
                                         inactiveThumbColor: SahelColors.textSoft,
                                       ),
@@ -283,7 +282,7 @@ class _ServiceCatalogManagementScreenState extends State<ServiceCatalogManagemen
                       value: active,
                       onChanged: (v) => setSheetState(() => active = v),
                       activeTrackColor: SahelColors.success.withOpacity(0.4),
-                      activeColor: SahelColors.success,
+                      activeThumbColor: SahelColors.success,
                     ),
                   ],
                 ),
@@ -325,7 +324,7 @@ class _ServiceCatalogManagementScreenState extends State<ServiceCatalogManagemen
                           );
                           setState(() {
                             if (isEdit) {
-                              final idx = _services.indexWhere((e) => e.id == s!.id);
+                              final idx = _services.indexWhere((e) => e.id == s.id);
                               if (idx >= 0) _services[idx] = newS;
                             } else {
                               _services.add(newS);

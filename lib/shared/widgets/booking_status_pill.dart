@@ -30,6 +30,11 @@ class BookingStatusPill extends StatelessWidget {
         fg = SahelColors.primary700;
         text = 'جاري التنفيذ';
         break;
+      case BookingStatus.paid:
+        bg = SahelColors.successSoft;
+        fg = SahelColors.success;
+        text = 'مدفوع';
+        break;
       case BookingStatus.completed:
         bg = SahelColors.successSoft;
         fg = SahelColors.success;

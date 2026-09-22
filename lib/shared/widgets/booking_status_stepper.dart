@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'booking_status_pill.dart';
+
 
 class BookingStatusStepper extends StatelessWidget {
   final BookingStatus status;
@@ -15,6 +15,8 @@ class BookingStatusStepper extends StatelessWidget {
       case BookingStatus.accepted:
         return 1;
       case BookingStatus.inProgress:
+        return 3;
+      case BookingStatus.paid:
         return 3;
       case BookingStatus.completed:
         return 4;

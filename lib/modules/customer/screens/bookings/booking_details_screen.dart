@@ -1,59 +1,129 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/booking_status_pill.dart';
 import 'package:saber_flutter/shared/widgets/booking_status_stepper.dart';
 import 'package:saber_flutter/shared/widgets/provider_mini_card.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'live_tracking_screen.dart';
-import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
-class BookingDetailsScreen extends StatelessWidget {
-  const BookingDetailsScreen({super.key});
+class BookingDetailsScreen extends ConsumerWidget {
+  final String id;
+  const BookingDetailsScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context) {
-    const status = BookingStatus.inProgress;
-    const scheduledAt = 'السبت 20 سبتمبر 2026 · 10:00 صباحاً';
-    const addressFull = 'شارع الجزائر، حي الحصبة، صنعاء، اليمن، عمارة رقم 15، شقة رقم 3';
-    const customerNotes = 'الرجاء جلب أدوات التنظيف الخاصة. البوابة الرئيسية مفتوحة.';
-    const problemImageUrls = ['img1', 'img2', 'img3'];
-    const subtotal = 1000.0;
-    const discountPct = 0.20;
-    const platformFeePct = 0.10;
-    const vatPct = 0.15;
-    final discount = subtotal * discountPct;
-    final afterDiscount = subtotal - discount;
-    final platformFee = afterDiscount * platformFeePct;
-    final tax = (afterDiscount + platformFee) * vatPct;
-    final total = afterDiscount + platformFee + tax;
-    final isPaid = true;
-    final cancellationAllowed = true;
-
-    const titleSmall = TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: SahelColors.text);
-    const bodySmall = TextStyle(fontSize: 12, color: SahelColors.textMuted, fontWeight: FontWeight.w500);
-    const muted = TextStyle(color: SahelColors.textMuted, fontWeight: FontWeight.w500, fontSize: 13);
-    const amountStyle = TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: SahelColors.text);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final bookingId = int.tryParse(id) ?? 0;
+    final booking = ref.watch(customerBookingProvider(bookingId));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'تفاصيل الحجز #BK-20260919',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        title: Text(
+          'تفاصيل الحجز #$id',
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
         ),
         centerTitle: true,
-        actions: const [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: BookingStatusPill(status: status),
+        actions: [
+          booking.maybeWhen(
+            data: (b) => Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: BookingStatusPill(
+                status:
+                    BookingStatusX.fromJson(str(b['status'], 'pending')),
+              ),
+            ),
+            orElse: () => const SizedBox.shrink(),
           ),
         ],
       ),
-      body: ListView(
+      body: booking.when(
+        loading: () => ListView(
+          padding: const EdgeInsets.all(16),
+          children: const [
+            ShimmerCard(height: 90),
+            SizedBox(height: 16),
+            ShimmerCard(height: 220),
+            SizedBox(height: 16),
+            ShimmerCard(height: 160),
+          ],
+        ),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_outlined,
+                  size: 56, color: SahelColors.textMuted),
+              const SizedBox(height: 12),
+              const Text('تعذر تحميل تفاصيل الحجز',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: SahelColors.textMuted)),
+              TextButton.icon(
+                onPressed: () =>
+                    ref.invalidate(customerBookingProvider(bookingId)),
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+        data: (b) => _BookingDetailsBody(booking: b, bookingId: bookingId),
+      ),
+    );
+  }
+}
+
+class _BookingDetailsBody extends ConsumerWidget {
+  final Map<String, dynamic> booking;
+  final int bookingId;
+  const _BookingDetailsBody({required this.booking, required this.bookingId});
+
+  static const titleSmall = TextStyle(
+      fontSize: 13, fontWeight: FontWeight.w700, color: SahelColors.text);
+  static const bodySmall = TextStyle(
+      fontSize: 12, color: SahelColors.textMuted, fontWeight: FontWeight.w500);
+  static const muted = TextStyle(
+      color: SahelColors.textMuted,
+      fontWeight: FontWeight.w500,
+      fontSize: 13);
+  static const amountStyle = TextStyle(
+      fontWeight: FontWeight.w700, fontSize: 13, color: SahelColors.text);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = BookingStatusX.fromJson(str(booking['status'], 'pending'));
+    final service = asMap(booking['service']);
+    final provider = asMap(booking['provider']);
+    final providerUser = asMap(provider['user']);
+    final address = asMap(booking['address']);
+    final images = asList(booking['images'] ?? booking['attachments']);
+    final isPaid = toBool(booking['is_paid']) || status == BookingStatus.paid;
+    final canCancel = status == BookingStatus.pending ||
+        status == BookingStatus.accepted;
+    final canTrack = status == BookingStatus.accepted ||
+        status == BookingStatus.inProgress;
+    final phone = str(providerUser['phone'] ?? provider['phone']);
+
+    final addressText = str(address['full_address'] ??
+        address['address'] ??
+        booking['address_text'] ??
+        booking['address']);
+
+    return RefreshIndicator(
+      onRefresh: () async =>
+          ref.invalidate(customerBookingProvider(bookingId)),
+      child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const BookingStatusStepper(status: status),
+          BookingStatusStepper(status: status),
           const SizedBox(height: 20),
           Card(
             elevation: 0,
@@ -69,92 +139,148 @@ class BookingDetailsScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Text('موعد التنفيذ', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text('الخدمة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 14)),
                       const Spacer(),
-                      const Text(
-                        scheduledAt,
-                        style: TextStyle(color: SahelColors.primary700, fontWeight: FontWeight.w800, fontSize: 13),
+                      Text(
+                        str(service['name'], '—'),
+                        style: const TextStyle(
+                            color: SahelColors.primary700,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('الفني المكلف', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text('موعد التنفيذ',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 14)),
                       const Spacer(),
-                      const ProviderMiniCard(),
+                      Text(
+                        [
+                          str(booking['booking_date']),
+                          str(booking['booking_time'] ??
+                              booking['time_slot']),
+                        ].where((e) => e.isNotEmpty).join(' · '),
+                        style: const TextStyle(
+                            color: SahelColors.primary700,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on, color: SahelColors.primary600, size: 18),
-                      const SizedBox(width: 6),
-                      const Expanded(
-                        child: Text(
-                          addressFull,
-                          style: TextStyle(fontSize: 13, height: 1.5, color: SahelColors.text),
+                      const Text('الفني المكلف',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Spacer(),
+                      ProviderMiniCard(
+                        businessName: str(provider['business_name'] ??
+                            providerUser['name']),
+                        avatarUrl:
+                            strOrNull(provider['business_logo'] ??
+                                providerUser['avatar']),
+                        ratingAvg:
+                            toDoubleOrNull(provider['average_rating']),
+                        isVerified: toBool(provider['is_verified']),
+                      ),
+                    ],
+                  ),
+                  if (addressText.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.location_on,
+                            color: SahelColors.primary600, size: 18),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            addressText,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: SahelColors.text),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('ملاحظات العميل:', style: titleSmall),
-                  const SizedBox(height: 4),
-                  const Text(customerNotes, style: bodySmall),
-                  const SizedBox(height: 12),
-                  const Text('صور المشكلة المرسلة:', style: titleSmall),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: problemImageUrls.map((url) {
-                      return Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          color: SahelColors.surface3,
+                      ],
+                    ),
+                  ],
+                  if (str(booking['notes'] ?? booking['customer_notes'])
+                      .isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('ملاحظات العميل:', style: titleSmall),
+                    const SizedBox(height: 4),
+                    Text(
+                        str(booking['notes'] ?? booking['customer_notes']),
+                        style: bodySmall),
+                  ],
+                  if (images.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('الصور المرفقة:', style: titleSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: images.map((img) {
+                        final url = str(asMap(img)['url'] ?? img);
+                        return ClipRRect(
                           borderRadius: SahelRadii.smRadius,
-                          border: Border.all(color: SahelColors.border),
-                        ),
-                        child: const Icon(Icons.image, color: SahelColors.textMuted, size: 32),
-                      );
-                    }).toList(),
-                  ),
+                          child: url.isNotEmpty
+                              ? Image.network(
+                                  url,
+                                  width: 96,
+                                  height: 96,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      _imgPlaceholder(),
+                                )
+                              : _imgPlaceholder(),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   const Divider(),
                   const SizedBox(height: 12),
-                  const Text('الإجراءات السريعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Text('الإجراءات السريعة',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
                   Wrap(
                     runSpacing: 12,
                     spacing: 12,
                     children: [
-                      SahelButton.gradient(
-                        icon: Icons.map,
-                        label: 'تتبع الوصول',
-                        width: 150,
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LiveTrackingScreen()),
-                          );
-                        },
-                      ),
-                      SahelButton.soft(
-                        icon: Icons.call,
-                        label: 'اتصال',
-                        width: 120,
-                        onPressed: () async {
-                          final tel = Uri.parse('tel:+967777123456');
-                          if (await canLaunchUrl(tel)) await launchUrl(tel);
-                        },
-                      ),
+                      if (canTrack)
+                        SahelButton.gradient(
+                          icon: Icons.map,
+                          label: 'تتبع الوصول',
+                          width: 150,
+                          onPressed: () =>
+                              context.push('/bookings/$bookingId/track'),
+                        ),
+                      if (phone.isNotEmpty)
+                        SahelButton.soft(
+                          icon: Icons.call,
+                          label: 'اتصال',
+                          width: 120,
+                          onPressed: () async {
+                            final tel = Uri.parse('tel:$phone');
+                            if (await canLaunchUrl(tel)) {
+                              await launchUrl(tel);
+                            }
+                          },
+                        ),
                       SahelButton.soft(
                         icon: Icons.chat,
                         label: 'محادثة',
                         width: 120,
-                        onPressed: () {},
+                        onPressed: () => context.go('/inbox'),
                       ),
                     ],
                   ),
@@ -175,36 +301,44 @@ class BookingDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('الفاتورة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Text('الفاتورة',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [const Text('القيمة الأساسية', style: muted), const Spacer(), Text('${subtotal.toStringAsFixed(0)} ر.س', style: amountStyle)],
-                  ),
+                  _amountRow('القيمة الأساسية',
+                      str(booking['formatted_subtotal'] ?? booking['subtotal'])),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Text('الخصم -20%', style: muted),
-                      const Spacer(),
-                      Text('−${discount.toStringAsFixed(0)} ر.س', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: SahelColors.success)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [const Text('رسوم المنصة 10%', style: muted), const Spacer(), Text('${platformFee.toStringAsFixed(0)} ر.س', style: amountStyle)],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [const Text('الضريبة (VAT 15%)', style: muted), const Spacer(), Text('${tax.toStringAsFixed(0)} ر.س', style: amountStyle)],
-                  ),
+                  if (toDoubleOrNull(booking['discount']) != null &&
+                      toDouble(booking['discount']) > 0) ...[
+                    _amountRow(
+                        'الخصم',
+                        '−${str(booking['formatted_discount'] ?? booking['discount'])}',
+                        color: SahelColors.success),
+                    const SizedBox(height: 8),
+                  ],
+                  if (toDoubleOrNull(booking['platform_fee']) != null) ...[
+                    _amountRow('رسوم المنصة',
+                        str(booking['formatted_platform_fee'] ?? booking['platform_fee'])),
+                    const SizedBox(height: 8),
+                  ],
+                  if (toDoubleOrNull(booking['tax'] ?? booking['vat']) !=
+                      null) ...[
+                    _amountRow('الضريبة',
+                        str(booking['formatted_tax'] ?? booking['tax'] ?? booking['vat'])),
+                    const SizedBox(height: 8),
+                  ],
                   const SizedBox(height: 12),
                   const Divider(),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('الإجمالي', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                      const Text('الإجمالي',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w800)),
                       const Spacer(),
                       Text(
-                        '${total.toStringAsFixed(0)} ر.س',
+                        str(booking['formatted_total'] ?? booking['total'],
+                            '—'),
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
@@ -216,11 +350,15 @@ class BookingDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.account_balance_wallet, color: SahelColors.primary600, size: 20),
+                      const Icon(Icons.account_balance_wallet,
+                          color: SahelColors.primary600, size: 20),
                       const SizedBox(width: 6),
-                      const Text(
-                        'طريقة الدفع: المحفظة',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: SahelColors.text),
+                      Text(
+                        'طريقة الدفع: ${str(booking['payment_method'], '—')}',
+                        style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: SahelColors.text),
                       ),
                       const Spacer(),
                       Chip(
@@ -229,13 +367,18 @@ class BookingDetailsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
-                            color: isPaid ? SahelColors.success : SahelColors.amber,
+                            color: isPaid
+                                ? SahelColors.success
+                                : SahelColors.amber,
                           ),
                         ),
-                        backgroundColor: isPaid ? SahelColors.successSoft : SahelColors.amberSoft,
+                        backgroundColor: isPaid
+                            ? SahelColors.successSoft
+                            : SahelColors.amberSoft,
                         side: BorderSide.none,
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
                       ),
                     ],
                   ),
@@ -244,22 +387,130 @@ class BookingDetailsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          if (cancellationAllowed)
+          if (!isPaid && status == BookingStatus.pending)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SahelButton.gradient(
+                icon: Icons.payment,
+                label: 'الدفع الآن',
+                onPressed: () => _pay(context, ref),
+              ),
+            ),
+          if (canCancel)
             SahelButton.danger(
-              label: 'إلغاء الحجز خلال 15 دقيقة (استرداد كامل)',
-              onPressed: () {},
+              label: 'إلغاء الحجز',
+              onPressed: () => _cancel(context, ref),
             )
           else
             const Text(
-              'عذراً، انتهت نافذة الإلغاء المجاني',
-              style: TextStyle(color: SahelColors.textMuted, fontWeight: FontWeight.w600),
+              'لا يمكن إلغاء هذا الحجز',
+              style: TextStyle(
+                  color: SahelColors.textMuted,
+                  fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
-          const SizedBox(height: 12),
-          SahelButton.soft(
-            label: 'إعادة جدولة الحجز',
-            onPressed: () {},
-          ),
+          if (status == BookingStatus.completed) ...[
+            const SizedBox(height: 12),
+            SahelButton.soft(
+              label: 'تقييم الخدمة',
+              onPressed: () =>
+                  context.push('/bookings/$bookingId/review'),
+            ),
+            const SizedBox(height: 12),
+            SahelButton.soft(
+              label: 'إعادة الحجز',
+              onPressed: () => _rebook(context, ref),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _imgPlaceholder() => Container(
+        width: 96,
+        height: 96,
+        decoration: BoxDecoration(
+          color: SahelColors.surface3,
+          borderRadius: SahelRadii.smRadius,
+          border: Border.all(color: SahelColors.border),
+        ),
+        child:
+            const Icon(Icons.image, color: SahelColors.textMuted, size: 32),
+      );
+
+  Widget _amountRow(String label, String value, {Color? color}) => Row(
+        children: [
+          Text(label, style: muted),
+          const Spacer(),
+          Text(value.isEmpty ? '—' : value,
+              style: amountStyle.copyWith(color: color)),
+        ],
+      );
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final reason = await _askReason(context);
+    if (reason == null || !context.mounted) return;
+    try {
+      await ref
+          .read(customerRepositoryProvider)
+          .cancelBooking(bookingId, reason);
+      ref.invalidate(customerBookingProvider(bookingId));
+      ref.invalidate(customerBookingsProvider);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر إلغاء الحجز')));
+      }
+    }
+  }
+
+  Future<void> _rebook(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(customerRepositoryProvider).rebook(bookingId);
+      ref.invalidate(customerBookingsProvider);
+      if (context.mounted) context.go('/bookings');
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر إعادة الحجز')));
+      }
+    }
+  }
+
+  Future<void> _pay(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref
+          .read(customerRepositoryProvider)
+          .payBooking(bookingId, 'wallet');
+      ref.invalidate(customerBookingProvider(bookingId));
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر الدفع')));
+      }
+    }
+  }
+
+  Future<String?> _askReason(BuildContext context) {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('سبب الإلغاء'),
+        content: TextField(
+          controller: controller,
+          decoration:
+              const InputDecoration(hintText: 'اذكر سبب الإلغاء…'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('تراجع')),
+          TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('تأكيد الإلغاء')),
         ],
       ),
     );

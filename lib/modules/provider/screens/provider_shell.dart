@@ -15,7 +15,7 @@ class ProviderShell extends StatelessWidget {
     (icon: Icons.inbox_outlined, activeIcon: Icons.inbox, label: 'الطلبات'),
     (icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'الحجوزات'),
     (icon: Icons.attach_money_outlined, activeIcon: Icons.attach_money, label: 'الأرباح'),
-    (icon: Icons.person_outline, activeIcon: Icons.person, label: 'الحساب'),
+    (icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble, label: 'الرسائل'),
   ];
 
   void _tap(int idx) {

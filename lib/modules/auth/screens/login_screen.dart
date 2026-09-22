@@ -1,36 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/services.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _phoneController = TextEditingController();
-  String _countryCode = '+967';
-  final List<Map<String, String>> _countries = const [
-    {'code': '+967', 'name': 'YEM', 'flag': '🇾🇪'},
-    {'code': '+966', 'name': 'KSA', 'flag': '🇸🇦'},
-    {'code': '+971', 'name': 'ARE', 'flag': '🇦🇪'},
-  ];
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _loginController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  bool get _isValid =>
+      _loginController.text.trim().isNotEmpty &&
+      _passwordController.text.isNotEmpty;
+
+  Future<void> _login() async {
+    final ok = await ref.read(authNotifierProvider.notifier).login(
+          login: _loginController.text.trim(),
+          password: _passwordController.text,
+        );
+    if (!mounted) return;
+    final auth = ref.read(authNotifierProvider);
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'فشل تسجيل الدخول'),
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+    if (!auth.isVerified) {
+      context.go('/otp');
+      return;
+    }
+    // Router redirect handles role-based landing.
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(authNotifierProvider).isLoading;
+
     return Scaffold(
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 24),
               const Text(
-                'مرحباً 👋',
+                'مرحباً بعودتك 👋',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
@@ -39,50 +72,50 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                'أدخل رقم هاتفك لتسجيل الدخول',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF64748B),
-                ),
+                'سجّل الدخول بحسابك للمتابعة',
+                style: TextStyle(fontSize: 16, color: Color(0xFF64748B)),
               ),
               const SizedBox(height: 32),
               TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                controller: _loginController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'البريد الإلكتروني أو رقم الهاتف',
+                  prefixIcon: Icon(Icons.person_outline),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscure,
                 decoration: InputDecoration(
-                  labelText: 'رقم الهاتف',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  suffix: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _countryCode,
-                        items: _countries
-                            .map((c) => DropdownMenuItem(
-                                  value: c['code'],
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(c['flag']!),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '${c['name']} ${c['code']}',
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ],
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) setState(() => _countryCode = v);
-                        },
-                      ),
+                  labelText: 'كلمة المرور',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'نسيت كلمة المرور؟',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF0F766E),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Container(
                 width: double.infinity,
                 height: 52,
@@ -100,25 +133,32 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
-                    final phone = '$_countryCode${_phoneController.text}';
-                    context.go('/otp', extra: phone);
-                  },
+                  onPressed: _isValid && !isLoading ? _login : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
+                    disabledBackgroundColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.5),
                     ),
                   ),
-                  child: const Text(
-                    'إرسال رمز التحقق',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'تسجيل الدخول',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 16),

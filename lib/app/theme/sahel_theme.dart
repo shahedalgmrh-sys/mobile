@@ -71,7 +71,6 @@ class SahelTheme {
 
   static TextTheme get sahelTextTheme {
     final tajawal = GoogleFonts.tajawalTextTheme();
-    final fallback = GoogleFonts.plusJakartaSansTextTheme();
     return TextTheme(
       displayLarge: tajawal.displayLarge?.copyWith(
         fontFamily: GoogleFonts.tajawal().fontFamily,
@@ -257,7 +256,7 @@ class SahelTheme {
             color: SahelColors.text,
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: SahelColors.surface,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -348,7 +347,7 @@ class SahelTheme {
             color: Color(0xFFF1F5F9),
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Color(0xFF1E293B),
           elevation: 0,
           shape: RoundedRectangleBorder(

@@ -204,7 +204,6 @@ class SahelButton extends StatelessWidget {
       case SahelButtonVariant.amber:
         return _buildSolid(isDisabled, textStyle, SahelColors.amber500, Colors.white);
       case SahelButtonVariant.filled:
-      default:
         return _buildSolid(isDisabled, textStyle, SahelColors.primary600, Colors.white);
     }
   }
@@ -223,7 +222,6 @@ class SahelButton extends StatelessWidget {
         return Colors.white;
       case SahelButtonVariant.gradient:
       case SahelButtonVariant.filled:
-      default:
         return Colors.white;
     }
   }

@@ -1,60 +1,175 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
+import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
 import '../../../shared/theme/sahel_colors.dart';
 import '../../../models/booking_status.dart';
 
-class BookingRequestsFeedScreen extends StatelessWidget {
+class BookingRequestsFeedScreen extends ConsumerWidget {
   const BookingRequestsFeedScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending =
+        ref.watch(providerBookingsProvider((status: 'pending', date: null)));
+
     return Scaffold(
       appBar: AppBar(title: const Text('طلبات الحجز')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _request('أحمد محمد', 'تنظيف منزل كامل', '20 سبتمبر · 10:00 صباحاً', 'صنعاء - حيلة', 2500, BookingStatus.pending),
-            const SizedBox(height: 12),
-            _request('خالد عبدالله', 'فحص تكييف 3 وحدات', '21 سبتمبر · 2:00 عصراً', 'صنعاء - السبعين', 3800, BookingStatus.pending),
-            const SizedBox(height: 40),
-            const Center(
-              child: Text('لا توجد طلبات أخرى',
-                  style: TextStyle(color: SahelColors.muted, fontSize: 13)),
+        child: pending.when(
+          loading: () => ListView(
+            padding: const EdgeInsets.all(16),
+            children: const [
+              ShimmerCard(height: 170),
+              SizedBox(height: 12),
+              ShimmerCard(height: 170),
+            ],
+          ),
+          error: (e, _) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_outlined,
+                    size: 56, color: SahelColors.muted),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: () => ref.invalidate(providerBookingsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة المحاولة'),
+                ),
+              ],
             ),
-          ],
+          ),
+          data: (items) => RefreshIndicator(
+            onRefresh: () async => ref.invalidate(providerBookingsProvider),
+            child: items.isEmpty
+                ? ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: const [
+                      SizedBox(height: 80),
+                      Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.inbox_outlined,
+                                size: 56, color: SahelColors.muted),
+                            SizedBox(height: 12),
+                            Text('لا توجد طلبات جديدة',
+                                style: TextStyle(
+                                    color: SahelColors.muted,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, i) =>
+                        _RequestCard(booking: items[i]),
+                  ),
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _request(String name, String svc, String time, String loc, double price, BookingStatus s) {
+class _RequestCard extends ConsumerStatefulWidget {
+  final Map<String, dynamic> booking;
+  const _RequestCard({required this.booking});
+
+  @override
+  ConsumerState<_RequestCard> createState() => _RequestCardState();
+}
+
+class _RequestCardState extends ConsumerState<_RequestCard> {
+  bool _busy = false;
+
+  Future<void> _act(String action) async {
+    setState(() => _busy = true);
+    final repo = ref.read(providerRepositoryProvider);
+    final id = toInt(widget.booking['id']);
+    try {
+      if (action == 'accept') {
+        await repo.acceptBooking(id);
+      } else {
+        await repo.rejectBooking(id);
+      }
+      ref.invalidate(providerBookingsProvider);
+      ref.invalidate(providerDashboardProvider);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تنفيذ العملية')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final b = widget.booking;
+    final customer = asMap(b['customer'] ?? b['user']);
+    final service = asMap(b['service']);
+    final address = asMap(b['address']);
+    final name = str(customer['name'], 'عميل');
+    final loc = str(address['city'] ?? address['full_address'] ?? '');
+    final svc = str(service['name'], 'خدمة');
+    final time = [
+      str(b['booking_date']),
+      str(b['booking_time'] ?? b['time_slot']),
+    ].where((e) => e.isNotEmpty).join(' · ');
+    final price = str(b['formatted_total'] ?? b['total']);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: SahelColors.slate200),
-        boxShadow: const [BoxShadow(color: Color(0x0A0F172A), blurRadius: 8, offset: Offset(0, 2))],
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 8,
+              offset: Offset(0, 2))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(child: Text(name[0])),
+              CircleAvatar(
+                child: Text(name.isNotEmpty ? name[0] : '؟'),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    Text(loc, style: const TextStyle(color: SahelColors.muted, fontSize: 12)),
+                    Text(name,
+                        style:
+                            const TextStyle(fontWeight: FontWeight.w700)),
+                    if (loc.isNotEmpty)
+                      Text(loc,
+                          style: const TextStyle(
+                              color: SahelColors.muted, fontSize: 12)),
                   ],
                 ),
               ),
-              BookingStatusPill(status: s),
+              BookingStatusPill(
+                status: BookingStatusX.fromJson(
+                    str(b['status'], 'pending')),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -66,20 +181,30 @@ class BookingRequestsFeedScreen extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.plumbing_sharp, color: SahelColors.primary600),
+                const Icon(Icons.home_repair_service,
+                    color: SahelColors.primary600),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(svc, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      Text(time, style: const TextStyle(color: SahelColors.muted, fontSize: 12)),
+                      Text(svc,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700)),
+                      if (time.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(time,
+                            style: const TextStyle(
+                                color: SahelColors.muted, fontSize: 12)),
+                      ],
                     ],
                   ),
                 ),
-                Text('${price.toStringAsFixed(0)} ﷼',
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: SahelColors.primary700, fontSize: 16)),
+                Text(price,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.primary700,
+                        fontSize: 16)),
               ],
             ),
           ),
@@ -87,12 +212,31 @@ class BookingRequestsFeedScreen extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: SahelButton.soft(label: 'رفض', onTap: () {}, height: 40),
+                child: SahelButton.soft(
+                    label: 'رفض',
+                    onTap: _busy ? null : () => _act('reject'),
+                    height: 40),
               ),
               const SizedBox(width: 10),
               Expanded(
                 flex: 2,
-                child: SahelButton(label: 'قبول الطلب', variant: SahelButtonVariant.gradient, onPressed: () {}, height: 40),
+                child: _busy
+                    ? const SizedBox(
+                        height: 40,
+                        child: Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2),
+                          ),
+                        ),
+                      )
+                    : SahelButton(
+                        label: 'قبول الطلب',
+                        variant: SahelButtonVariant.gradient,
+                        onPressed: () => _act('accept'),
+                        height: 40),
               ),
             ],
           ),

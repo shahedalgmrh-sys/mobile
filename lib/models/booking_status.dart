@@ -1,13 +1,2 @@
-enum BookingStatus {
-  pending,
-  accepted,
-  inProgress,
-  paid,
-  completed,
-  rejected,
-  cancelled,
-  rescheduled,
-  refunded,
-}
-
-enum UserRole { customer, provider }
+export 'package:saber_flutter/core/constants/enums.dart'
+    show BookingStatus, BookingStatusX, UserRole, UserRoleX;
