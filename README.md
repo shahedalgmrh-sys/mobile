@@ -57,21 +57,25 @@ flutter run
 
 ## 3. تشغيل الـ Backend (Laravel)
 
-التطبيق يحتاج خادم الـ API ليعمل. مشروع الويب/الباك-إند في مستودع مستقل
-(`SaberWeb-main` — Laravel 11 + Sanctum + SQLite افتراضياً):
+> ⚠️ **التطبيق بدون خادم يعرض "تعذر الاتصال بالخادم"** — يجب تشغيل الـ API أولاً.
+
+مشروع الويب/الباك-إند في مستودع مستقل (Laravel 11 + Sanctum + SQLite افتراضياً):
 
 ```bash
-cd <مسار-الباك-إند>
+# 1) اسحب كود الباك-إند
+git clone https://github.com/shahedalgmrh-sys/saber.git
+cd saber
 
+# 2) ثبّت التبعيات وأعدّ البيئة
 composer install
 cp .env.example .env
 php artisan key:generate
 
-# إنشاء قاعدة SQLite وزرع البيانات التجريبية
+# 3) قاعدة SQLite + البيانات التجريبية
 type nul > database\database.sqlite     # Windows
 php artisan migrate --seed --force
 
-# التشغيل — مهم: 0.0.0.0 ليقبل اتصالات الأجهزة الأخرى
+# 4) التشغيل — مهم: 0.0.0.0 ليقبل اتصالات الأجهزة الأخرى
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
