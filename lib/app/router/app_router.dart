@@ -96,7 +96,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/language', builder: (_, __) => const LanguageSelectScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/otp', builder: (_, s) => const OtpScreen()),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+      GoRoute(
+        path: '/register',
+        builder: (_, state) => RegisterScreen(
+          initialRole: state.uri.queryParameters['role'] == 'provider'
+              ? UserRole.provider
+              : null,
+        ),
+      ),
       GoRoute(path: '/profile-setup', builder: (_, __) => const ProfileSetupScreen()),
 
       // ------------------------------------------------ Customer shell

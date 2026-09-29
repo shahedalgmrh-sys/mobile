@@ -5,7 +5,9 @@ import 'package:saber_flutter/models/booking_status.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, this.initialRole});
+
+  final UserRole? initialRole;
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -18,7 +20,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
-  UserRole _selectedRole = UserRole.customer;
+  late UserRole _selectedRole = widget.initialRole ?? UserRole.customer;
   bool _obscurePass = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;

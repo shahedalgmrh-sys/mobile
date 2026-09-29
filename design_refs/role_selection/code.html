@@ -1,0 +1,665 @@
+<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_stack" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100%;margin:0;padding:0;min-height:100%;}body{overscroll-behavior-y:none;font-family:'Plus Jakarta Sans',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "inverse-on-surface": "#eef0ff", "on-background": "#131b2e", "background": "#faf8ff", "whatsapp": "#25d366", "error": "#ba1a1a", "secondary-fixed": "#9cf2e8", "primary-fixed": "#89f5e7", "on-tertiary-fixed": "#2a1700", "primary-700": "#115e59", "tertiary-container": "#a36700", "tertiary-fixed": "#ffddb8", "on-tertiary-container": "#fffbff", "on-error": "#ffffff", "on-secondary-fixed": "#00201d", "outline-variant": "#bcc9c6", "on-secondary-fixed-variant": "#00504a", "outline": "#6d7a77", "on-primary-container": "#f4fffc", "text-soft": "#94a3b8", "primary-surface": "#f0fdfa", "on-tertiary": "#ffffff", "surface-tint": "#006a61", "secondary": "#006a63", "surface-container": "#eaedff", "primary": "#00685f", "text-muted": "#64748b", "surface-container-lowest": "#ffffff", "surface-card": "#ffffff", "tertiary": "#825100", "error-container": "#ffdad6", "on-primary-fixed": "#00201d", "accent-violet": "#8b5cf6", "surface-variant": "#dae2fd", "on-secondary-container": "#006f67", "border-strong": "#cbd5e1", "primary-container": "#ccfbf1", "secondary-container": "#99efe5", "border-default": "#e2e8f0", "focus-ring": "rgba(13, 148, 136, 0.18)", "on-tertiary-fixed-variant": "#653e00", "inverse-surface": "#283044", "surface-container-low": "#f2f3ff", "error-destructive": "#dc3545", "surface": "#faf8ff", "inverse-primary": "#6bd8cb", "secondary-fixed-dim": "#80d5cb", "surface-canvas": "#f6f7f9", "on-error-container": "#93000a", "surface-dim": "#d2d9f4", "on-secondary": "#ffffff", "surface-bright": "#faf8ff", "surface-subtle": "#f8fafc", "surface-inset": "#f1f5f9", "on-primary-fixed-variant": "#005049", "surface-container-highest": "#dae2fd", "primary-fixed-dim": "#6bd8cb", "on-primary": "#ffffff", "on-surface": "#131b2e", "on-surface-variant": "#3d4947", "tertiary-fixed-dim": "#ffb95f", "success-semantic": "#16a34a", "surface-container-high": "#e2e7ff" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xl": "2rem", "margin-lg": "2.5rem", "space-md": "1rem", "margin": "1rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "margin-md": "1.5rem", "gutter": "1.5rem", "section-lg": "4.5rem", "space-sm": "0.5rem", "section-sm": "2.5rem", "gutter-lg": "2rem" }, fontFamily: { "headline-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "display-hero": ["Plus Jakarta Sans"], "headline-lg-mobile": ["Plus Jakarta Sans"], "caption": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-lead": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "body-bold": ["Plus Jakarta Sans"], "title-card": ["Plus Jakarta Sans"], "display-hero-mobile": ["Plus Jakarta Sans"], "eyebrow-caps": ["Plus Jakarta Sans"], "body-base": ["Plus Jakarta Sans"] }, fontSize: { "headline-md": ["1.5rem", { "lineHeight": "2rem", "fontWeight": "700" }], "headline-lg": ["2.25rem", { "lineHeight": "2.9rem", "fontWeight": "800" }], "display-hero": ["3rem", { "lineHeight": "3.6rem", "fontWeight": "800" }], "headline-lg-mobile": ["1.6rem", { "lineHeight": "2.1rem", "fontWeight": "800" }], "caption": ["0.875rem", { "lineHeight": "1.4rem", "fontWeight": "400" }], "headline-sm": ["1.25rem", { "lineHeight": "1.75rem", "fontWeight": "600" }], "body-lead": ["1.125rem", { "lineHeight": "1.9rem", "fontWeight": "400" }], "label-md": ["0.875rem", { "lineHeight": "1.3rem", "fontWeight": "500" }], "body-bold": ["1rem", { "lineHeight": "1.6rem", "fontWeight": "600" }], "title-card": ["1.125rem", { "lineHeight": "1.55rem", "fontWeight": "600" }], "display-hero-mobile": ["2rem", { "lineHeight": "2.5rem", "fontWeight": "800" }], "eyebrow-caps": ["0.78rem", { "lineHeight": "1rem", "fontWeight": "700" }], "body-base": ["1rem", { "lineHeight": "1.7rem", "fontWeight": "400" }] } } } }</script></head><body class="bg-surface font-body-base text-body-base text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm"><button aria-label="رجوع" class="w-11 h-11 flex items-center justify-center rounded-xl text-on-surface hover:bg-surface-container transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[24px] transform scale-x-[-1]">arrow_back</span></button><img alt="Brand logo. - Primary color: #0d9488 - Font: plusJakartaSans - Mode: light - Roundness: rounded-md" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UXv4ET6q53u7r2pNR3syZTHWx1MKkQ7VJVvFlTfBVeiD_XJ6Y1-PiIq4e9W_gwzomc2XVnBvoq9I7ETLb2u4zrAz0PFuKFeT3DQdyQcM41-YRy4kjYwqzpIXdnJQg2iPNF5w1yV2JErFfmiIO15PoApXqDr0-VO9oudZE5WpXblMz2fd9SfqIvk89LYkto7UQuEI54Sp_QCFLnP3R8TzGhFLREsA6rwXMT3TuPqi1OWO-HkdHvGcUW-H4"><span class="font-title-card text-title-card text-on-surface select-none truncate max-w-[130px]">Role Selection</span></div><div class="flex items-center gap-space-xs"><button class="min-h-[44px] px-space-md py-space-xs rounded-full font-label-md text-label-md text-text-muted hover:text-primary transition-colors flex items-center justify-center" type="button">تخطي</button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-safe bg-surface"><div class="flex flex-col w-full relative select-none">
+<!-- Interactive State Controller & Layout -->
+<div class="w-full max-w-[440px] mx-auto px-margin flex flex-col justify-between py-space-md min-h-[calc(100dvh-4rem)]">
+<!-- Progress Dots & Status Bar -->
+<div class="w-full flex items-center justify-between mb-space-sm">
+<div class="px-space-sm py-0.5 rounded-full bg-primary-container text-primary-700 font-eyebrow-caps text-eyebrow-caps font-bold" id="stepCounterBadge">
+        الخطوة <span id="currentStepNumber">١</span> من ٥
+      </div>
+<!-- 5-Dot Stepper Tracker -->
+<div aria-label="مؤشر الخطوات" class="flex items-center gap-1.5" id="stepperDots" role="tablist">
+<button aria-label="الانتقال للخطوة 1" class="w-7 h-2 rounded-full bg-primary transition-all duration-300" id="dot-1" onclick="goToSlide(1)"></button>
+<button aria-label="الانتقال للخطوة 2" class="w-2 h-2 rounded-full bg-surface-variant transition-all duration-300" id="dot-2" onclick="goToSlide(2)"></button>
+<button aria-label="الانتقال للخطوة 3" class="w-2 h-2 rounded-full bg-surface-variant transition-all duration-300" id="dot-3" onclick="goToSlide(3)"></button>
+<button aria-label="الانتقال للخطوة 4" class="w-2 h-2 rounded-full bg-surface-variant transition-all duration-300" id="dot-4" onclick="goToSlide(4)"></button>
+<button aria-label="الانتقال للخطوة 5" class="w-2 h-2 rounded-full bg-surface-variant transition-all duration-300" id="dot-5" onclick="goToSlide(5)"></button>
+</div>
+<!-- Quick Skip to Stage 5 -->
+<button class="text-text-muted hover:text-primary font-label-md text-label-md transition-colors flex items-center gap-0.5" id="topSkipBtn" onclick="goToSlide(5)" type="button">
+<span>تخطي</span>
+<span class="material-symbols-outlined text-[16px] transform scale-x-[-1]">double_arrow</span>
+</button>
+</div>
+<!-- Onboarding Stage Slides Wrapper -->
+<div class="relative w-full overflow-hidden flex-1 flex flex-col justify-center">
+<!-- ================= STAGE 1: Welcome ================= -->
+<div class="slide-panel flex flex-col items-center text-center transition-all duration-500 ease-out transform opacity-100 translate-x-0" id="slide-1">
+<!-- Sahel Brand Hero Glowing Container -->
+<div class="relative mb-space-lg flex items-center justify-center">
+<div class="absolute w-36 h-36 rounded-full bg-secondary-container/40 blur-2xl animate-pulse"></div>
+<div class="relative w-28 h-28 rounded-3xl bg-surface-container-lowest shadow-xl flex items-center justify-center p-space-md">
+<img alt="شعار ساحل الرسمي" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UXv4ET6q53u7r2pNR3syZTHWx1MKkQ7VJVvFlTfBVeiD_XJ6Y1-PiIq4e9W_gwzomc2XVnBvoq9I7ETLb2u4zrAz0PFuKFeT3DQdyQcM41-YRy4kjYwqzpIXdnJQg2iPNF5w1yV2JErFfmiIO15PoApXqDr0-VO9oudZE5WpXblMz2fd9SfqIvk89LYkto7UQuEI54Sp_QCFLnP3R8TzGhFLREsA6rwXMT3TuPqi1OWO-HkdHvGcUW-H4">
+</div>
+<div class="absolute -bottom-2 -inline-start-2 bg-surface-container-lowest px-space-sm py-1 rounded-full shadow-md flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-success-semantic animate-ping"></span>
+<span class="font-eyebrow-caps text-eyebrow-caps text-primary font-bold">موثوق ١٠٠٪</span>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-primary-container text-primary-700 font-label-md text-label-md font-bold mb-space-sm">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>أهلاً بك في ساحل</span>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-space-xs font-bold leading-tight">
+          خدمات منزلك المثالية... <br>
+<span class="text-primary">بضغطة زر واحدة</span>
+</h1>
+<p class="font-body-base text-body-base text-text-muted mb-space-lg max-w-sm">
+          المنصة السعودية الرائدة التي تجمعك بنخبة مزودي الخدمات المنزلية المعتمدين والموثقين بأعلى معايير الجودة والأمان.
+        </p>
+<!-- Highlights Chips -->
+<div class="flex flex-wrap items-center justify-center gap-space-xs mb-space-lg">
+<div class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm text-on-surface-variant font-label-md text-label-md">
+<span>🛡️</span>
+<span>فنيون معتمدون</span>
+</div>
+<div class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm text-on-surface-variant font-label-md text-label-md">
+<span>💎</span>
+<span>ضمان الجودة والأسعار</span>
+</div>
+<div class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm text-on-surface-variant font-label-md text-label-md">
+<span>💳</span>
+<span>دفع إلكتروني آمن</span>
+</div>
+</div>
+</div>
+<!-- ================= STAGE 2: Discover ================= -->
+<div class="slide-panel hidden flex flex-col items-center text-center transition-all duration-500 ease-out transform opacity-0 translate-x-12" id="slide-2">
+<!-- Service Discovery Mockup Card -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-md mb-space-md text-start">
+<div class="w-full bg-surface-container-low rounded-xl px-space-sm py-2 flex items-center justify-between text-text-muted mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">search</span>
+<span class="font-caption text-caption">ابحث عن صيانة تكييف، سباكة...</span>
+</div>
+<span class="px-2 py-0.5 rounded-lg bg-primary-container text-primary font-eyebrow-caps text-eyebrow-caps font-bold">الرياض</span>
+</div>
+<div class="grid grid-cols-2 gap-2 mb-2">
+<div class="p-2.5 rounded-xl bg-surface-container-low flex items-center gap-2">
+<span class="text-xl">🧹</span>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">تنظيف منازل</p>
+<p class="font-caption text-caption text-text-muted">يبدأ من ٩٩ ر.س</p>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low flex items-center gap-2">
+<span class="text-xl">⚡</span>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">سباكة وكهرباء</p>
+<p class="font-caption text-caption text-text-muted">طوارئ ٢٤/٧</p>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low flex items-center gap-2">
+<span class="text-xl">❄️</span>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">تكييف وتبريد</p>
+<p class="font-caption text-caption text-text-muted">فحص وضمان</p>
+</div>
+</div>
+<div class="p-2.5 rounded-xl bg-surface-container-low flex items-center gap-2">
+<span class="text-xl">🎨</span>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">دهانات وديكور</p>
+<p class="font-caption text-caption text-text-muted">تشطيب فاخر</p>
+</div>
+</div>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-secondary-container text-secondary font-label-md text-label-md font-bold mb-space-xs">
+<span class="material-symbols-outlined text-[18px]">explore</span>
+<span>اكتشف بكل راحة</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-xs">
+          اكتشف الخدمات التي تحتاجها بسهولة
+        </h2>
+<p class="font-caption text-caption text-text-muted mb-space-md max-w-sm">
+          تصفح مئات الخدمات المنزلية الموثوقة مع أسعار واضحة ومسبقة وتقييمات حقيقية من آلاف العملاء في مدينتك.
+        </p>
+<!-- Feature Bullets -->
+<div class="w-full space-y-2 text-start">
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">تصفح ذكي وبحث فوري في الرياض وجميع مدن المملكة.</p>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">loyalty</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">عروض وباقات حصرية بأسعار تنافسية ومحددة مسبقاً.</p>
+</div>
+</div>
+</div>
+<!-- ================= STAGE 3: Connect ================= -->
+<div class="slide-panel hidden flex flex-col items-center text-center transition-all duration-500 ease-out transform opacity-0 translate-x-12" id="slide-3">
+<!-- Direct Chat Interface Mockup Card -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-md mb-space-md text-start">
+<div class="flex items-center justify-between pb-space-xs mb-space-xs">
+<div class="flex items-center gap-2">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center font-bold text-primary">
+                  م.أ
+                </div>
+<span class="absolute bottom-0 inline-start-0 w-3 h-3 rounded-full bg-success-semantic"></span>
+</div>
+<div>
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-bold text-on-surface">م. أحمد الزهراني</span>
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<p class="font-eyebrow-caps text-eyebrow-caps text-text-muted">فني تكييف معتمد • ٤.٩ ★</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-8 h-8 rounded-full bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">call</span>
+</span>
+</div>
+</div>
+<!-- Chat bubble conversation -->
+<div class="space-y-2 pt-2 bg-surface-container-low/50 rounded-xl p-space-sm">
+<div class="bg-primary text-on-primary font-caption text-caption p-2.5 rounded-2xl rounded-br-sm max-w-[80%] inline-block">
+              السلام عليكم، هل يمكنك فحص مكيف سبليت اليوم؟
+            </div>
+<div class="bg-surface-container-lowest text-on-surface font-caption text-caption p-2.5 rounded-2xl rounded-bl-sm max-w-[85%] float-left clear-both shadow-sm">
+              وعليكم السلام، بالتأكيد! يمكنني الوصول إليكم خلال ٤٥ دقيقة.
+            </div>
+<div class="clear-both"></div>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-primary-container text-primary-700 font-label-md text-label-md font-bold mb-space-xs">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+<span>تواصل سريع ومباشر</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-xs">
+          تواصل مع مقدمي الخدمات بكل ثقة
+        </h2>
+<p class="font-caption text-caption text-text-muted mb-space-md max-w-sm">
+          محادثة فورية مباشرة وتنسيق سريع مع الفني قبل وبعد الحجز، مع إمكانية إرسال الصور وتحديد المتطلبات بدقة.
+        </p>
+<!-- Feature Bullets -->
+<div class="w-full space-y-2 text-start">
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">محادثة مباشرة ومشفرة بدون وسيط وبأمان تام.</p>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">add_a_photo</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">إمكانية مشاركة موقع المنزل وصور المشكلة بضغطة زر.</p>
+</div>
+</div>
+</div>
+<!-- ================= STAGE 4: Manage ================= -->
+<div class="slide-panel hidden flex flex-col items-center text-center transition-all duration-500 ease-out transform opacity-0 translate-x-12" id="slide-4">
+<!-- Order Timeline & Booking Tracker Card -->
+<div class="w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-md mb-space-md text-start">
+<div class="flex items-center justify-between mb-space-sm">
+<div>
+<span class="font-caption text-caption text-text-muted">رقم الطلب #SH-8841</span>
+<p class="font-label-md text-label-md font-bold text-on-surface">صيانة شاملة ونظافة فلاتر</p>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container text-secondary font-eyebrow-caps text-eyebrow-caps font-bold">
+              فاتورة ضريبية ZATCA
+            </span>
+</div>
+<!-- Timeline Stepper Track -->
+<div class="flex items-center justify-between relative py-2">
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-6 h-6 rounded-full bg-success-semantic text-on-primary flex items-center justify-center text-xs">✓</div>
+<span class="font-eyebrow-caps text-eyebrow-caps text-text-muted">الانتظار</span>
+</div>
+<div class="flex-1 h-1 bg-success-semantic mx-1"></div>
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-6 h-6 rounded-full bg-success-semantic text-on-primary flex items-center justify-center text-xs">✓</div>
+<span class="font-eyebrow-caps text-eyebrow-caps text-text-muted">القبول</span>
+</div>
+<div class="flex-1 h-1 bg-primary mx-1"></div>
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs animate-pulse">🛠️</div>
+<span class="font-eyebrow-caps text-eyebrow-caps text-primary font-bold">قيد التنفيذ</span>
+</div>
+<div class="flex-1 h-1 bg-surface-variant mx-1"></div>
+<div class="flex flex-col items-center gap-1 z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container text-text-muted flex items-center justify-center text-xs">🎉</div>
+<span class="font-eyebrow-caps text-eyebrow-caps text-text-muted">مكتمل</span>
+</div>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-secondary-container text-secondary font-label-md text-label-md font-bold mb-space-xs">
+<span class="material-symbols-outlined text-[18px]">track_changes</span>
+<span>متابعة لحظية وموثقة</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-xs">
+          أدر طلباتك وحجوزاتك بكل سهولة
+        </h2>
+<p class="font-caption text-caption text-text-muted mb-space-md max-w-sm">
+          لوحة تحكم ذكية تتيح لك تتبع حركة الفني خطوة بخطوة، وإعادة جدولة المواعيد، والوصول لكافة فواتيرك الضريبية وإيصالاتك.
+        </p>
+<!-- Feature Bullets -->
+<div class="w-full space-y-2 text-start">
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">إشعارات حية ومباشرة لحالة طلبك وموقع الفني على الخريطة.</p>
+</div>
+<div class="p-space-sm rounded-xl bg-surface-container-lowest shadow-sm flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">published_with_changes</span>
+</div>
+<p class="font-caption text-caption text-on-surface font-semibold">مرونة كاملة في تعديل الموعد أو الإلغاء بضمان استرداد المبلغ.</p>
+</div>
+</div>
+</div>
+<!-- ================= STAGE 5: Role Selection (الأهم) ================= -->
+<div class="slide-panel hidden flex flex-col items-center transition-all duration-500 ease-out transform opacity-0 translate-x-12" id="slide-5">
+<!-- Role Header -->
+<div class="text-center mb-space-md">
+<div class="inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-primary-container text-primary-700 font-label-md text-label-md font-bold mb-space-xs">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+<span>الخطوة النهائية</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold mb-1">
+            كيف تريد استخدام المنصة؟
+          </h2>
+<p class="font-caption text-caption text-text-muted">
+            اختر نوع الحساب المناسب لك للمتابعة والبدء
+          </p>
+</div>
+<!-- Alert Validation Banner -->
+<div class="hidden w-full mb-space-sm p-space-sm rounded-xl bg-error-container text-on-error-container text-caption flex items-center gap-2 animate-bounce" id="roleAlertBanner">
+<span class="material-symbols-outlined text-[20px] text-error">error</span>
+<span class="font-label-md text-label-md font-semibold">يرجى اختيار نوع الحساب للمتابعة</span>
+</div>
+<!-- Role Option Cards (Interactive Radio Selection) -->
+<div class="w-full space-y-space-md mb-space-md" id="roleCardsContainer">
+<!-- Role 1: Customer (العميل) -->
+<div class="role-selection-card cursor-pointer w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-space-xs group" id="cardRoleCustomer" onclick="selectRole('customer')">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-2xl bg-primary-container text-primary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[28px]">person</span>
+</div>
+<div>
+<h3 class="font-title-card text-title-card text-on-surface font-bold">أنا عميل (أبحث عن خدمات)</h3>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-primary-surface text-primary-700 font-eyebrow-caps text-eyebrow-caps font-bold">حجز فوري</span>
+<span class="px-2 py-0.5 rounded-full bg-primary-surface text-primary-700 font-eyebrow-caps text-eyebrow-caps font-bold">ضمان ساحل</span>
+</div>
+</div>
+</div>
+<!-- Radio Indicator Circle -->
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center transition-all duration-300 shrink-0" id="radioCustomer">
+<span class="material-symbols-outlined text-on-primary text-[16px] hidden" id="checkCustomer">check</span>
+</div>
+</div>
+<p class="font-caption text-caption text-text-muted mt-space-xs text-start">
+              أبحث عن خدمات منزلية موثوقة، وأحجز الفنيين المعتمدين، وأدير منزلي بكل راحة وأمان وضمان مالي كامل.
+            </p>
+</div>
+<!-- Role 2: Service Provider (مزود الخدمة) -->
+<div class="role-selection-card cursor-pointer w-full bg-surface-container-lowest rounded-2xl p-space-md shadow-md transition-all duration-300 relative overflow-hidden flex flex-col gap-space-xs group" id="cardRoleProvider" onclick="selectRole('provider')">
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-2xl bg-secondary-container text-secondary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[28px]">storefront</span>
+</div>
+<div>
+<h3 class="font-title-card text-title-card text-on-surface font-bold">أنا مزود خدمة (أقدم خدماتي)</h3>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-secondary font-eyebrow-caps text-eyebrow-caps font-bold">عملاء مستمرون</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-secondary font-eyebrow-caps text-eyebrow-caps font-bold">تسوية أسبوعية</span>
+</div>
+</div>
+</div>
+<!-- Radio Indicator Circle -->
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center transition-all duration-300 shrink-0" id="radioProvider">
+<span class="material-symbols-outlined text-on-primary text-[16px] hidden" id="checkProvider">check</span>
+</div>
+</div>
+<p class="font-caption text-caption text-text-muted mt-space-xs text-start">
+              أمتلك خبرة أو مؤسسة مرخصة وأرغب بتقديم خدماتي واستقبال طلبات الحجز المباشرة وتنمية دخلي وأعمالي.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Navigation Control Actions -->
+<div class="w-full pt-space-sm flex flex-col gap-space-sm">
+<div class="flex items-center gap-space-sm w-full">
+<!-- Back Button (shown on slides 2 to 5) -->
+<button class="hidden min-h-[48px] px-space-md rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-bold flex items-center justify-center gap-1 hover:bg-surface-variant transition-colors" id="navBackBtn" onclick="prevSlide()" type="button">
+<span class="material-symbols-outlined text-[20px] transform scale-x-[-1]">arrow_back</span>
+<span>رجوع</span>
+</button>
+<!-- Primary Advance / Complete Action Button -->
+<button class="flex-1 min-h-[48px] px-space-lg rounded-xl bg-primary text-on-primary font-body-bold text-body-bold flex items-center justify-center gap-2 shadow-md hover:bg-primary-700 transition-all active:scale-[0.98]" id="navNextBtn" onclick="nextSlide()" type="button">
+<span id="nextBtnText">ابدأ الآن</span>
+<span class="material-symbols-outlined text-[20px] transform scale-x-[-1]" id="nextBtnIcon">arrow_forward</span>
+</button>
+</div>
+<!-- Dev/Testing Reset Badge -->
+<div class="flex items-center justify-center pt-space-xs">
+<button class="font-eyebrow-caps text-eyebrow-caps text-text-muted hover:text-error transition-colors flex items-center gap-1 opacity-70 hover:opacity-100" onclick="resetOnboardingState()" type="button">
+<span class="material-symbols-outlined text-[14px]">restart_alt</span>
+<span>إعادة تعيين التجربة (Reset Onboarding)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Role Confirmation / Redirection Feedback Modal -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-space-md" id="completionSuccessModal">
+<div class="w-full max-w-[390px] bg-surface-container-lowest rounded-3xl p-space-lg text-center shadow-2xl transform transition-all duration-300 translate-y-6 opacity-0" id="modalCard">
+<div class="w-16 h-16 rounded-full bg-primary-container text-primary flex items-center justify-center mx-auto mb-space-sm">
+<span class="material-symbols-outlined text-[36px]" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+</div>
+<span class="px-space-sm py-1 rounded-full bg-secondary-container text-secondary font-eyebrow-caps text-eyebrow-caps font-bold">
+        تم الحفظ بنجاح
+      </span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mt-2 mb-1" id="modalHeading">
+        مرحباً بك في ساحل!
+      </h3>
+<p class="font-body-base text-body-base text-text-muted mb-space-md" id="modalSubtext">
+        جاري تهيئة حسابك ونقلك للخطوة القادمة...
+      </p>
+<div class="p-space-sm rounded-2xl bg-surface-container-low mb-space-md text-start flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center" id="modalRoleIcon">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<div>
+<p class="font-eyebrow-caps text-eyebrow-caps text-text-muted">نوع الحساب المختار</p>
+<p class="font-label-md text-label-md font-bold text-on-surface" id="modalRoleTitle">عميل ساحل</p>
+</div>
+</div>
+<button class="w-full min-h-[48px] rounded-xl bg-primary text-on-primary font-body-bold text-body-bold shadow-md hover:bg-primary-700 transition-colors flex items-center justify-center gap-2" onclick="acknowledgeRedirect()" type="button">
+<span>الانتقال لإنشاء الحساب</span>
+<span class="material-symbols-outlined text-[20px] transform scale-x-[-1]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // State Machine Variables
+  let currentStep = 1;
+  const totalSteps = 5;
+  let selectedRole = null;
+
+  // Arabic Digits helper
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥'];
+
+  // Initialization & Persistent State Checking
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      const isCompleted = localStorage.getItem('onboardingCompleted');
+      const savedRole = localStorage.getItem('selectedRole');
+
+      if (isCompleted === 'true' && savedRole) {
+        selectedRole = savedRole;
+        goToSlide(5);
+        selectRole(savedRole);
+      } else {
+        updateStepUI();
+      }
+    } catch (e) {
+      updateStepUI();
+    }
+  });
+
+  // Slide Navigation Handler
+  function goToSlide(stepIndex) {
+    if (stepIndex < 1 || stepIndex > totalSteps) return;
+
+    // Hide all slides
+    for (let i = 1; i <= totalSteps; i++) {
+      const slide = document.getElementById(`slide-${i}`);
+      const dot = document.getElementById(`dot-${i}`);
+      if (slide) {
+        slide.classList.add('hidden');
+        slide.classList.remove('opacity-100', 'translate-x-0');
+        slide.classList.add('opacity-0', 'translate-x-12');
+      }
+      if (dot) {
+        dot.classList.remove('w-7', 'bg-primary');
+        dot.classList.add('w-2', 'bg-surface-variant');
+      }
+    }
+
+    currentStep = stepIndex;
+
+    // Show active slide
+    const targetSlide = document.getElementById(`slide-${currentStep}`);
+    const targetDot = document.getElementById(`dot-${currentStep}`);
+
+    if (targetSlide) {
+      targetSlide.classList.remove('hidden');
+      setTimeout(() => {
+        targetSlide.classList.remove('opacity-0', 'translate-x-12');
+        targetSlide.classList.add('opacity-100', 'translate-x-0');
+      }, 20);
+    }
+
+    if (targetDot) {
+      targetDot.classList.remove('w-2', 'bg-surface-variant');
+      targetDot.classList.add('w-7', 'bg-primary');
+    }
+
+    updateStepUI();
+  }
+
+  function nextSlide() {
+    if (currentStep < totalSteps) {
+      goToSlide(currentStep + 1);
+    } else {
+      handleFinalSubmission();
+    }
+  }
+
+  function prevSlide() {
+    if (currentStep > 1) {
+      goToSlide(currentStep - 1);
+    }
+  }
+
+  function updateStepUI() {
+    // Counter Badge
+    const stepNumEl = document.getElementById('currentStepNumber');
+    if (stepNumEl) {
+      stepNumEl.textContent = arabicDigits[currentStep] || currentStep;
+    }
+
+    // Top Skip button visibility (hide on step 5)
+    const topSkipBtn = document.getElementById('topSkipBtn');
+    if (topSkipBtn) {
+      if (currentStep === 5) {
+        topSkipBtn.classList.add('invisible');
+      } else {
+        topSkipBtn.classList.remove('invisible');
+      }
+    }
+
+    // Nav Back Button visibility
+    const backBtn = document.getElementById('navBackBtn');
+    if (backBtn) {
+      if (currentStep > 1) {
+        backBtn.classList.remove('hidden');
+      } else {
+        backBtn.classList.add('hidden');
+      }
+    }
+
+    // Dynamic Next Button Label
+    const nextBtnText = document.getElementById('nextBtnText');
+    const nextBtnIcon = document.getElementById('nextBtnIcon');
+
+    if (currentStep === 1) {
+      nextBtnText.textContent = 'ابدأ الآن';
+      nextBtnIcon.textContent = 'arrow_forward';
+    } else if (currentStep === 4) {
+      nextBtnText.textContent = 'اختيار نوع الحساب';
+      nextBtnIcon.textContent = 'arrow_forward';
+    } else if (currentStep === 5) {
+      nextBtnText.textContent = 'متابعة';
+      nextBtnIcon.textContent = 'check_circle';
+    } else {
+      nextBtnText.textContent = 'التالي';
+      nextBtnIcon.textContent = 'arrow_forward';
+    }
+  }
+
+  // Role Selection Logic
+  function selectRole(role) {
+    selectedRole = role;
+
+    // Clear alert banner if active
+    const alertBanner = document.getElementById('roleAlertBanner');
+    if (alertBanner) alertBanner.classList.add('hidden');
+
+    const customerCard = document.getElementById('cardRoleCustomer');
+    const providerCard = document.getElementById('cardRoleProvider');
+
+    const radioCustomer = document.getElementById('radioCustomer');
+    const radioProvider = document.getElementById('radioProvider');
+
+    const checkCustomer = document.getElementById('checkCustomer');
+    const checkProvider = document.getElementById('checkProvider');
+
+    if (role === 'customer') {
+      // Highlight Customer
+      customerCard.classList.add('shadow-xl', 'scale-[1.02]');
+      customerCard.classList.remove('opacity-60');
+      customerCard.style.boxShadow = '0 0 0 2px #00685f, 0 10px 25px -5px rgba(13, 148, 136, 0.2)';
+
+      radioCustomer.classList.remove('bg-surface-container');
+      radioCustomer.classList.add('bg-primary');
+      checkCustomer.classList.remove('hidden');
+
+      // Dim Provider
+      providerCard.classList.remove('shadow-xl', 'scale-[1.02]');
+      providerCard.classList.add('opacity-60');
+      providerCard.style.boxShadow = '';
+      radioProvider.classList.remove('bg-primary');
+      radioProvider.classList.add('bg-surface-container');
+      checkProvider.classList.add('hidden');
+    } else if (role === 'provider') {
+      // Highlight Provider
+      providerCard.classList.add('shadow-xl', 'scale-[1.02]');
+      providerCard.classList.remove('opacity-60');
+      providerCard.style.boxShadow = '0 0 0 2px #00685f, 0 10px 25px -5px rgba(13, 148, 136, 0.2)';
+
+      radioProvider.classList.remove('bg-surface-container');
+      radioProvider.classList.add('bg-primary');
+      checkProvider.classList.remove('hidden');
+
+      // Dim Customer
+      customerCard.classList.remove('shadow-xl', 'scale-[1.02]');
+      customerCard.classList.add('opacity-60');
+      customerCard.style.boxShadow = '';
+      radioCustomer.classList.remove('bg-primary');
+      radioCustomer.classList.add('bg-surface-container');
+      checkCustomer.classList.add('hidden');
+    }
+  }
+
+  // Stage 5 Validation and Submission
+  function handleFinalSubmission() {
+    if (!selectedRole) {
+      // Validation failure trigger shake
+      const alertBanner = document.getElementById('roleAlertBanner');
+      if (alertBanner) alertBanner.classList.remove('hidden');
+
+      const container = document.getElementById('roleCardsContainer');
+      container.classList.add('animate-pulse');
+      setTimeout(() => container.classList.remove('animate-pulse'), 600);
+      return;
+    }
+
+    // Persist into localStorage
+    try {
+      localStorage.setItem('onboardingCompleted', 'true');
+      localStorage.setItem('selectedRole', selectedRole);
+    } catch (e) {
+      console.warn('Storage unavailable:', e);
+    }
+
+    // Show Confirmation Modal with Dynamic details
+    showSuccessModal();
+  }
+
+  function showSuccessModal() {
+    const modal = document.getElementById('completionSuccessModal');
+    const card = document.getElementById('modalCard');
+    const modalHeading = document.getElementById('modalHeading');
+    const modalSubtext = document.getElementById('modalSubtext');
+    const modalRoleTitle = document.getElementById('modalRoleTitle');
+    const modalRoleIcon = document.getElementById('modalRoleIcon');
+
+    if (selectedRole === 'customer') {
+      modalHeading.textContent = 'أهلاً بك كعميل في ساحل!';
+      modalSubtext.textContent = 'يمكنك الآن استكشاف الفنيين والبدء بحجز خدمات منزلك بكل طمأنينة.';
+      modalRoleTitle.textContent = 'حساب عميل (طالب خدمة)';
+      modalRoleIcon.innerHTML = '<span class="material-symbols-outlined text-[20px]">person</span>';
+    } else {
+      modalHeading.textContent = 'أهلاً بك كشريك في ساحل!';
+      modalSubtext.textContent = 'منصتك الموثوقة لتوسيع قاعدة عملائك واستقبال الحجوزات المباشرة.';
+      modalRoleTitle.textContent = 'حساب مزود خدمة معتمد';
+      modalRoleIcon.innerHTML = '<span class="material-symbols-outlined text-[20px]">storefront</span>';
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      card.classList.remove('translate-y-6', 'opacity-0');
+      card.classList.add('translate-y-0', 'opacity-100');
+    }, 20);
+  }
+
+  function acknowledgeRedirect() {
+    const modal = document.getElementById('completionSuccessModal');
+    modal.classList.add('hidden');
+    
+    // Simulate routing to Registration
+    const destination = selectedRole === 'customer' ? 'تسجيل دخول العميل' : 'تسجيل مزود جديد';
+    alert(`جاري نقلك إلى صفحة: ${destination}`);
+  }
+
+  // Testing Reset Feature
+  function resetOnboardingState() {
+    try {
+      localStorage.removeItem('onboardingCompleted');
+      localStorage.removeItem('selectedRole');
+    } catch (e) {}
+
+    selectedRole = null;
+    const customerCard = document.getElementById('cardRoleCustomer');
+    const providerCard = document.getElementById('cardRoleProvider');
+    if (customerCard) {
+      customerCard.classList.remove('shadow-xl', 'scale-[1.02]', 'opacity-60');
+      customerCard.style.boxShadow = '';
+    }
+    if (providerCard) {
+      providerCard.classList.remove('shadow-xl', 'scale-[1.02]', 'opacity-60');
+      providerCard.style.boxShadow = '';
+    }
+    const checkCustomer = document.getElementById('checkCustomer');
+    const checkProvider = document.getElementById('checkProvider');
+    if (checkCustomer) checkCustomer.classList.add('hidden');
+    if (checkProvider) checkProvider.classList.add('hidden');
+
+    const radioCustomer = document.getElementById('radioCustomer');
+    const radioProvider = document.getElementById('radioProvider');
+    if (radioCustomer) {
+      radioCustomer.classList.remove('bg-primary');
+      radioCustomer.classList.add('bg-surface-container');
+    }
+    if (radioProvider) {
+      radioProvider.classList.remove('bg-primary');
+      radioProvider.classList.add('bg-surface-container');
+    }
+
+    goToSlide(1);
+  }
+</script></main></body></html>
