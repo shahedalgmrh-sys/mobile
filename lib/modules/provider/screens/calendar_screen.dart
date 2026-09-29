@@ -101,10 +101,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       _ => (SahelColors.slate100, SahelColors.muted),
     };
     final time = str(b['scheduled_time'] ?? b['time'] ?? b['start_time']);
-    final id = toInt(b['id']);
+    final id = str(b['id']);
 
     return InkWell(
-      onTap: id > 0 ? () => context.push('/provider/bookings/$id') : null,
+      onTap: id.isNotEmpty ? () => context.push('/provider/bookings/$id') : null,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),

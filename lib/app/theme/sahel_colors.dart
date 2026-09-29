@@ -55,8 +55,8 @@ class SahelColors {
   static const Color border = Color(0xFFE2E8F0);
 
   // Status
-  static const Color danger = Color(0xFFDC2626);
-  static const Color success = Color(0xFF059669);
+  static const Color danger = Color(0xFFDC3545);
+  static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFD97706);
   static const Color info = Color(0xFF0369A1);
 

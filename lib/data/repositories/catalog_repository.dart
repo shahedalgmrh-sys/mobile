@@ -4,7 +4,7 @@ import '../sources/remote_sources.dart';
 import 'parsers.dart';
 
 class CategoryItem {
-  final int id;
+  final String id;
   final String slug;
   final String name;
   final String? icon;
@@ -21,7 +21,7 @@ class CategoryItem {
   });
 
   factory CategoryItem.fromJson(Map<String, dynamic> j) => CategoryItem(
-        id: toInt(j['id']),
+        id: str(j['id']),
         slug: str(j['slug']),
         name: str(j['name'] ?? j['title'] ?? j['title_ar']),
         icon: strOrNull(j['icon']),
@@ -31,7 +31,7 @@ class CategoryItem {
 }
 
 class OfferItem {
-  final int id;
+  final String id;
   final String title;
   final String? description;
   final String? image;
@@ -46,7 +46,7 @@ class OfferItem {
   });
 
   factory OfferItem.fromJson(Map<String, dynamic> j) => OfferItem(
-        id: toInt(j['id']),
+        id: str(j['id']),
         title: str(j['title'] ?? j['title_ar'] ?? j['name']),
         description: strOrNull(j['description'] ?? j['description_ar']),
         image: strOrNull(j['image'] ?? j['image_url']),
@@ -133,17 +133,17 @@ class CatalogRepository {
     return dataList(apiData(res)).map(CategoryItem.fromJson).toList();
   }
 
-  Future<List<Service>> services({String? q, int? categoryId, String? sort, int? page}) async {
+  Future<List<Service>> services({String? q, String? categoryId, String? sort, int? page}) async {
     final res = await source.services(q: q, categoryId: categoryId, sort: sort, page: page);
     return dataList(apiData(res)).map(serviceFromJson).toList();
   }
 
-  Future<List<ProviderModel>> providers({int? cityId, int? page}) async {
+  Future<List<ProviderModel>> providers({String? cityId, int? page}) async {
     final res = await source.providers(cityId: cityId, page: page);
     return dataList(apiData(res)).map(providerFromJson).toList();
   }
 
-  Future<ProviderModel> providerProfile(int id) async {
+  Future<ProviderModel> providerProfile(String id) async {
     final res = await source.providerProfile(id);
     final d = asMap(apiData(res));
     final p = asMap(d['provider']);
@@ -151,7 +151,7 @@ class CatalogRepository {
   }
 
   /// GET /providers/{id} → {provider, services, portfolios, reviews}
-  Future<Map<String, dynamic>> providerProfileFull(int id) async {
+  Future<Map<String, dynamic>> providerProfileFull(String id) async {
     final res = await source.providerProfile(id);
     return asMap(apiData(res));
   }
@@ -166,7 +166,7 @@ class CatalogRepository {
     return dataList(apiData(res));
   }
 
-  Future<List<Map<String, dynamic>>> cityAreas(int cityId) async {
+  Future<List<Map<String, dynamic>>> cityAreas(String cityId) async {
     final res = await source.cityAreas(cityId);
     return dataList(apiData(res));
   }

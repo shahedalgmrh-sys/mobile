@@ -30,10 +30,10 @@ class CustomerRepository {
   Future<Map<String, dynamic>> storeAddress(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeAddress(data)));
 
-  Future<Map<String, dynamic>> updateAddress(int id, Map<String, dynamic> data) async =>
+  Future<Map<String, dynamic>> updateAddress(String id, Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateAddress(id, data)));
 
-  Future<void> destroyAddress(int id) => source.destroyAddress(id);
+  Future<void> destroyAddress(String id) => source.destroyAddress(id);
 
   // Bookings
   Future<List<Map<String, dynamic>>> bookings({String? status, int? page}) async =>
@@ -42,37 +42,37 @@ class CustomerRepository {
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async =>
       asMap(apiData(await source.createBooking(data)));
 
-  Future<Map<String, dynamic>> booking(int id) async =>
+  Future<Map<String, dynamic>> booking(String id) async =>
       asMap(apiData(await source.showBooking(id)));
 
-  Future<Map<String, dynamic>> trackBooking(int id) async =>
+  Future<Map<String, dynamic>> trackBooking(String id) async =>
       asMap(apiData(await source.trackBooking(id)));
 
-  Future<Map<String, dynamic>> cancelBooking(int id, String reason) async =>
+  Future<Map<String, dynamic>> cancelBooking(String id, String reason) async =>
       asMap(apiData(await source.cancelBooking(id, reason)));
 
-  Future<Map<String, dynamic>> rescheduleBooking(int id, String date, String time,
+  Future<Map<String, dynamic>> rescheduleBooking(String id, String date, String time,
           {String? reason}) async =>
       asMap(apiData(await source.rescheduleBooking(id, date, time, reason: reason)));
 
-  Future<Map<String, dynamic>> rebook(int id) async =>
+  Future<Map<String, dynamic>> rebook(String id) async =>
       asMap(apiData(await source.rebook(id)));
 
-  Future<Map<String, dynamic>> payBooking(int id, String method) async =>
+  Future<Map<String, dynamic>> payBooking(String id, String method) async =>
       asMap(apiData(await source.payBooking(id, method)));
 
   // Payments
-  Future<List<Map<String, dynamic>>> payments({int? page}) async =>
+  Future<List<Map<String, dynamic>>> payments({String? page}) async =>
       dataList(apiData(await source.payments(page: page)));
 
-  Future<Map<String, dynamic>> invoice(int paymentId) async =>
+  Future<Map<String, dynamic>> invoice(String paymentId) async =>
       asMap(apiData(await source.invoice(paymentId)));
 
   // Wallet
   Future<Map<String, dynamic>> wallet() async =>
       asMap(apiData(await source.wallet()));
 
-  Future<List<Map<String, dynamic>>> walletTransactions({int? page}) async =>
+  Future<List<Map<String, dynamic>>> walletTransactions({String? page}) async =>
       dataList(apiData(await source.walletTransactions(page: page)));
 
   Future<Map<String, dynamic>> addFunds(double amount, String method) async =>
@@ -82,10 +82,10 @@ class CustomerRepository {
   Future<Map<String, dynamic>> favorites() async =>
       asMap(apiData(await source.favorites()));
 
-  Future<void> toggleServiceFavorite(int serviceId) =>
+  Future<void> toggleServiceFavorite(String serviceId) =>
       source.toggleServiceFavorite(serviceId);
 
-  Future<void> toggleProviderFavorite(int providerId) =>
+  Future<void> toggleProviderFavorite(String providerId) =>
       source.toggleProviderFavorite(providerId);
 
   // Reviews & complaints
@@ -93,7 +93,7 @@ class CustomerRepository {
       dataList(apiData(await source.reviews()));
 
   Future<Map<String, dynamic>> storeReview({
-    required int bookingId,
+    required String bookingId,
     required int rating,
     String? comment,
   }) async =>
@@ -107,7 +107,7 @@ class CustomerRepository {
       dataList(apiData(await source.complaints()));
 
   Future<Map<String, dynamic>> storeComplaint({
-    int? bookingId,
+    String? bookingId,
     required String subject,
     required String description,
     String priority = 'medium',
@@ -123,14 +123,14 @@ class CustomerRepository {
   Future<List<Map<String, dynamic>>> conversations() async =>
       dataList(apiData(await source.conversations()));
 
-  Future<Map<String, dynamic>> conversation(int id) async =>
+  Future<Map<String, dynamic>> conversation(String id) async =>
       asMap(apiData(await source.conversation(id)));
 
-  Future<Map<String, dynamic>> sendMessage(int id, String body) async =>
+  Future<Map<String, dynamic>> sendMessage(String id, String body) async =>
       asMap(apiData(await source.sendMessage(id, body)));
 
   // Notifications
-  Future<List<Map<String, dynamic>>> notifications({int? page}) async =>
+  Future<List<Map<String, dynamic>>> notifications({String? page}) async =>
       dataList(apiData(await source.notifications(page: page)));
 
   Future<List<Map<String, dynamic>>> unreadNotifications() async =>
@@ -143,7 +143,7 @@ class CustomerRepository {
       dataList(apiData(await source.coupons()));
 
   Future<Map<String, dynamic>> validateCoupon(String code,
-          {required double subtotal, int? serviceId}) async =>
+          {required double subtotal, String? serviceId}) async =>
       asMap(apiData(await source.validateCoupon(code,
           subtotal: subtotal, serviceId: serviceId)));
 

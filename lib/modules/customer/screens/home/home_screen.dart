@@ -179,27 +179,31 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              if (data.categories.isEmpty)
-                const _EmptyLine(text: 'لا توجد تصنيفات متاحة حالياً')
-              else
-                GridView.count(
+              Builder(builder: (context) {
+                final fallback = ref.watch(categoriesProvider).valueOrNull ?? const [];
+                final cats = data.categories.isNotEmpty ? data.categories : fallback;
+                if (cats.isEmpty) {
+                  return const _EmptyLine(text: 'لا توجد تصنيفات متاحة حالياً');
+                }
+                return GridView.count(
                   crossAxisCount: 4,
                   shrinkWrap: true,
                   primary: false,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   children: [
-                    for (var i = 0; i < data.categories.length; i++)
+                    for (var i = 0; i < cats.length; i++)
                       CategoryTile(
                         icon: _categoryStyles[i % _categoryStyles.length].$1,
-                        label: data.categories[i].name,
+                        label: cats[i].name,
                         color: _categoryStyles[i % _categoryStyles.length].$2,
                         bgColor:
                             _categoryStyles[i % _categoryStyles.length].$3,
-                        onTap: () => context.go('/search'),
+                        onTap: () => context.go('/search?category=${cats[i].id}'),
                       ),
                   ],
-                ),
+                );
+              }),
               if (data.offers.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 _OfferBanner(offer: data.offers.first),

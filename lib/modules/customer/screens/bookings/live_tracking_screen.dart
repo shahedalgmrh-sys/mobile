@@ -14,7 +14,7 @@ class LiveTrackingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookingId = int.tryParse(id) ?? 0;
+    final bookingId = id;
     final track = ref.watch(bookingTrackProvider(bookingId));
 
     return Scaffold(
@@ -56,7 +56,7 @@ class LiveTrackingScreen extends ConsumerWidget {
 
 class _TrackingBody extends ConsumerWidget {
   final Map<String, dynamic> track;
-  final int bookingId;
+  final String bookingId;
   const _TrackingBody({required this.track, required this.bookingId});
 
   @override

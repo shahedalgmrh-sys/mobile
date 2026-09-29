@@ -20,7 +20,7 @@ class ProviderBookingDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookingId = int.tryParse(id) ?? 0;
+    final bookingId = id;
     final booking = ref.watch(providerBookingProvider(bookingId));
 
     return Scaffold(
@@ -54,7 +54,7 @@ class ProviderBookingDetailsScreen extends ConsumerWidget {
 
 class _Body extends ConsumerStatefulWidget {
   final Map<String, dynamic> booking;
-  final int bookingId;
+  final String bookingId;
   const _Body({required this.booking, required this.bookingId});
 
   @override

@@ -16,8 +16,8 @@ class HomeFeedData {
 class SearchFilters {
   final double? minPrice;
   final double? maxPrice;
-  final int? categoryId;
-  final int? cityId;
+  final String? categoryId;
+  final String? cityId;
   final double? minRating;
   final List<int>? providerIds;
   final int? durationMinutesMin;
@@ -67,7 +67,7 @@ abstract class IServiceRepository {
 
   Future<Service> getBySlug(String slug);
 
-  Future<Provider> getProviderById(int id);
+  Future<Provider> getProviderById(String id);
 
-  Future<bool> toggleFavorite(int serviceId);
+  Future<bool> toggleFavorite(String serviceId);
 }

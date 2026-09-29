@@ -88,7 +88,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
     try {
       await ref
           .read(providerRepositoryProvider)
-          .toggleService(toInt(widget.service['id']));
+          .toggleService(str(widget.service['id']));
       setState(() => _active = !_active);
       ref.invalidate(providerServicesProvider);
     } catch (_) {

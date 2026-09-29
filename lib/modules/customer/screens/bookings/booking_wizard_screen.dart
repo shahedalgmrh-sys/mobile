@@ -39,7 +39,7 @@ class _BookingWizardScreenState
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
 
-  int? _selectedAddressId;
+  String? _selectedAddressId;
 
   int _selectedDate = 0;
   final _dates =
@@ -119,7 +119,7 @@ class _BookingWizardScreenState
           .read(customerRepositoryProvider)
           .validateCoupon(code,
               subtotal: _subtotal,
-              serviceId: int.tryParse(widget.serviceId ?? ''));
+              serviceId: widget.serviceId);
       if (!toBool(res['valid'], true)) {
         setState(() {
           _appliedCoupon = null;
@@ -166,7 +166,7 @@ class _BookingWizardScreenState
       final booking = await ref
           .read(customerRepositoryProvider)
           .createBooking({
-        'service_id': int.tryParse(widget.serviceId ?? '') ??
+        'service_id': widget.serviceId ??
             widget.serviceId,
         'customer_address_id': _selectedAddressId,
         'booking_date':
@@ -464,14 +464,14 @@ class _BookingWizardScreenState
             }
             _selectedAddressId ??= items
                 .where((a) => toBool(a['is_default'] ?? a['is_primary']))
-                .map((a) => toInt(a['id']))
+                .map((a) => str(a['id']))
                 .firstOrNull ??
-                toInt(items.first['id']);
+                str(items.first['id']);
             return Column(
               children: [
                 for (final a in items)
                   _addressTile(
-                    id: toInt(a['id']),
+                    id: str(a['id']),
                     label: str(a['label'] ?? a['title'], 'عنوان'),
                     body: str(a['full_address'] ??
                         a['address'] ??
@@ -499,7 +499,7 @@ class _BookingWizardScreenState
   }
 
   Widget _addressTile({
-    required int id,
+    required String id,
     required String label,
     required String body,
     required bool isDefault,

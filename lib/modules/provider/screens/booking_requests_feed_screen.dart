@@ -95,7 +95,7 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
   Future<void> _act(String action) async {
     setState(() => _busy = true);
     final repo = ref.read(providerRepositoryProvider);
-    final id = toInt(widget.booking['id']);
+    final id = str(widget.booking['id']);
     try {
       if (action == 'accept') {
         await repo.acceptBooking(id);

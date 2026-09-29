@@ -17,20 +17,20 @@ abstract class IBookingRepository {
     String? status,
   });
 
-  Future<Booking> accept(int bookingId);
+  Future<Booking> accept(String bookingId);
 
-  Future<Booking> reject(int bookingId);
+  Future<Booking> reject(String bookingId);
 
-  Future<Booking> start(int bookingId);
+  Future<Booking> start(String bookingId);
 
-  Future<Booking> complete(int bookingId);
+  Future<Booking> complete(String bookingId);
 
-  Future<Booking> cancel(int bookingId, String reason);
+  Future<Booking> cancel(String bookingId, String reason);
 
-  Future<Booking> getById(int bookingId);
+  Future<Booking> getById(String bookingId);
 
   Future<List<String>> uploadWorkProof(
-    int bookingId,
+    String bookingId,
     List<MultipartFile> files,
   );
 }

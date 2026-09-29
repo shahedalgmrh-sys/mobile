@@ -39,37 +39,37 @@ class ProviderRepository {
   Future<Map<String, dynamic>> storeService(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeService(data)));
 
-  Future<Map<String, dynamic>> updateService(int id, Map<String, dynamic> data) async =>
+  Future<Map<String, dynamic>> updateService(String id, Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateService(id, data)));
 
-  Future<void> destroyService(int id) => source.destroyService(id);
+  Future<void> destroyService(String id) => source.destroyService(id);
 
-  Future<Map<String, dynamic>> toggleService(int id) async =>
+  Future<Map<String, dynamic>> toggleService(String id) async =>
       asMap(apiData(await source.toggleService(id)));
 
-  Future<Map<String, dynamic>> duplicateService(int id) async =>
+  Future<Map<String, dynamic>> duplicateService(String id) async =>
       asMap(apiData(await source.duplicateService(id)));
 
   // Bookings
   Future<List<Map<String, dynamic>>> bookings({String? status, String? date, int? page}) async =>
       dataList(apiData(await source.bookings(status: status, date: date, page: page)));
 
-  Future<Map<String, dynamic>> booking(int id) async =>
+  Future<Map<String, dynamic>> booking(String id) async =>
       asMap(apiData(await source.showBooking(id)));
 
-  Future<Map<String, dynamic>> acceptBooking(int id) async =>
+  Future<Map<String, dynamic>> acceptBooking(String id) async =>
       asMap(apiData(await source.acceptBooking(id)));
 
-  Future<Map<String, dynamic>> rejectBooking(int id, {String? reason}) async =>
+  Future<Map<String, dynamic>> rejectBooking(String id, {String? reason}) async =>
       asMap(apiData(await source.rejectBooking(id, reason: reason)));
 
-  Future<Map<String, dynamic>> startBooking(int id) async =>
+  Future<Map<String, dynamic>> startBooking(String id) async =>
       asMap(apiData(await source.startBooking(id)));
 
-  Future<Map<String, dynamic>> completeBooking(int id) async =>
+  Future<Map<String, dynamic>> completeBooking(String id) async =>
       asMap(apiData(await source.completeBooking(id)));
 
-  Future<Map<String, dynamic>> rescheduleBooking(int id, String date, String time,
+  Future<Map<String, dynamic>> rescheduleBooking(String id, String date, String time,
           {String? reason}) async =>
       asMap(apiData(await source.rescheduleBooking(id, date, time, reason: reason)));
 
@@ -80,17 +80,17 @@ class ProviderRepository {
   Future<void> storeWorkingHour(Map<String, dynamic> data) =>
       source.storeWorkingHour(data);
 
-  Future<void> destroyWorkingHour(int id) => source.destroyWorkingHour(id);
+  Future<void> destroyWorkingHour(String id) => source.destroyWorkingHour(id);
 
   Future<void> storeArea(Map<String, dynamic> data) => source.storeArea(data);
 
-  Future<void> destroyArea(int id) => source.destroyArea(id);
+  Future<void> destroyArea(String id) => source.destroyArea(id);
 
   // Portfolio
   Future<List<Map<String, dynamic>>> portfolio() async =>
       dataList(apiData(await source.portfolio()));
 
-  Future<void> destroyPortfolio(int id) => source.destroyPortfolio(id);
+  Future<void> destroyPortfolio(String id) => source.destroyPortfolio(id);
 
   // Wallet & withdrawals
   Future<Map<String, dynamic>> wallet() async =>
@@ -102,26 +102,26 @@ class ProviderRepository {
   Future<Map<String, dynamic>> storeWithdrawal(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeWithdrawal(data)));
 
-  Future<void> cancelWithdrawal(int id) => source.cancelWithdrawal(id);
+  Future<void> cancelWithdrawal(String id) => source.cancelWithdrawal(id);
 
   // Reviews
   Future<List<Map<String, dynamic>>> reviews() async =>
       dataList(apiData(await source.reviews()));
 
-  Future<void> replyReview(int id, String reply) => source.replyReview(id, reply);
+  Future<void> replyReview(String id, String reply) => source.replyReview(id, reply);
 
   // Chat
   Future<List<Map<String, dynamic>>> conversations() async =>
       dataList(apiData(await source.conversations()));
 
-  Future<Map<String, dynamic>> conversation(int id) async =>
+  Future<Map<String, dynamic>> conversation(String id) async =>
       asMap(apiData(await source.conversation(id)));
 
-  Future<Map<String, dynamic>> sendMessage(int id, String body) async =>
+  Future<Map<String, dynamic>> sendMessage(String id, String body) async =>
       asMap(apiData(await source.sendMessage(id, body)));
 
   // Notifications
-  Future<List<Map<String, dynamic>>> notifications({int? page}) async =>
+  Future<List<Map<String, dynamic>>> notifications({String? page}) async =>
       dataList(apiData(await source.notifications(page: page)));
 
   Future<void> markNotificationRead(String id) => source.markNotificationRead(id);
@@ -135,13 +135,13 @@ class ProviderRepository {
   Future<Map<String, dynamic>> storeServiceRequest(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeServiceRequest(data)));
 
-  Future<Map<String, dynamic>> acceptServiceRequest(int id) async =>
+  Future<Map<String, dynamic>> acceptServiceRequest(String id) async =>
       asMap(apiData(await source.acceptServiceRequest(id)));
 
-  Future<Map<String, dynamic>> rejectServiceRequest(int id, {String? reason}) async =>
+  Future<Map<String, dynamic>> rejectServiceRequest(String id, {String? reason}) async =>
       asMap(apiData(await source.rejectServiceRequest(id, reason: reason)));
 
-  Future<Map<String, dynamic>> completeServiceRequest(int id) async =>
+  Future<Map<String, dynamic>> completeServiceRequest(String id) async =>
       asMap(apiData(await source.completeServiceRequest(id)));
 
   // Reports

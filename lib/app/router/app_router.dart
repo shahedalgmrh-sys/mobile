@@ -126,7 +126,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/search',
-              pageBuilder: (_, __) => const NoTransitionPage(child: SearchScreen()),
+              pageBuilder: (_, state) => NoTransitionPage(
+                child: SearchScreen(
+                  initialCategory: state.uri.queryParameters['category'],
+                ),
+              ),
             ),
           ]),
           StatefulShellBranch(routes: [
