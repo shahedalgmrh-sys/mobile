@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Flutter SDK archive — لا يلزم في المستودع
+flutter_windows_*.zip
+
 # IntelliJ related
 *.iml
 *.ipr
