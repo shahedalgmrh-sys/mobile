@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/models/booking_status.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 
@@ -44,84 +46,83 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0F172A),
-              Color(0xFF115E59),
-              Color(0xFF0F766E),
+              SahelColors.slate900,
+              SahelColors.primary800,
+              SahelColors.primary600,
             ],
           ),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            const Icon(
-              Icons.water_drop,
-              size: 100,
-              color: Color(0xFF14B8A6),
+            Container(
+              width: 104,
+              height: 104,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+              ),
+              child: const Icon(
+                Icons.water_drop,
+                size: 48,
+                color: SahelColors.primary300,
+              ),
             ),
             const SizedBox(height: 24),
             const Text(
               'SAHEL',
               style: TextStyle(
-                fontSize: 40,
+                fontSize: 38,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
-                letterSpacing: 4,
+                letterSpacing: 6,
               ),
             ),
+            const SizedBox(height: 4),
             const Text(
               'ساحل',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF5EEAD4),
+                color: SahelColors.primary300,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32),
+              padding: EdgeInsets.symmetric(horizontal: 40),
               child: Text(
                 'خدمات منزلية موثوقة على الطلب',
                 style: TextStyle(
                   fontSize: 15,
+                  height: 1.6,
                   color: Color(0xDEFFFFFF),
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                'Trusted home services delivered to your door',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xB3FFFFFF),
+            const Spacer(flex: 3),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 56),
+              child: ClipRRect(
+                borderRadius: SahelRadii.pillRadius,
+                child: const LinearProgressIndicator(
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(SahelColors.primary300),
+                  backgroundColor: Color(0x33FFFFFF),
+                  minHeight: 3,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
-            const Spacer(flex: 3),
+            const SizedBox(height: 20),
             const Text(
-              'Version 1.0.0 (build 421)',
+              'Version 1.0.0',
               style: TextStyle(
                 fontSize: 11,
                 color: Color(0x99FFFFFF),
               ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: const LinearProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2DD4BF)),
-                  backgroundColor: Color(0x33FFFFFF),
-                  minHeight: 2,
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 28),
           ],
         ),
       ),

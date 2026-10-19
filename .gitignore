@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Flutter SDK archive — لا يلزم في المستودع
+flutter_windows_*.zip
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -57,3 +60,6 @@ app.*.map.json
 *.lnk
 screen_*.png
 analyze_*.txt
+
+# Stitch design reference (kept locally, not part of the app source)
+stitch_saber_design_system_guide*/

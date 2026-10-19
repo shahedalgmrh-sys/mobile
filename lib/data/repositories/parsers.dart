@@ -11,7 +11,7 @@ List<Map<String, dynamic>> asMapList(dynamic v) =>
 
 String str(dynamic v, [String fallback = '']) => v?.toString() ?? fallback;
 
-String? strOrNull(dynamic v) => v == null ? null : v.toString();
+String? strOrNull(dynamic v) => v?.toString();
 
 int toInt(dynamic v, [int fallback = 0]) {
   if (v is int) return v;

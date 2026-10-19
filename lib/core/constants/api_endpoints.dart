@@ -9,10 +9,10 @@ class ApiEndpoints {
   static const String categories = '/categories';
   static const String services = '/services';
   static const String providers = '/providers';
-  static String providerProfile(int id) => '/providers/$id';
+  static String providerProfile(String id) => '/providers/$id';
   static const String offers = '/offers';
   static const String cities = '/cities';
-  static String cityAreas(int cityId) => '/cities/$cityId/areas';
+  static String cityAreas(String cityId) => '/cities/$cityId/areas';
   static const String faqs = '/faqs';
   static const String contact = '/contact';
   static const String currencies = '/currencies';
@@ -30,35 +30,40 @@ class ApiEndpoints {
   // --- Customer (/customer) ---
   static const String customerMe = '/customer/me';
   static const String customerPassword = '/customer/me/password';
+  static const String customerAvatar = '/customer/me/avatar';
   static const String customerPreferences = '/customer/me/preferences';
   static const String customerAddresses = '/customer/addresses';
-  static String customerAddress(int id) => '/customer/addresses/$id';
+  static String customerAddress(String id) => '/customer/addresses/$id';
 
   static const String customerBookings = '/customer/bookings';
-  static String customerBooking(int id) => '/customer/bookings/$id';
-  static String bookingTrack(int id) => '/customer/bookings/$id/track';
-  static String bookingCancel(int id) => '/customer/bookings/$id/cancel';
-  static String bookingReschedule(int id) => '/customer/bookings/$id/reschedule';
-  static String bookingRebook(int id) => '/customer/bookings/$id/rebook';
-  static String bookingPay(int id) => '/customer/bookings/$id/pay';
+  static const String bookingAvailableSlots = '/customer/bookings/available-slots';
+  static String customerBooking(String id) => '/customer/bookings/$id';
+  static String bookingTrack(String id) => '/customer/bookings/$id/track';
+  static String bookingCancel(String id) => '/customer/bookings/$id/cancel';
+  static String bookingReschedule(String id) => '/customer/bookings/$id/reschedule';
+  static String bookingRebook(String id) => '/customer/bookings/$id/rebook';
+  static String bookingPay(String id) => '/customer/bookings/$id/pay';
 
   static const String customerPayments = '/customer/payments';
-  static String paymentInvoice(int id) => '/customer/payments/$id/invoice';
+  static String payment(String id) => '/customer/payments/$id';
+  static String paymentInvoice(String id) => '/customer/payments/$id/invoice';
 
   static const String customerWallet = '/customer/wallet';
   static const String walletTransactions = '/customer/wallet/transactions';
   static const String walletAddFunds = '/customer/wallet/add-funds';
+  static String walletConfirmPayment(String paymentId) =>
+      '/customer/wallet/confirm-payment/$paymentId';
 
   static const String customerFavorites = '/customer/favorites';
   static const String favoriteToggle = '/customer/favorites/toggle';
-  static String favoriteProviderToggle(int id) => '/customer/favorites/providers/$id/toggle';
+  static String favoriteProviderToggle(String id) => '/customer/favorites/providers/$id/toggle';
 
   static const String customerReviews = '/customer/reviews';
   static const String customerComplaints = '/customer/complaints';
 
   static const String customerConversations = '/customer/conversations';
-  static String conversation(int id) => '/customer/conversations/$id';
-  static String conversationMessages(int id) => '/customer/conversations/$id/messages';
+  static String conversation(String id) => '/customer/conversations/$id';
+  static String conversationMessages(String id) => '/customer/conversations/$id/messages';
 
   static const String customerNotifications = '/customer/notifications';
   static const String notificationsUnread = '/customer/notifications/unread';
@@ -73,52 +78,52 @@ class ApiEndpoints {
   // --- Provider (/provider) ---
   static const String providerDashboard = '/provider/dashboard';
   static const String providerProfileMe = '/provider/profile';
+  static const String providerPassword = '/provider/profile/password';
   static const String providerVerificationStatus = '/provider/verification-status';
   static const String providerVerification = '/provider/verification';
 
   static const String providerServices = '/provider/services';
-  static String providerService(int id) => '/provider/services/$id';
-  static String serviceToggleActive(int id) => '/provider/services/$id/toggle-active';
-  static String serviceDuplicate(int id) => '/provider/services/$id/duplicate';
+  static String providerService(String id) => '/provider/services/$id';
+  static String serviceToggleActive(String id) => '/provider/services/$id/toggle-active';
+  static String serviceDuplicate(String id) => '/provider/services/$id/duplicate';
 
   static const String providerBookings = '/provider/bookings';
-  static String providerBooking(int id) => '/provider/bookings/$id';
-  static String bookingAccept(int id) => '/provider/bookings/$id/accept';
-  static String bookingReject(int id) => '/provider/bookings/$id/reject';
-  static String bookingStart(int id) => '/provider/bookings/$id/start';
-  static String bookingComplete(int id) => '/provider/bookings/$id/complete';
-  static String providerBookingCancel(int id) => '/provider/bookings/$id/cancel';
-  static String providerBookingReschedule(int id) => '/provider/bookings/$id/reschedule';
+  static String providerBooking(String id) => '/provider/bookings/$id';
+  static String bookingAccept(String id) => '/provider/bookings/$id/accept';
+  static String bookingReject(String id) => '/provider/bookings/$id/reject';
+  static String bookingStart(String id) => '/provider/bookings/$id/start';
+  static String bookingComplete(String id) => '/provider/bookings/$id/complete';
+  static String providerBookingCancel(String id) => '/provider/bookings/$id/cancel';
 
   static const String providerAvailability = '/provider/availability';
   static const String workingHours = '/provider/availability/working-hours';
-  static String workingHour(int id) => '/provider/availability/working-hours/$id';
+  static String workingHour(String id) => '/provider/availability/working-hours/$id';
   static const String availabilityAreas = '/provider/availability/areas';
-  static String availabilityArea(int id) => '/provider/availability/areas/$id';
+  static String availabilityArea(String id) => '/provider/availability/areas/$id';
 
   static const String providerPortfolio = '/provider/portfolio';
-  static String portfolioItem(int id) => '/provider/portfolio/$id';
+  static String portfolioItem(String id) => '/provider/portfolio/$id';
 
   static const String providerWallet = '/provider/wallet';
   static const String providerWithdrawals = '/provider/withdrawals';
-  static String withdrawalCancel(int id) => '/provider/withdrawals/$id/cancel';
+  static String withdrawalCancel(String id) => '/provider/withdrawals/$id/cancel';
 
   static const String providerReviews = '/provider/reviews';
-  static String reviewReply(int id) => '/provider/reviews/$id/reply';
+  static String reviewReply(String id) => '/provider/reviews/$id/reply';
 
   static const String providerConversations = '/provider/conversations';
-  static String providerConversation(int id) => '/provider/conversations/$id';
-  static String providerConversationMessages(int id) => '/provider/conversations/$id/messages';
+  static String providerConversation(String id) => '/provider/conversations/$id';
+  static String providerConversationMessages(String id) => '/provider/conversations/$id/messages';
 
   static const String providerNotifications = '/provider/notifications';
   static String providerNotificationRead(String id) => '/provider/notifications/$id/read';
   static const String providerNotificationsReadAll = '/provider/notifications/read-all';
 
   static const String providerRequests = '/provider/requests';
-  static String providerRequest(int id) => '/provider/requests/$id';
-  static String requestAccept(int id) => '/provider/requests/$id/accept';
-  static String requestReject(int id) => '/provider/requests/$id/reject';
-  static String requestComplete(int id) => '/provider/requests/$id/complete';
+  static String providerRequest(String id) => '/provider/requests/$id';
+  static String requestAccept(String id) => '/provider/requests/$id/accept';
+  static String requestReject(String id) => '/provider/requests/$id/reject';
+  static String requestComplete(String id) => '/provider/requests/$id/complete';
 
   static const String reportBookings = '/provider/reports/bookings';
   static const String reportRevenue = '/provider/reports/revenue';

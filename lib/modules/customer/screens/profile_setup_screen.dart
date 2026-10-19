@@ -22,7 +22,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _bioController = TextEditingController();
-  int? _cityId;
+  String? _cityId;
   bool _saving = false;
 
   @override
@@ -121,15 +121,15 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         horizontal: 12, vertical: 2),
                   ),
                   child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
+                    child: DropdownButton<String>(
                       isExpanded: true,
                       value: _cityId,
                       hint: const Text('اختر مدينتك',
                           style: TextStyle(color: SahelColors.muted)),
                       items: [
                         for (final c in cities.valueOrNull ?? const [])
-                          DropdownMenuItem<int>(
-                            value: toInt(c['id']),
+                          DropdownMenuItem<String>(
+                            value: str(c['id']),
                             child: Text(
                                 str(c['name'] ?? c['name_ar'] ?? c['title']),
                                 style: const TextStyle(fontSize: 14)),

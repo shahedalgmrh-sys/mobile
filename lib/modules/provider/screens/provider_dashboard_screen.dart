@@ -6,6 +6,7 @@ import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import '../../../shared/theme/sahel_colors.dart';
+import '../../../shared/theme/sahel_theme.dart';
 
 class ProviderDashboardScreen extends ConsumerWidget {
   const ProviderDashboardScreen({super.key});
@@ -87,15 +88,9 @@ class ProviderDashboardScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF0D9488), Color(0xFF14B8A6)]),
+                    gradient: SahelColors.primaryGradient,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: const [
-                      BoxShadow(
-                          color: Color(0x4014B8A6),
-                          blurRadius: 24,
-                          offset: Offset(0, 8))
-                    ],
+                    boxShadow: SahelElevations.glow,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +107,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: isOnline
-                                  ? Colors.white.withOpacity(0.2)
+                                  ? Colors.white.withValues(alpha: 0.2)
                                   : Colors.black26,
                               borderRadius: BorderRadius.circular(20),
                             ),
@@ -226,7 +221,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10)),
         child: Column(
           children: [

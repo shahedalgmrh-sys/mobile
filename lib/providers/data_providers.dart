@@ -16,21 +16,21 @@ final categoriesProvider = FutureProvider<List<CategoryItem>>(
 );
 
 final servicesProvider = FutureProvider.autoDispose
-    .family<List<dynamic>, ({String? q, int? categoryId, String? sort})>(
+    .family<List<dynamic>, ({String? q, String? categoryId, String? sort})>(
   (ref, params) => ref
       .watch(catalogRepositoryProvider)
       .services(q: params.q, categoryId: params.categoryId, sort: params.sort),
 );
 
 final providersCatalogProvider = FutureProvider.autoDispose
-    .family<List<dynamic>, ({int? cityId, int? page})>(
+    .family<List<dynamic>, ({String? cityId, int? page})>(
   (ref, params) => ref
       .watch(catalogRepositoryProvider)
       .providers(cityId: params.cityId, page: params.page),
 );
 
 final publicProviderProfileProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(catalogRepositoryProvider).providerProfileFull(id),
 );
 
@@ -60,12 +60,12 @@ final customerBookingsProvider = FutureProvider.autoDispose
 );
 
 final customerBookingProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(customerRepositoryProvider).booking(id),
 );
 
 final bookingTrackProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(customerRepositoryProvider).trackBooking(id),
 );
 
@@ -98,7 +98,7 @@ final customerConversationsProvider = FutureProvider<List<Map<String, dynamic>>>
 );
 
 final customerConversationProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(customerRepositoryProvider).conversation(id),
 );
 
@@ -143,7 +143,7 @@ final providerBookingsProvider = FutureProvider.autoDispose
 );
 
 final providerBookingProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(providerRepositoryProvider).booking(id),
 );
 
@@ -172,7 +172,7 @@ final providerConversationsProvider = FutureProvider<List<Map<String, dynamic>>>
 );
 
 final providerConversationProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, int>(
+    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
   (ref, id) => ref.watch(providerRepositoryProvider).conversation(id),
 );
 

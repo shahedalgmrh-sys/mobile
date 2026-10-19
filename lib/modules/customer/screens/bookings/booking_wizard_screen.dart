@@ -29,17 +29,11 @@ class _BookingWizardScreenState
     'أسبوعين',
     'شهرياً'
   ];
-  static const _frequencyKeys = [
-    'once',
-    'weekly',
-    'biweekly',
-    'monthly'
-  ];
   int _selectedFrequency = 0;
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
 
-  int? _selectedAddressId;
+  String? _selectedAddressId;
 
   int _selectedDate = 0;
   final _dates =
@@ -47,7 +41,6 @@ class _BookingWizardScreenState
   final _timeSlots = const ['09:00', '10:00', '12:00', '15:00', '18:00'];
   int _selectedSlot = -1;
 
-  static const _paymentKeys = ['wallet', 'card', 'cash_on_delivery'];
   static const _paymentLabels = ['محفظة', 'بطاقة', 'عند الاستلام'];
   int _selectedPayment = 0;
   bool _submitting = false;
@@ -119,7 +112,7 @@ class _BookingWizardScreenState
           .read(customerRepositoryProvider)
           .validateCoupon(code,
               subtotal: _subtotal,
-              serviceId: int.tryParse(widget.serviceId ?? ''));
+              serviceId: widget.serviceId);
       if (!toBool(res['valid'], true)) {
         setState(() {
           _appliedCoupon = null;
@@ -166,7 +159,7 @@ class _BookingWizardScreenState
       final booking = await ref
           .read(customerRepositoryProvider)
           .createBooking({
-        'service_id': int.tryParse(widget.serviceId ?? '') ??
+        'service_id': widget.serviceId ??
             widget.serviceId,
         'customer_address_id': _selectedAddressId,
         'booking_date':
@@ -229,7 +222,7 @@ class _BookingWizardScreenState
                           shape: BoxShape.circle,
                           color: dotColor,
                           boxShadow: isCurrent
-                              ? [BoxShadow(color: dotColor.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)]
+                              ? [BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)]
                               : null,
                         ),
                         child: Center(
@@ -464,14 +457,14 @@ class _BookingWizardScreenState
             }
             _selectedAddressId ??= items
                 .where((a) => toBool(a['is_default'] ?? a['is_primary']))
-                .map((a) => toInt(a['id']))
+                .map((a) => str(a['id']))
                 .firstOrNull ??
-                toInt(items.first['id']);
+                str(items.first['id']);
             return Column(
               children: [
                 for (final a in items)
                   _addressTile(
-                    id: toInt(a['id']),
+                    id: str(a['id']),
                     label: str(a['label'] ?? a['title'], 'عنوان'),
                     body: str(a['full_address'] ??
                         a['address'] ??
@@ -499,7 +492,7 @@ class _BookingWizardScreenState
   }
 
   Widget _addressTile({
-    required int id,
+    required String id,
     required String label,
     required String body,
     required bool isDefault,

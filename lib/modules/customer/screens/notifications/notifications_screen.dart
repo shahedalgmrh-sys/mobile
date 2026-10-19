@@ -177,7 +177,7 @@ class _NotificationList extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Material(
             color: isUnread
-                ? SahelColors.primary50.withOpacity(0.4)
+                ? SahelColors.primary50.withValues(alpha: 0.4)
                 : SahelColors.surface,
             borderRadius: SahelRadii.mdRadius,
             child: InkWell(

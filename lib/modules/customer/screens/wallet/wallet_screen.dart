@@ -19,7 +19,7 @@ class WalletScreen extends ConsumerWidget {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(180),
         child: Container(
-          decoration: BoxDecoration(gradient: SahelColors.nightGradient),
+          decoration: const BoxDecoration(gradient: SahelColors.nightGradient),
           child: SafeArea(
             child: Center(
               child: wallet.when(
@@ -34,7 +34,7 @@ class WalletScreen extends ConsumerWidget {
                       'رصيد المحفظة',
                       style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),

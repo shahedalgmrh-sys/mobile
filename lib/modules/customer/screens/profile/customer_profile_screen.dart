@@ -123,9 +123,9 @@ class CustomerProfileScreen extends ConsumerWidget {
             children: [
               Container(
                 height: 200,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: SahelColors.nightGradient,
-                  borderRadius: const BorderRadius.only(
+                  borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
                   ),
@@ -164,7 +164,7 @@ class CustomerProfileScreen extends ConsumerWidget {
                 bottom: -40,
                 child: Card(
                   elevation: 6,
-                  shadowColor: SahelColors.text.withOpacity(0.12),
+                  shadowColor: SahelColors.text.withValues(alpha: 0.12),
                   margin: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                       borderRadius: SahelRadii.lgRadius),

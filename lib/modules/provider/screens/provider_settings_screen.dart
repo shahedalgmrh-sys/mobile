@@ -29,8 +29,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
           children: [
             UserAccountsDrawerHeader(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF14B8A6)]),
+                gradient: SahelColors.primaryGradient,
                 borderRadius: BorderRadius.all(Radius.circular(16)),
               ),
               accountName: Text(businessName,
@@ -110,7 +109,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
       trailing:
           const Icon(Icons.chevron_right, color: SahelColors.muted),
       onTap: onTap,
-      shape: Border(
+      shape: const Border(
           bottom: BorderSide(color: SahelColors.slate100, width: 1)),
     );
   }

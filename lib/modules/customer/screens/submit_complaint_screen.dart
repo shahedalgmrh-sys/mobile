@@ -46,7 +46,7 @@ class _SubmitComplaintScreenState
     setState(() => _submitting = true);
     try {
       await ref.read(customerRepositoryProvider).storeComplaint(
-            bookingId: int.tryParse(widget.id),
+            bookingId: widget.id,
             subject: _subject!,
             description: _description.text.trim(),
           );

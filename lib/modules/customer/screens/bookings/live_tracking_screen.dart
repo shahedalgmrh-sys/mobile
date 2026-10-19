@@ -14,7 +14,7 @@ class LiveTrackingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookingId = int.tryParse(id) ?? 0;
+    final bookingId = id;
     final track = ref.watch(bookingTrackProvider(bookingId));
 
     return Scaffold(
@@ -56,7 +56,7 @@ class LiveTrackingScreen extends ConsumerWidget {
 
 class _TrackingBody extends ConsumerWidget {
   final Map<String, dynamic> track;
-  final int bookingId;
+  final String bookingId;
   const _TrackingBody({required this.track, required this.bookingId});
 
   @override
@@ -155,7 +155,7 @@ class _TrackingBody extends ConsumerWidget {
           bottom: 16,
           child: Card(
             elevation: 24,
-            shadowColor: SahelColors.text.withOpacity(0.2),
+            shadowColor: SahelColors.text.withValues(alpha: 0.2),
             margin: EdgeInsets.zero,
             shape:
                 RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),

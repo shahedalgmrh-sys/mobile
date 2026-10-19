@@ -174,7 +174,7 @@ class _KycStatusScreenState extends ConsumerState<KycStatusScreen> {
             height: 44,
             decoration: BoxDecoration(
               color: uploaded
-                  ? SahelColors.green600.withOpacity(0.12)
+                  ? SahelColors.green600.withValues(alpha: 0.12)
                   : SahelColors.slate100,
               borderRadius: BorderRadius.circular(10),
             ),

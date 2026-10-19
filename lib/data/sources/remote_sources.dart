@@ -102,23 +102,23 @@ class CatalogRemoteSource {
 
   Future<Response> home() => _run(() => client.get(ApiEndpoints.home));
   Future<Response> categories() => _run(() => client.get(ApiEndpoints.categories));
-  Future<Response> services({String? q, int? categoryId, String? sort, int? page}) =>
+  Future<Response> services({String? q, String? categoryId, String? sort, int? page}) =>
       _run(() => client.get(ApiEndpoints.services, queryParameters: {
             if (q != null) 'q': q,
             if (categoryId != null) 'category_id': categoryId,
             if (sort != null) 'sort': sort,
             if (page != null) 'page': page,
           }));
-  Future<Response> providers({int? cityId, int? page}) =>
+  Future<Response> providers({String? cityId, int? page}) =>
       _run(() => client.get(ApiEndpoints.providers, queryParameters: {
             if (cityId != null) 'city_id': cityId,
             if (page != null) 'page': page,
           }));
-  Future<Response> providerProfile(int id) =>
+  Future<Response> providerProfile(String id) =>
       _run(() => client.get(ApiEndpoints.providerProfile(id)));
   Future<Response> offers() => _run(() => client.get(ApiEndpoints.offers));
   Future<Response> cities() => _run(() => client.get(ApiEndpoints.cities));
-  Future<Response> cityAreas(int cityId) =>
+  Future<Response> cityAreas(String cityId) =>
       _run(() => client.get(ApiEndpoints.cityAreas(cityId)));
   Future<Response> faqs({String? category}) =>
       _run(() => client.get(ApiEndpoints.faqs,
@@ -143,6 +143,13 @@ class CustomerRemoteSource {
   Future<Response> me() => _run(() => client.get(ApiEndpoints.customerMe));
   Future<Response> updateMe(Map<String, dynamic> data) =>
       _run(() => client.put(ApiEndpoints.customerMe, data: data));
+  Future<Response> updateAvatar(MultipartFile image) => _run(() => client.post(
+        ApiEndpoints.customerAvatar,
+        data: FormData.fromMap({'avatar': image}),
+        options: Options(contentType: Headers.multipartFormDataContentType),
+      ));
+  Future<Response> deleteAvatar() =>
+      _run(() => client.delete(ApiEndpoints.customerAvatar));
   Future<Response> changePassword(
           String current, String password, String confirmation) =>
       _run(() => client.post(ApiEndpoints.customerPassword, data: {
@@ -160,9 +167,9 @@ class CustomerRemoteSource {
   Future<Response> addresses() => _run(() => client.get(ApiEndpoints.customerAddresses));
   Future<Response> storeAddress(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.customerAddresses, data: data));
-  Future<Response> updateAddress(int id, Map<String, dynamic> data) =>
+  Future<Response> updateAddress(String id, Map<String, dynamic> data) =>
       _run(() => client.put(ApiEndpoints.customerAddress(id), data: data));
-  Future<Response> destroyAddress(int id) =>
+  Future<Response> destroyAddress(String id) =>
       _run(() => client.delete(ApiEndpoints.customerAddress(id)));
 
   // Bookings
@@ -173,34 +180,46 @@ class CustomerRemoteSource {
           }));
   Future<Response> createBooking(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.customerBookings, data: data));
-  Future<Response> showBooking(int id) =>
+  Future<Response> availableSlots({
+    String? serviceId,
+    String? service,
+    required String date,
+  }) =>
+      _run(() => client.get(ApiEndpoints.bookingAvailableSlots, queryParameters: {
+            if (serviceId != null) 'service_id': serviceId,
+            if (service != null) 'service': service,
+            'date': date,
+          }));
+  Future<Response> showBooking(String id) =>
       _run(() => client.get(ApiEndpoints.customerBooking(id)));
-  Future<Response> trackBooking(int id) =>
+  Future<Response> trackBooking(String id) =>
       _run(() => client.get(ApiEndpoints.bookingTrack(id)));
-  Future<Response> cancelBooking(int id, String reason) =>
+  Future<Response> cancelBooking(String id, String reason) =>
       _run(() => client.post(ApiEndpoints.bookingCancel(id), data: {'reason': reason}));
-  Future<Response> rescheduleBooking(int id, String date, String time, {String? reason}) =>
+  Future<Response> rescheduleBooking(String id, String date, String time, {String? reason}) =>
       _run(() => client.post(ApiEndpoints.bookingReschedule(id), data: {
             'booking_date': date,
             'booking_time': time,
             if (reason != null) 'reason': reason,
           }));
-  Future<Response> rebook(int id) =>
+  Future<Response> rebook(String id) =>
       _run(() => client.post(ApiEndpoints.bookingRebook(id)));
-  Future<Response> payBooking(int id, String method) =>
+  Future<Response> payBooking(String id, String method) =>
       _run(() => client.post(ApiEndpoints.bookingPay(id), data: {'payment_method': method}));
 
   // Payments
-  Future<Response> payments({int? page}) =>
+  Future<Response> payments({String? page}) =>
       _run(() => client.get(ApiEndpoints.customerPayments, queryParameters: {
             if (page != null) 'page': page,
           }));
-  Future<Response> invoice(int paymentId) =>
+  Future<Response> invoice(String paymentId) =>
       _run(() => client.get(ApiEndpoints.paymentInvoice(paymentId)));
+  Future<Response> payment(String paymentId) =>
+      _run(() => client.get(ApiEndpoints.payment(paymentId)));
 
   // Wallet
   Future<Response> wallet() => _run(() => client.get(ApiEndpoints.customerWallet));
-  Future<Response> walletTransactions({int? page}) =>
+  Future<Response> walletTransactions({String? page}) =>
       _run(() => client.get(ApiEndpoints.walletTransactions, queryParameters: {
             if (page != null) 'page': page,
           }));
@@ -209,12 +228,14 @@ class CustomerRemoteSource {
             'amount': amount,
             'payment_method': method,
           }));
+  Future<Response> confirmWalletPayment(String paymentId) =>
+      _run(() => client.post(ApiEndpoints.walletConfirmPayment(paymentId)));
 
   // Favorites
   Future<Response> favorites() => _run(() => client.get(ApiEndpoints.customerFavorites));
-  Future<Response> toggleServiceFavorite(int serviceId) =>
+  Future<Response> toggleServiceFavorite(String serviceId) =>
       _run(() => client.post(ApiEndpoints.favoriteToggle, data: {'service_id': serviceId}));
-  Future<Response> toggleProviderFavorite(int providerId) =>
+  Future<Response> toggleProviderFavorite(String providerId) =>
       _run(() => client.post(ApiEndpoints.favoriteProviderToggle(providerId)));
 
   // Reviews & complaints
@@ -227,9 +248,9 @@ class CustomerRemoteSource {
 
   // Chat
   Future<Response> conversations() => _run(() => client.get(ApiEndpoints.customerConversations));
-  Future<Response> conversation(int id) =>
+  Future<Response> conversation(String id) =>
       _run(() => client.get(ApiEndpoints.conversation(id)));
-  Future<Response> sendMessage(int id, String body, {List<MultipartFile>? attachments}) =>
+  Future<Response> sendMessage(String id, String body, {List<MultipartFile>? attachments}) =>
       _run(() => client.post(
             ApiEndpoints.conversationMessages(id),
             data: attachments == null
@@ -241,7 +262,7 @@ class CustomerRemoteSource {
           ));
 
   // Notifications
-  Future<Response> notifications({int? page}) =>
+  Future<Response> notifications({String? page}) =>
       _run(() => client.get(ApiEndpoints.customerNotifications, queryParameters: {
             if (page != null) 'page': page,
           }));
@@ -253,7 +274,7 @@ class CustomerRemoteSource {
   // Coupons & search
   Future<Response> coupons() => _run(() => client.get(ApiEndpoints.customerCoupons));
   Future<Response> validateCoupon(String code,
-          {required double subtotal, int? serviceId}) =>
+          {required double subtotal, String? serviceId}) =>
       _run(() => client.post(ApiEndpoints.couponValidate, data: {
             'code': code,
             'subtotal': subtotal,
@@ -264,6 +285,8 @@ class CustomerRemoteSource {
             'q': q,
             ...?filters,
           }));
+  Future<Response> reports(String type) =>
+      _run(() => client.get(ApiEndpoints.customerReport(type)));
 }
 
 class ProviderRemoteSource {
@@ -280,6 +303,15 @@ class ProviderRemoteSource {
 
   Future<Response> dashboard() => _run(() => client.get(ApiEndpoints.providerDashboard));
   Future<Response> profile() => _run(() => client.get(ApiEndpoints.providerProfileMe));
+  Future<Response> updateProfile(Map<String, dynamic> data) =>
+      _run(() => client.put(ApiEndpoints.providerProfileMe, data: data));
+  Future<Response> changePassword(
+          String current, String password, String confirmation) =>
+      _run(() => client.post(ApiEndpoints.providerPassword, data: {
+            'current_password': current,
+            'password': password,
+            'password_confirmation': confirmation,
+          }));
   Future<Response> verificationStatus() =>
       _run(() => client.get(ApiEndpoints.providerVerificationStatus));
   Future<Response> submitVerification(Map<String, dynamic> fields,
@@ -296,15 +328,17 @@ class ProviderRemoteSource {
 
   // Services
   Future<Response> services() => _run(() => client.get(ApiEndpoints.providerServices));
+  Future<Response> showService(String id) =>
+      _run(() => client.get(ApiEndpoints.providerService(id)));
   Future<Response> storeService(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.providerServices, data: data));
-  Future<Response> updateService(int id, Map<String, dynamic> data) =>
+  Future<Response> updateService(String id, Map<String, dynamic> data) =>
       _run(() => client.put(ApiEndpoints.providerService(id), data: data));
-  Future<Response> destroyService(int id) =>
+  Future<Response> destroyService(String id) =>
       _run(() => client.delete(ApiEndpoints.providerService(id)));
-  Future<Response> toggleService(int id) =>
+  Future<Response> toggleService(String id) =>
       _run(() => client.post(ApiEndpoints.serviceToggleActive(id)));
-  Future<Response> duplicateService(int id) =>
+  Future<Response> duplicateService(String id) =>
       _run(() => client.post(ApiEndpoints.serviceDuplicate(id)));
 
   // Bookings
@@ -314,34 +348,28 @@ class ProviderRemoteSource {
             if (date != null) 'date': date,
             if (page != null) 'page': page,
           }));
-  Future<Response> showBooking(int id) =>
+  Future<Response> showBooking(String id) =>
       _run(() => client.get(ApiEndpoints.providerBooking(id)));
-  Future<Response> acceptBooking(int id) =>
+  Future<Response> acceptBooking(String id) =>
       _run(() => client.post(ApiEndpoints.bookingAccept(id)));
-  Future<Response> rejectBooking(int id, {String? reason}) =>
+  Future<Response> rejectBooking(String id, {String? reason}) =>
       _run(() => client.post(ApiEndpoints.bookingReject(id), data: {
             if (reason != null) 'reason': reason,
           }));
-  Future<Response> startBooking(int id) =>
+  Future<Response> startBooking(String id) =>
       _run(() => client.post(ApiEndpoints.bookingStart(id)));
-  Future<Response> completeBooking(int id) =>
+  Future<Response> completeBooking(String id) =>
       _run(() => client.post(ApiEndpoints.bookingComplete(id)));
-  Future<Response> rescheduleBooking(int id, String date, String time, {String? reason}) =>
-      _run(() => client.post(ApiEndpoints.providerBookingReschedule(id), data: {
-            'scheduled_date': date,
-            'scheduled_time': time,
-            if (reason != null) 'reason': reason,
-          }));
 
   // Availability
   Future<Response> availability() => _run(() => client.get(ApiEndpoints.providerAvailability));
   Future<Response> storeWorkingHour(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.workingHours, data: data));
-  Future<Response> destroyWorkingHour(int id) =>
+  Future<Response> destroyWorkingHour(String id) =>
       _run(() => client.delete(ApiEndpoints.workingHour(id)));
   Future<Response> storeArea(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.availabilityAreas, data: data));
-  Future<Response> destroyArea(int id) =>
+  Future<Response> destroyArea(String id) =>
       _run(() => client.delete(ApiEndpoints.availabilityArea(id)));
 
   // Portfolio
@@ -356,7 +384,7 @@ class ProviderRemoteSource {
                 ? null
                 : Options(contentType: Headers.multipartFormDataContentType),
           ));
-  Future<Response> destroyPortfolio(int id) =>
+  Future<Response> destroyPortfolio(String id) =>
       _run(() => client.delete(ApiEndpoints.portfolioItem(id)));
 
   // Wallet & withdrawals
@@ -364,19 +392,19 @@ class ProviderRemoteSource {
   Future<Response> withdrawals() => _run(() => client.get(ApiEndpoints.providerWithdrawals));
   Future<Response> storeWithdrawal(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.providerWithdrawals, data: data));
-  Future<Response> cancelWithdrawal(int id) =>
+  Future<Response> cancelWithdrawal(String id) =>
       _run(() => client.post(ApiEndpoints.withdrawalCancel(id)));
 
   // Reviews
   Future<Response> reviews() => _run(() => client.get(ApiEndpoints.providerReviews));
-  Future<Response> replyReview(int id, String reply) =>
+  Future<Response> replyReview(String id, String reply) =>
       _run(() => client.post(ApiEndpoints.reviewReply(id), data: {'reply': reply}));
 
   // Chat
   Future<Response> conversations() => _run(() => client.get(ApiEndpoints.providerConversations));
-  Future<Response> conversation(int id) =>
+  Future<Response> conversation(String id) =>
       _run(() => client.get(ApiEndpoints.providerConversation(id)));
-  Future<Response> sendMessage(int id, String body, {List<MultipartFile>? attachments}) =>
+  Future<Response> sendMessage(String id, String body, {List<MultipartFile>? attachments}) =>
       _run(() => client.post(
             ApiEndpoints.providerConversationMessages(id),
             data: attachments == null
@@ -388,7 +416,7 @@ class ProviderRemoteSource {
           ));
 
   // Notifications
-  Future<Response> notifications({int? page}) =>
+  Future<Response> notifications({String? page}) =>
       _run(() => client.get(ApiEndpoints.providerNotifications, queryParameters: {
             if (page != null) 'page': page,
           }));
@@ -404,13 +432,13 @@ class ProviderRemoteSource {
           }));
   Future<Response> storeServiceRequest(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.providerRequests, data: data));
-  Future<Response> acceptServiceRequest(int id) =>
+  Future<Response> acceptServiceRequest(String id) =>
       _run(() => client.post(ApiEndpoints.requestAccept(id)));
-  Future<Response> rejectServiceRequest(int id, {String? reason}) =>
+  Future<Response> rejectServiceRequest(String id, {String? reason}) =>
       _run(() => client.post(ApiEndpoints.requestReject(id), data: {
             if (reason != null) 'reason': reason,
           }));
-  Future<Response> completeServiceRequest(int id) =>
+  Future<Response> completeServiceRequest(String id) =>
       _run(() => client.post(ApiEndpoints.requestComplete(id)));
 
   // Reports

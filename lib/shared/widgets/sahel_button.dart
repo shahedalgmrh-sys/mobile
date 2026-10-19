@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
-import 'package:saber_flutter/app/theme/sahel_radii.dart';
-import 'package:saber_flutter/app/theme/sahel_elevations.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 enum SahelButtonVariant {
   filled,
@@ -11,8 +10,15 @@ enum SahelButtonVariant {
   ghost,
   danger,
   amber,
+
+  /// Solid white surface with brand-teal text — used on top of gradient /
+  /// photography heroes where a filled button would lose contrast.
+  whiteBg,
 }
 
+/// Brand button following the Sahel design system:
+/// minimum height `48`, `10.5` radius (pill for [SahelButtonVariant.whiteBg]),
+/// weight `700` label, and a `4px` atmospheric focus halo in `#f0fdfa` tints.
 class SahelButton extends StatelessWidget {
   final SahelButtonVariant variant;
   final String label;
@@ -21,219 +27,295 @@ class SahelButton extends StatelessWidget {
   final IconData? prefixIcon;
   final double width;
   final double height;
+  final BorderRadius? borderRadius;
 
-  SahelButton({
+  const SahelButton({
     super.key,
     this.variant = SahelButtonVariant.filled,
     required this.label,
-    VoidCallback? onPressed,
-    VoidCallback? onTap,
+    this.onPressed,
     this.loading = false,
-    IconData? prefixIcon,
-    IconData? icon,
-    Color? bgColor,
+    this.prefixIcon,
     this.width = double.infinity,
-    this.height = 52,
-  })  : onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon;
+    this.height = 48,
+    this.borderRadius,
+  });
 
-  SahelButton.soft({
-    super.key,
+  factory SahelButton.filled({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 38,
-  })  : variant = SahelButtonVariant.soft,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.filled,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.gradient({
-    super.key,
+  factory SahelButton.gradient({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.gradient,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.gradient,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.danger({
-    super.key,
+  factory SahelButton.soft({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.danger,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 40,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.soft,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.amber({
-    super.key,
+  factory SahelButton.outline({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.amber,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.outline,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.outline({
-    super.key,
+  factory SahelButton.ghost({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.outline,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.ghost,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.ghost({
-    super.key,
+  factory SahelButton.danger({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.ghost,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.danger,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.filled({
-    super.key,
+  factory SahelButton.amber({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.filled,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 48,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.amber,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  SahelButton.whiteBgPrimaryText({
-    super.key,
+  factory SahelButton.whiteBgPrimaryText({
+    Key? key,
     required String label,
     VoidCallback? onTap,
     VoidCallback? onPressed,
-    this.loading = false,
+    bool loading = false,
     IconData? prefixIcon,
     IconData? icon,
-    Color? bgColor,
     double? width,
-    this.height = 52,
-  })  : variant = SahelButtonVariant.ghost,
-        onPressed = onPressed ?? onTap,
-        prefixIcon = prefixIcon ?? icon,
-        width = width ?? double.infinity,
-        label = label;
+    double height = 40,
+  }) =>
+      SahelButton(
+        key: key,
+        variant: SahelButtonVariant.whiteBg,
+        label: label,
+        onPressed: onPressed ?? onTap,
+        loading: loading,
+        prefixIcon: prefixIcon ?? icon,
+        width: width ?? double.infinity,
+        height: height,
+      );
 
-  @override
-  Widget build(BuildContext context) {
-    final isDisabled = onPressed == null || loading;
-    final textStyle = TextStyle(
-      fontSize: 15,
-      fontWeight: FontWeight.w700,
-      color: _textColor,
-    );
+  bool get _isDisabled => onPressed == null || loading;
 
-    return SizedBox(
-      width: width,
-      height: height,
-      child: _buildButton(isDisabled, textStyle),
-    );
-  }
+  BorderRadius get _radius =>
+      borderRadius ??
+      (variant == SahelButtonVariant.whiteBg
+          ? SahelRadii.pillRadius
+          : SahelRadii.smRadius);
 
-  Widget _buildButton(bool isDisabled, TextStyle textStyle) {
+  Color get _foreground {
+    if (_isDisabled) {
+      switch (variant) {
+        case SahelButtonVariant.ghost:
+        case SahelButtonVariant.outline:
+        case SahelButtonVariant.whiteBg:
+          return SahelColors.textSoft;
+        default:
+          return Colors.white70;
+      }
+    }
     switch (variant) {
-      case SahelButtonVariant.gradient:
-        return _buildGradient(isDisabled, textStyle);
       case SahelButtonVariant.soft:
-        return _buildSoft(isDisabled, textStyle);
       case SahelButtonVariant.outline:
-        return _buildOutline(isDisabled, textStyle);
       case SahelButtonVariant.ghost:
-        return _buildGhost(isDisabled, textStyle);
-      case SahelButtonVariant.danger:
-        return _buildSolid(isDisabled, textStyle, SahelColors.red600, Colors.white);
-      case SahelButtonVariant.amber:
-        return _buildSolid(isDisabled, textStyle, SahelColors.amber500, Colors.white);
+      case SahelButtonVariant.whiteBg:
+        return SahelColors.primary700;
       case SahelButtonVariant.filled:
-        return _buildSolid(isDisabled, textStyle, SahelColors.primary600, Colors.white);
+      case SahelButtonVariant.gradient:
+      case SahelButtonVariant.danger:
+      case SahelButtonVariant.amber:
+        return Colors.white;
     }
   }
 
-  Color get _textColor {
+  BoxDecoration _decoration() {
     switch (variant) {
-      case SahelButtonVariant.soft:
-        return SahelColors.primary700;
-      case SahelButtonVariant.outline:
-        return SahelColors.primary700;
-      case SahelButtonVariant.ghost:
-        return SahelColors.primary700;
-      case SahelButtonVariant.danger:
-        return Colors.white;
-      case SahelButtonVariant.amber:
-        return Colors.white;
       case SahelButtonVariant.gradient:
+        return BoxDecoration(
+          gradient: _isDisabled ? null : SahelColors.primaryGradient,
+          color: _isDisabled ? SahelColors.slate300 : null,
+          borderRadius: _radius,
+          boxShadow: _isDisabled ? null : SahelElevations.glow,
+        );
+      case SahelButtonVariant.soft:
+        return BoxDecoration(
+          color: _isDisabled ? SahelColors.surface3 : SahelColors.primarySurface,
+          borderRadius: _radius,
+          border: Border.all(
+            color: _isDisabled ? SahelColors.border : SahelColors.primary100,
+          ),
+        );
+      case SahelButtonVariant.outline:
+        return BoxDecoration(
+          color: SahelColors.surface,
+          borderRadius: _radius,
+          border: Border.all(
+            color: _isDisabled ? SahelColors.border : SahelColors.primary,
+            width: 1.5,
+          ),
+        );
+      case SahelButtonVariant.ghost:
+        return BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: _radius,
+        );
+      case SahelButtonVariant.danger:
+        return BoxDecoration(
+          color: _isDisabled ? SahelColors.slate300 : SahelColors.red600,
+          borderRadius: _radius,
+          boxShadow: _isDisabled ? null : SahelElevations.xs,
+        );
+      case SahelButtonVariant.amber:
+        return BoxDecoration(
+          color: _isDisabled ? SahelColors.slate300 : SahelColors.amber500,
+          borderRadius: _radius,
+          boxShadow: _isDisabled ? null : SahelElevations.xs,
+        );
+      case SahelButtonVariant.whiteBg:
+        return BoxDecoration(
+          color: SahelColors.surface,
+          borderRadius: _radius,
+          boxShadow: _isDisabled ? null : SahelElevations.xs,
+        );
       case SahelButtonVariant.filled:
-        return Colors.white;
+        return BoxDecoration(
+          color: _isDisabled ? SahelColors.slate300 : SahelColors.primary,
+          borderRadius: _radius,
+          boxShadow: _isDisabled ? null : SahelElevations.xs,
+        );
     }
   }
 
-  Widget _buildContent(TextStyle textStyle) {
+  Widget _content() {
     if (loading) {
       return SizedBox(
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: _textColor,
+          color: _foreground,
         ),
       );
     }
@@ -242,105 +324,44 @@ class SahelButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (prefixIcon != null) ...[
-          Icon(prefixIcon, size: 18, color: _textColor),
+          Icon(prefixIcon, size: 18, color: _foreground),
           const SizedBox(width: 8),
         ],
-        Text(label, style: textStyle),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _foreground,
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildGradient(bool isDisabled, TextStyle textStyle) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D9488), Color(0xFF14B8A6), Color(0xFF2DD4BF)],
-        ),
-        borderRadius: BorderRadius.circular(SahelRadii.sm),
-        boxShadow: isDisabled ? null : SahelElevations.glow,
-      ),
-      child: ElevatedButton(
-        onPressed: isDisabled ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          disabledBackgroundColor: SahelColors.slate300,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(SahelRadii.sm),
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: _decoration(),
+          child: InkWell(
+            onTap: _isDisabled ? null : onPressed,
+            borderRadius: _radius,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Center(child: _content()),
+            ),
           ),
-          minimumSize: Size.zero,
         ),
-        child: _buildContent(textStyle),
       ),
-    );
-  }
-
-  Widget _buildSolid(bool isDisabled, TextStyle textStyle, Color bg, Color fg) {
-    return ElevatedButton(
-      onPressed: isDisabled ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isDisabled ? SahelColors.slate300 : bg,
-        foregroundColor: fg,
-        disabledForegroundColor: Colors.white70,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SahelRadii.sm),
-        ),
-        elevation: 0,
-        minimumSize: Size.zero,
-      ),
-      child: _buildContent(textStyle),
-    );
-  }
-
-  Widget _buildSoft(bool isDisabled, TextStyle textStyle) {
-    return ElevatedButton(
-      onPressed: isDisabled ? null : onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: SahelColors.primary50,
-        foregroundColor: SahelColors.primary700,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SahelRadii.sm),
-          side: const BorderSide(color: SahelColors.primary100, width: 1),
-        ),
-        elevation: 0,
-        minimumSize: Size.zero,
-      ),
-      child: _buildContent(textStyle),
-    );
-  }
-
-  Widget _buildOutline(bool isDisabled, TextStyle textStyle) {
-    return OutlinedButton(
-      onPressed: isDisabled ? null : onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: SahelColors.primary700,
-        side: const BorderSide(color: SahelColors.primary500, width: 1),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SahelRadii.sm),
-        ),
-        minimumSize: Size.zero,
-      ),
-      child: _buildContent(textStyle),
-    );
-  }
-
-  Widget _buildGhost(bool isDisabled, TextStyle textStyle) {
-    return TextButton(
-      onPressed: isDisabled ? null : onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: SahelColors.primary700,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(SahelRadii.sm),
-        ),
-        minimumSize: Size.zero,
-      ),
-      child: _buildContent(textStyle),
     );
   }
 }
-

@@ -42,6 +42,10 @@ class SecureStorage {
     await _storage.write(key: _userKey, value: jsonEncode(user));
   }
 
+  Future<void> deleteUser() async {
+    await _storage.delete(key: _userKey);
+  }
+
   Future<void> deleteAll() async {
     await _storage.deleteAll();
   }

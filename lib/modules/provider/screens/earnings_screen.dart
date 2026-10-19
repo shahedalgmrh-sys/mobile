@@ -41,8 +41,7 @@ class EarningsScreen extends ConsumerWidget {
                 data: (w) => Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF0D9488), Color(0xFF14B8A6)]),
+                    gradient: SahelColors.primaryGradient,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(

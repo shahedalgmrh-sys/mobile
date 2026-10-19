@@ -12,7 +12,9 @@ import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.initialCategory});
+
+  final String? initialCategory;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -22,10 +24,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _controller = TextEditingController();
   Timer? _debounce;
   String _query = '';
-  int? _categoryId;
+  String? _categoryId;
   RangeValues _priceRange = const RangeValues(200, 800);
   bool _ratingFilter = false;
-  int? _cityId;
+  String? _cityId;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryId = widget.initialCategory;
+  }
 
   @override
   void dispose() {
@@ -106,14 +114,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     ),
                     child: DropdownButtonHideUnderline(
-                      child: DropdownButton<int>(
+                      child: DropdownButton<String>(
                         isExpanded: true,
                         value: _cityId,
                         hint: const Text('اختر المدينة'),
                         items: [
                           for (final c in cities)
-                            DropdownMenuItem<int>(
-                              value: toInt(c['id']),
+                            DropdownMenuItem<String>(
+                              value: str(c['id']),
                               child: Text(str(c['name'])),
                             ),
                         ],

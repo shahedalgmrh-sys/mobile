@@ -25,7 +25,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
   bool _sending = false;
 
-  int get _id => int.tryParse(widget.threadId) ?? 0;
+  String get _id => widget.threadId;
 
   bool get _isProvider =>
       ref.read(authNotifierProvider).role == UserRole.provider;
@@ -160,7 +160,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               border:
                   Border(top: BorderSide(color: SahelColors.slate200)),

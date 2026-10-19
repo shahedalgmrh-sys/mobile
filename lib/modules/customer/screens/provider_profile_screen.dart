@@ -22,7 +22,7 @@ class ProviderProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile =
-        ref.watch(publicProviderProfileProvider(int.tryParse(id) ?? 0));
+        ref.watch(publicProviderProfileProvider(id));
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +46,7 @@ class ProviderProfileScreen extends ConsumerWidget {
           error: (e, _) => Center(
             child: TextButton.icon(
               onPressed: () => ref.invalidate(
-                  publicProviderProfileProvider(int.tryParse(id) ?? 0)),
+                  publicProviderProfileProvider(id)),
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
             ),
@@ -60,7 +60,7 @@ class ProviderProfileScreen extends ConsumerWidget {
 
             return RefreshIndicator(
               onRefresh: () async => ref.invalidate(
-                  publicProviderProfileProvider(int.tryParse(id) ?? 0)),
+                  publicProviderProfileProvider(id)),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [

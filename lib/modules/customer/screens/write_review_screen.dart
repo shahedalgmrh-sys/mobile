@@ -33,7 +33,7 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
     setState(() => _submitting = true);
     try {
       await ref.read(customerRepositoryProvider).storeReview(
-            bookingId: int.tryParse(widget.id) ?? 0,
+            bookingId: widget.id,
             rating: _overall.round(),
             comment: _comment.text.trim().isEmpty ? null : _comment.text.trim(),
           );

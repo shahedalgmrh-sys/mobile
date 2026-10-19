@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/models/booking_status.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
+import 'package:saber_flutter/shared/widgets/sahel_auth_header.dart';
+import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({super.key});
+  const RegisterScreen({super.key, this.initialRole});
+
+  final UserRole? initialRole;
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -18,10 +24,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
-  UserRole _selectedRole = UserRole.customer;
+  late UserRole _selectedRole = widget.initialRole ?? UserRole.customer;
   bool _obscurePass = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
 
   bool _isEmail(String v) =>
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim());
@@ -46,7 +62,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg ?? 'فشل إنشاء الحساب'),
-          backgroundColor: const Color(0xFFDC2626),
+          backgroundColor: SahelColors.danger,
         ),
       );
     }
@@ -61,230 +77,253 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(elevation: 0),
+      backgroundColor: SahelColors.bg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'إنشاء حساب جديد',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'أنضم إلى ساحل واحصل على أفضل الخدمات المنزلية',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.person_outline, size: 18),
-                          SizedBox(width: 6),
-                          Text('عميل'),
-                        ],
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SahelAuthHeader(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'إنشاء حساب جديد',
+                      style: TextStyle(
+                        fontSize: 28,
+                        height: 1.3,
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.text,
                       ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'انضم إلى ساحل واحصل على أفضل الخدمات المنزلية',
+                      style: SahelTextStyles.caption,
+                    ),
+                    const SizedBox(height: 24),
+                    _RoleOption(
+                      icon: Icons.person_outline,
+                      title: 'أنا عميل',
+                      subtitle: 'أبحث عن خدمات منزلية',
                       selected: _selectedRole == UserRole.customer,
-                      selectedColor: const Color(0xFFCCFBF1),
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: _selectedRole == UserRole.customer
-                            ? const Color(0xFF0F766E)
-                            : const Color(0xFF64748B),
-                      ),
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.5),
-                        side: BorderSide(
-                          color: _selectedRole == UserRole.customer
-                              ? const Color(0xFF14B8A6)
-                              : Colors.transparent,
-                        ),
-                      ),
-                      onSelected: (_) => setState(() => _selectedRole = UserRole.customer),
+                      onTap: () =>
+                          setState(() => _selectedRole = UserRole.customer),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.build_outlined, size: 18),
-                          SizedBox(width: 6),
-                          Text('مزود خدمة'),
-                        ],
-                      ),
+                    const SizedBox(height: 12),
+                    _RoleOption(
+                      icon: Icons.build_outlined,
+                      title: 'مزود خدمة',
+                      subtitle: 'أقدّم خدماتي للعملاء',
                       selected: _selectedRole == UserRole.provider,
-                      selectedColor: const Color(0xFFCCFBF1),
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: _selectedRole == UserRole.provider
-                            ? const Color(0xFF0F766E)
-                            : const Color(0xFF64748B),
+                      onTap: () =>
+                          setState(() => _selectedRole = UserRole.provider),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _nameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'الاسم الكامل',
+                        prefixIcon: Icon(Icons.person_outline, size: 20),
                       ),
-                      backgroundColor: const Color(0xFFF1F5F9),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.5),
-                        side: BorderSide(
-                          color: _selectedRole == UserRole.provider
-                              ? const Color(0xFF14B8A6)
-                              : Colors.transparent,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'رقم الهاتف (اختياري)',
+                        prefixIcon: Icon(Icons.phone_outlined, size: 20),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'البريد الإلكتروني',
+                        prefixIcon: Icon(Icons.email_outlined, size: 20),
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePass,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'كلمة المرور',
+                        helperText: '8 أحرف على الأقل',
+                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                        suffixIcon: IconButton(
+                          tooltip: _obscurePass ? 'إظهار' : 'إخفاء',
+                          icon: Icon(
+                            _obscurePass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscurePass = !_obscurePass),
                         ),
                       ),
-                      onSelected: (_) => setState(() => _selectedRole = UserRole.provider),
+                      onChanged: (_) => setState(() {}),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'الاسم الكامل',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'رقم الهاتف',
-                  prefixIcon: Icon(Icons.phone_outlined),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'البريد الإلكتروني',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePass,
-                decoration: InputDecoration(
-                  labelText: 'كلمة المرور',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePass ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _confirmController,
+                      obscureText: _obscureConfirm,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: 'تأكيد كلمة المرور',
+                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                        suffixIcon: IconButton(
+                          tooltip: _obscureConfirm ? 'إظهار' : 'إخفاء',
+                          icon: Icon(
+                            _obscureConfirm
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm),
+                        ),
+                      ),
+                      onChanged: (_) => setState(() {}),
                     ),
-                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
-                  ),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _confirmController,
-                obscureText: _obscureConfirm,
-                decoration: InputDecoration(
-                  labelText: 'تأكيد كلمة المرور',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    const SizedBox(height: 28),
+                    SahelButton.gradient(
+                      label: 'إنشاء حساب',
+                      loading: _isLoading,
+                      height: 52,
+                      onPressed: _isValid && !_isLoading ? _register : null,
                     ),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  ),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 32),
-              Container(
-                width: double.infinity,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF14B8A6), Color(0xFF2DD4BF)],
-                  ),
-                  borderRadius: BorderRadius.circular(10.5),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x4014B8A6),
-                      blurRadius: 24,
-                      offset: Offset(0, 8),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'لديك حساب بالفعل؟',
+                          style: SahelTextStyles.caption,
+                        ),
+                        TextButton(
+                          onPressed: () => context.go('/login'),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            foregroundColor: SahelColors.primary700,
+                          ),
+                          child: const Text(
+                            'تسجيل الدخول',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                child: ElevatedButton(
-                  onPressed: _isValid && !_isLoading ? _register : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    disabledBackgroundColor: Colors.black.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.5),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'إنشاء حساب',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'لديك حساب بالفعل؟ ',
-                    style: TextStyle(color: Color(0xFF64748B)),
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/login'),
-                    child: const Text(
-                      'تسجيل الدخول',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F766E),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+class _RoleOption extends StatelessWidget {
+  const _RoleOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: SahelRadii.mdRadius,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? SahelColors.primarySurface : SahelColors.surface,
+          borderRadius: SahelRadii.mdRadius,
+          border: Border.all(
+            color: selected ? SahelColors.primary : SahelColors.border,
+            width: selected ? 1.6 : 1,
+          ),
+          boxShadow: SahelElevations.xs,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: selected
+                    ? SahelColors.primary
+                    : SahelColors.primarySurface,
+                borderRadius: SahelRadii.smRadius,
+              ),
+              child: Icon(
+                icon,
+                size: 22,
+                color: selected ? Colors.white : SahelColors.primary700,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: SahelColors.text,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: SahelColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              selected ? Icons.check_circle : Icons.circle_outlined,
+              size: 22,
+              color: selected ? SahelColors.primary : SahelColors.slate300,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
