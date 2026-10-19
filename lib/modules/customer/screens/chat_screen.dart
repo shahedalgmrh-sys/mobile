@@ -160,7 +160,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.white,
               border:
                   Border(top: BorderSide(color: SahelColors.slate200)),

@@ -59,9 +59,9 @@ class CouponsScreen extends ConsumerWidget {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
-                          leading: CircleAvatar(
+                          leading: const CircleAvatar(
                             backgroundColor: SahelColors.amberSoft,
-                            child: const Icon(Icons.local_offer,
+                            child: Icon(Icons.local_offer,
                                 color: SahelColors.amber),
                           ),
                           title: Text(label,

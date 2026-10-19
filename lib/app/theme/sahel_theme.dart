@@ -15,6 +15,75 @@ class SahelRadii {
   static BorderRadius get pillRadius => BorderRadius.circular(pill);
 }
 
+/// 8px base grid with a 4px sub-unit, mirroring the design system spacing
+/// scale so every screen shares identical rhythm.
+class SahelSpacing {
+  SahelSpacing._();
+  static const double xxs = 2;
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 32;
+  static const double xxl = 40;
+  static const double section = 40;
+  static const double screen = 16;
+
+  static const EdgeInsets screenPadding = EdgeInsets.all(screen);
+  static const EdgeInsets cardPadding = EdgeInsets.all(md);
+  static const EdgeInsets gutter = EdgeInsets.symmetric(horizontal: screen);
+}
+
+/// Named text roles from the design system. Prefer these over ad-hoc
+/// `TextStyle` instances so weight/size stay consistent across screens.
+class SahelTextStyles {
+  SahelTextStyles._();
+
+  static const TextStyle eyebrow = TextStyle(
+    fontSize: 12.5,
+    height: 1.0,
+    fontWeight: FontWeight.w700,
+    // Arabic is cursive: tracking must stay at 0 to preserve ligatures.
+    letterSpacing: 0,
+    color: SahelColors.primary700,
+  );
+
+  static const TextStyle titleCard = TextStyle(
+    fontSize: 18,
+    height: 1.38,
+    fontWeight: FontWeight.w700,
+    color: SahelColors.text,
+  );
+
+  static const TextStyle headlineSm = TextStyle(
+    fontSize: 20,
+    height: 1.4,
+    fontWeight: FontWeight.w700,
+    color: SahelColors.text,
+  );
+
+  static const TextStyle label = TextStyle(
+    fontSize: 14,
+    height: 1.3,
+    fontWeight: FontWeight.w500,
+    color: SahelColors.text,
+  );
+
+  static const TextStyle caption = TextStyle(
+    fontSize: 14,
+    height: 1.4,
+    fontWeight: FontWeight.w400,
+    color: SahelColors.textMuted,
+  );
+
+  static const TextStyle price = TextStyle(
+    fontSize: 20,
+    height: 1.2,
+    fontWeight: FontWeight.w800,
+    color: SahelColors.text,
+  );
+}
+
 class SahelElevations {
   SahelElevations._();
   static const List<BoxShadow> xs = [
@@ -37,7 +106,7 @@ class SahelElevations {
 class SahelTheme {
   SahelTheme._();
 
-  static ColorScheme get colorSchemeLight => ColorScheme.light(
+  static ColorScheme get colorSchemeLight => const ColorScheme.light(
         primary: SahelColors.primary,
         primaryContainer: SahelColors.primary100,
         secondary: SahelColors.amber,
@@ -49,11 +118,11 @@ class SahelTheme {
         onError: Color(0xFFFFFFFF),
         onPrimaryContainer: SahelColors.primary700,
         onSurfaceVariant: SahelColors.textMuted,
-        surfaceVariant: SahelColors.surface3,
+        surfaceContainerHighest: SahelColors.surface3,
         outline: SahelColors.border,
       );
 
-  static ColorScheme get colorSchemeDark => ColorScheme.dark(
+  static ColorScheme get colorSchemeDark => const ColorScheme.dark(
         primary: SahelColors.primary300,
         primaryContainer: SahelColors.primary800,
         secondary: SahelColors.amber,
@@ -65,7 +134,7 @@ class SahelTheme {
         onError: Color(0xFF0F172A),
         onPrimaryContainer: SahelColors.primary100,
         onSurfaceVariant: Color(0xFF94A3B8),
-        surfaceVariant: Color(0xFF334155),
+        surfaceContainerHighest: Color(0xFF334155),
         outline: Color(0xFF475569),
       );
 
@@ -137,7 +206,7 @@ class SahelTheme {
 
   static ButtonStyle get primaryFilled => ElevatedButton.styleFrom(
         backgroundColor: SahelColors.primary,
-        foregroundColor: Color(0xFFFFFFFF),
+        foregroundColor: const Color(0xFFFFFFFF),
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
@@ -173,7 +242,7 @@ class SahelTheme {
 
   static ButtonStyle get danger => ElevatedButton.styleFrom(
         backgroundColor: SahelColors.danger,
-        foregroundColor: Color(0xFFFFFFFF),
+        foregroundColor: const Color(0xFFFFFFFF),
         minimumSize: const Size(0, 52),
         shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
@@ -187,12 +256,12 @@ class SahelTheme {
         elevation: 0,
       );
 
-  static BadgeThemeData get badgeTheme => BadgeThemeData(
+  static BadgeThemeData get badgeTheme => const BadgeThemeData(
         backgroundColor: SahelColors.primary,
         smallSize: 8,
         largeSize: 18,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        textStyle: const TextStyle(
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        textStyle: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: Color(0xFFFFFFFF),
@@ -284,14 +353,14 @@ class SahelTheme {
         useMaterial3: true,
         colorScheme: colorSchemeDark,
         textTheme: sahelTextTheme.apply(
-          bodyColor: Color(0xFFF1F5F9),
-          displayColor: Color(0xFFF1F5F9),
+          bodyColor: const Color(0xFFF1F5F9),
+          displayColor: const Color(0xFFF1F5F9),
         ),
-        scaffoldBackgroundColor: Color(0xFF0F172A),
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: SahelColors.primary300,
-            foregroundColor: Color(0xFF0F172A),
+            foregroundColor: const Color(0xFF0F172A),
             minimumSize: const Size(0, 52),
             shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
             elevation: 0,
@@ -315,7 +384,7 @@ class SahelTheme {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Color(0xFF1E293B),
+          fillColor: const Color(0xFF1E293B),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
@@ -338,17 +407,17 @@ class SahelTheme {
           hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: Color(0xFF1E293B),
-          foregroundColor: Color(0xFFF1F5F9),
+          backgroundColor: const Color(0xFF1E293B),
+          foregroundColor: const Color(0xFFF1F5F9),
           elevation: 0,
           centerTitle: false,
           titleTextStyle: sahelTextTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Color(0xFFF1F5F9),
+            color: const Color(0xFFF1F5F9),
           ),
         ),
         cardTheme: CardThemeData(
-          color: Color(0xFF1E293B),
+          color: const Color(0xFF1E293B),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: SahelRadii.mdRadius,
@@ -362,13 +431,13 @@ class SahelTheme {
           space: 1,
         ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: Color(0xFF1E293B),
-          indicatorColor: Color(0x3314B8A6),
+          backgroundColor: const Color(0xFF1E293B),
+          indicatorColor: const Color(0x3314B8A6),
           height: 72,
           labelTextStyle: WidgetStatePropertyAll(
             sahelTextTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
+              color: const Color(0xFF94A3B8),
             ),
           ),
         ),

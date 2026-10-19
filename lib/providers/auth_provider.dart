@@ -60,7 +60,11 @@ class AuthState {
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref);
+  final notifier = AuthNotifier(ref);
+  // Whenever the API rejects the session (HTTP 401) the client clears the
+  // stored token and notifies here so the router routes back to /login.
+  ref.read(apiClientProvider).onUnauthorized = notifier.handleSessionExpired;
+  return notifier;
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -117,7 +121,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storage.writeUser(user);
       _applyUser(user, token: token);
     } catch (_) {
-      await _storage.deleteAll();
+      await _storage.deleteToken();
+      await _storage.deleteUser();
       state = const AuthState();
     }
   }
@@ -223,7 +228,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repo.logout();
     } catch (_) {}
-    await _storage.deleteAll();
+    // Keep the stable device id so headers stay consistent across sessions.
+    await _storage.deleteToken();
+    await _storage.deleteUser();
     state = const AuthState();
+  }
+
+  /// Invoked by the API client when a request is rejected with HTTP 401.
+  /// Clears the local session without calling the backend (the token is
+  /// already invalid) and lets the router redirect to the login screen.
+  void handleSessionExpired() {
+    if (!state.isAuthenticated && state.token == null) return;
+    state = const AuthState(
+      errorMessage: 'انتهت الجلسة. سجّل الدخول مجدداً.',
+    );
   }
 }

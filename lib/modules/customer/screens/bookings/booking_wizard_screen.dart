@@ -29,12 +29,6 @@ class _BookingWizardScreenState
     'أسبوعين',
     'شهرياً'
   ];
-  static const _frequencyKeys = [
-    'once',
-    'weekly',
-    'biweekly',
-    'monthly'
-  ];
   int _selectedFrequency = 0;
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
@@ -47,7 +41,6 @@ class _BookingWizardScreenState
   final _timeSlots = const ['09:00', '10:00', '12:00', '15:00', '18:00'];
   int _selectedSlot = -1;
 
-  static const _paymentKeys = ['wallet', 'card', 'cash_on_delivery'];
   static const _paymentLabels = ['محفظة', 'بطاقة', 'عند الاستلام'];
   int _selectedPayment = 0;
   bool _submitting = false;
@@ -229,7 +222,7 @@ class _BookingWizardScreenState
                           shape: BoxShape.circle,
                           color: dotColor,
                           boxShadow: isCurrent
-                              ? [BoxShadow(color: dotColor.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)]
+                              ? [BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)]
                               : null,
                         ),
                         child: Center(

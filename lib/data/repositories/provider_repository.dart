@@ -14,6 +14,13 @@ class ProviderRepository {
   Future<Map<String, dynamic>> profile() async =>
       asMap(apiData(await source.profile()));
 
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async =>
+      asMap(apiData(await source.updateProfile(data)));
+
+  Future<void> changePassword(
+          String current, String password, String confirmation) async =>
+      apiData(await source.changePassword(current, password, confirmation));
+
   Future<Map<String, dynamic>> verificationStatus() async =>
       asMap(apiData(await source.verificationStatus()));
 
@@ -35,6 +42,9 @@ class ProviderRepository {
   // Services
   Future<List<Map<String, dynamic>>> services() async =>
       dataList(apiData(await source.services()));
+
+  Future<Map<String, dynamic>> service(String id) async =>
+      asMap(apiData(await source.showService(id)));
 
   Future<Map<String, dynamic>> storeService(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeService(data)));
@@ -68,10 +78,6 @@ class ProviderRepository {
 
   Future<Map<String, dynamic>> completeBooking(String id) async =>
       asMap(apiData(await source.completeBooking(id)));
-
-  Future<Map<String, dynamic>> rescheduleBooking(String id, String date, String time,
-          {String? reason}) async =>
-      asMap(apiData(await source.rescheduleBooking(id, date, time, reason: reason)));
 
   // Availability
   Future<Map<String, dynamic>> availability() async =>

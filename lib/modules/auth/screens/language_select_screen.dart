@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
+import 'package:saber_flutter/shared/widgets/sahel_auth_header.dart';
+import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 class LanguageSelectScreen extends StatefulWidget {
   const LanguageSelectScreen({super.key});
@@ -14,106 +18,104 @@ class _LanguageSelectScreenState extends State<LanguageSelectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: SahelColors.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 40),
-              const Text(
-                'اختر اللغة',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Choose your language',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 40),
-              _langCard(
-                langCode: 'ar',
-                flag: '🇾🇪',
-                title: 'العربية',
-                subtitle: 'اليمن — ريال يمني · صنعاء',
-                selected: _selectedLang == 'ar',
-              ),
-              const SizedBox(height: 16),
-              _langCard(
-                langCode: 'en',
-                flag: '🇸🇦',
-                title: 'English',
-                subtitle: 'KSA — SAR · Riyadh',
-                selected: _selectedLang == 'en',
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _selectedLang == null
-                      ? null
-                      : () => context.go('/login'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D9488),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.5),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SahelAuthHeader(showBack: false),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'اختر اللغة',
+                      style: TextStyle(
+                        fontSize: 28,
+                        height: 1.3,
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.text,
+                      ),
                     ),
-                    textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Choose your language',
+                      style: SahelTextStyles.caption,
                     ),
-                  ),
-                  child: const Text('تأكيد / Confirm'),
+                    const SizedBox(height: 28),
+                    _LanguageCard(
+                      flag: '🇾🇪',
+                      title: 'العربية',
+                      subtitle: 'اليمن — ريال يمني · صنعاء',
+                      selected: _selectedLang == 'ar',
+                      onTap: () => setState(() => _selectedLang = 'ar'),
+                    ),
+                    const SizedBox(height: 14),
+                    _LanguageCard(
+                      flag: '🇸🇦',
+                      title: 'English',
+                      subtitle: 'KSA — SAR · Riyadh',
+                      selected: _selectedLang == 'en',
+                      onTap: () => setState(() => _selectedLang = 'en'),
+                    ),
+                    const Spacer(),
+                    SahelButton.gradient(
+                      label: 'تأكيد / Confirm',
+                      height: 52,
+                      onPressed: _selectedLang == null
+                          ? null
+                          : () => context.go('/login'),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _langCard({
-    required String langCode,
-    required String flag,
-    required String title,
-    required String subtitle,
-    required bool selected,
-  }) {
-    return GestureDetector(
-      onTap: () => setState(() => _selectedLang = langCode),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
+class _LanguageCard extends StatelessWidget {
+  const _LanguageCard({
+    required this.flag,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String flag;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: SahelRadii.mdRadius,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: selected ? SahelColors.primarySurface : SahelColors.surface,
+          borderRadius: SahelRadii.mdRadius,
           border: Border.all(
-            color: selected ? const Color(0xFF14B8A6) : const Color(0xFFE2E8F0),
-            width: selected ? 2 : 1,
+            color: selected ? SahelColors.primary : SahelColors.border,
+            width: selected ? 1.6 : 1,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF14B8A6).withOpacity(0.15),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          boxShadow: SahelElevations.xs,
         ),
         child: Row(
           children: [
-            Text(flag, style: const TextStyle(fontSize: 40)),
+            Text(flag, style: const TextStyle(fontSize: 38)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -122,9 +124,9 @@ class _LanguageSelectScreenState extends State<LanguageSelectScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 17,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF0F172A),
+                      color: SahelColors.text,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -132,7 +134,7 @@ class _LanguageSelectScreenState extends State<LanguageSelectScreen> {
                     subtitle,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF64748B),
+                      color: SahelColors.textMuted,
                     ),
                   ),
                 ],
@@ -143,11 +145,11 @@ class _LanguageSelectScreenState extends State<LanguageSelectScreen> {
               height: 24,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selected ? const Color(0xFF14B8A6) : Colors.transparent,
+                color: selected ? SahelColors.primary : Colors.transparent,
                 border: Border.all(
                   color: selected
-                      ? const Color(0xFF14B8A6)
-                      : const Color(0xFFCBD5E1),
+                      ? SahelColors.primary
+                      : SahelColors.borderStrong,
                   width: 2,
                 ),
               ),

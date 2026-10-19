@@ -73,7 +73,8 @@ class BookingStatusStepper extends StatelessWidget {
                             boxShadow: isCurrent
                                 ? [
                                     BoxShadow(
-                                      color: SahelColors.primary500.withOpacity(0.4),
+                                      color: SahelColors.primary500
+                                          .withValues(alpha: 0.4),
                                       blurRadius: 10,
                                       spreadRadius: 3,
                                     ),

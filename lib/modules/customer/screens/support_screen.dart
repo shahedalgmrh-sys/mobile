@@ -5,6 +5,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import '../../../shared/theme/sahel_colors.dart';
+import '../../../shared/widgets/sahel_button.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
   const SupportScreen({super.key});
@@ -73,8 +74,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    colors: [Color(0xFF0D9488), Color(0xFF14B8A6)]),
+                gradient: SahelColors.primaryGradient,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Row(
@@ -175,15 +175,11 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
             const SizedBox(height: 12),
             _sending
                 ? const Center(child: CircularProgressIndicator())
-                : ElevatedButton.icon(
+                : SahelButton.gradient(
+                    label: 'إرسال',
+                    icon: Icons.send,
+                    height: 48,
                     onPressed: _send,
-                    icon: const Icon(Icons.send),
-                    label: const Text('إرسال'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      backgroundColor: SahelColors.primary600,
-                      foregroundColor: Colors.white,
-                    ),
                   ),
           ],
         ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import '../../../shared/widgets/sahel_bottom_nav_item.dart';
 
 class CustomerShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
@@ -10,36 +10,38 @@ class CustomerShell extends StatelessWidget {
     required this.navigationShell,
   });
 
-  static const _items = [
-    (icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
-    (icon: Icons.search_outlined, activeIcon: Icons.search, label: 'البحث'),
-    (icon: Icons.calendar_month_outlined, activeIcon: Icons.calendar_month, label: 'الحجوزات'),
-    (icon: Icons.chat_bubble_outline, activeIcon: Icons.chat_bubble, label: 'الرسائل'),
-    (icon: Icons.person_outline, activeIcon: Icons.person, label: 'الملف الشخصي'),
+  static const _destinations = [
+    SahelNavDestination(
+        icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
+    SahelNavDestination(
+        icon: Icons.search_outlined, activeIcon: Icons.search, label: 'البحث'),
+    SahelNavDestination(
+        icon: Icons.calendar_month_outlined,
+        activeIcon: Icons.calendar_month,
+        label: 'الحجوزات'),
+    SahelNavDestination(
+        icon: Icons.chat_bubble_outline,
+        activeIcon: Icons.chat_bubble,
+        label: 'الرسائل'),
+    SahelNavDestination(
+        icon: Icons.person_outline, activeIcon: Icons.person, label: 'حسابي'),
   ];
 
   void _tap(int idx) {
-    if (idx == 0) navigationShell.goBranch(0, initialLocation: idx == navigationShell.currentIndex);
-    if (idx == 1) navigationShell.goBranch(1, initialLocation: idx == navigationShell.currentIndex);
-    if (idx == 2) navigationShell.goBranch(2, initialLocation: idx == navigationShell.currentIndex);
-    if (idx == 3) navigationShell.goBranch(3, initialLocation: idx == navigationShell.currentIndex);
-    if (idx == 4) navigationShell.goBranch(4, initialLocation: idx == navigationShell.currentIndex);
+    navigationShell.goBranch(
+      idx,
+      initialLocation: idx == navigationShell.currentIndex,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: SahelBottomNavBar(
         currentIndex: navigationShell.currentIndex,
         onTap: _tap,
-        items: _items
-            .map((e) => BottomNavigationBarItem(
-                  icon: Icon(e.icon),
-                  activeIcon: Icon(e.activeIcon, color: SahelColors.primary600),
-                  label: e.label,
-                ))
-            .toList(),
+        destinations: _destinations,
       ),
     );
   }

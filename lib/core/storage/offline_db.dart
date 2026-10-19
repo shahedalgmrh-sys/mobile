@@ -71,14 +71,14 @@ class SyncQueue extends Table {
   IntColumn get statusIndex => integer().withDefault(const Constant(0))();
 }
 
-@DriftDatabase(tables: const [
+@DriftDatabase(tables: [
   CachedBookings,
   CachedServices,
   CachedProviders,
   SyncQueue,
 ])
 class OfflineDb extends _$OfflineDb {
-  OfflineDb(QueryExecutor e) : super(e);
+  OfflineDb(super.e);
 
   @override
   int get schemaVersion => 1;

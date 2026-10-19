@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/empty_state.dart';
@@ -90,7 +91,7 @@ class MessagesListScreen extends ConsumerWidget {
                           Text(
                             at.length > 10 ? at.substring(0, 10) : at,
                             style: const TextStyle(
-                                fontSize: 11, color: Color(0xFF64748B)),
+                                fontSize: 11, color: SahelColors.textMuted),
                           ),
                         if (unread > 0)
                           Container(
@@ -98,7 +99,7 @@ class MessagesListScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0D9488),
+                              color: SahelColors.primary,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(

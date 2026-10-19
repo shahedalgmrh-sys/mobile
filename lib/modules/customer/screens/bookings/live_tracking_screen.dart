@@ -155,7 +155,7 @@ class _TrackingBody extends ConsumerWidget {
           bottom: 16,
           child: Card(
             elevation: 24,
-            shadowColor: SahelColors.text.withOpacity(0.2),
+            shadowColor: SahelColors.text.withValues(alpha: 0.2),
             margin: EdgeInsets.zero,
             shape:
                 RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),

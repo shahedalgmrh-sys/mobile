@@ -30,11 +30,13 @@ class ApiEndpoints {
   // --- Customer (/customer) ---
   static const String customerMe = '/customer/me';
   static const String customerPassword = '/customer/me/password';
+  static const String customerAvatar = '/customer/me/avatar';
   static const String customerPreferences = '/customer/me/preferences';
   static const String customerAddresses = '/customer/addresses';
   static String customerAddress(String id) => '/customer/addresses/$id';
 
   static const String customerBookings = '/customer/bookings';
+  static const String bookingAvailableSlots = '/customer/bookings/available-slots';
   static String customerBooking(String id) => '/customer/bookings/$id';
   static String bookingTrack(String id) => '/customer/bookings/$id/track';
   static String bookingCancel(String id) => '/customer/bookings/$id/cancel';
@@ -43,11 +45,14 @@ class ApiEndpoints {
   static String bookingPay(String id) => '/customer/bookings/$id/pay';
 
   static const String customerPayments = '/customer/payments';
+  static String payment(String id) => '/customer/payments/$id';
   static String paymentInvoice(String id) => '/customer/payments/$id/invoice';
 
   static const String customerWallet = '/customer/wallet';
   static const String walletTransactions = '/customer/wallet/transactions';
   static const String walletAddFunds = '/customer/wallet/add-funds';
+  static String walletConfirmPayment(String paymentId) =>
+      '/customer/wallet/confirm-payment/$paymentId';
 
   static const String customerFavorites = '/customer/favorites';
   static const String favoriteToggle = '/customer/favorites/toggle';
@@ -73,6 +78,7 @@ class ApiEndpoints {
   // --- Provider (/provider) ---
   static const String providerDashboard = '/provider/dashboard';
   static const String providerProfileMe = '/provider/profile';
+  static const String providerPassword = '/provider/profile/password';
   static const String providerVerificationStatus = '/provider/verification-status';
   static const String providerVerification = '/provider/verification';
 
@@ -88,7 +94,6 @@ class ApiEndpoints {
   static String bookingStart(String id) => '/provider/bookings/$id/start';
   static String bookingComplete(String id) => '/provider/bookings/$id/complete';
   static String providerBookingCancel(String id) => '/provider/bookings/$id/cancel';
-  static String providerBookingReschedule(String id) => '/provider/bookings/$id/reschedule';
 
   static const String providerAvailability = '/provider/availability';
   static const String workingHours = '/provider/availability/working-hours';

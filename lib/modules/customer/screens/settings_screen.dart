@@ -222,7 +222,7 @@ class SettingsScreen extends ConsumerWidget {
                   const TextStyle(color: SahelColors.muted, fontSize: 12)),
       trailing: const Icon(Icons.chevron_right, color: SahelColors.muted),
       shape:
-          Border(bottom: BorderSide(color: SahelColors.slate100, width: 1)),
+          const Border(bottom: BorderSide(color: SahelColors.slate100, width: 1)),
     );
   }
 }

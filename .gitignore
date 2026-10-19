@@ -60,3 +60,6 @@ app.*.map.json
 *.lnk
 screen_*.png
 analyze_*.txt
+
+# Stitch design reference (kept locally, not part of the app source)
+stitch_saber_design_system_guide*/

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
+import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 /// Stitch "رحلة التهيئة واختيار الدور" — 5-step onboarding journey:
 /// welcome → smart discovery → direct chat → live tracking → role selection.
@@ -142,27 +144,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         : (_step == 0 ? 'ابدأ الآن' : 'التالي');
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: SizedBox(
-        width: double.infinity,
+      child: SahelButton.gradient(
+        label: label,
         height: 56,
-        child: ElevatedButton.icon(
-          onPressed: _canProceed ? _next : null,
-          iconAlignment: IconAlignment.end,
-          icon: const Icon(Icons.arrow_forward, size: 20),
-          label: Text(
-            label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: SahelColors.primary600,
-            disabledBackgroundColor: SahelColors.slate200,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-          ),
-        ),
+        prefixIcon: Icons.arrow_forward,
+        onPressed: _canProceed ? _next : null,
       ),
     );
   }
@@ -190,7 +176,7 @@ class _WelcomeStep extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(30),
-                  boxShadow: SahelElevationsGlow.shadow,
+                  boxShadow: SahelElevations.glow,
                 ),
                 child: Center(
                   child: Container(
@@ -298,38 +284,38 @@ class _DiscoverStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          const SizedBox(height: 24),
-          const _StepIcon(icon: Icons.explore, color: SahelColors.primary),
-          const SizedBox(height: 18),
-          const _StepTitle('اكتشف بكل راحة'),
-          const SizedBox(height: 20),
+          SizedBox(height: 24),
+          _StepIcon(icon: Icons.explore, color: SahelColors.primary),
+          SizedBox(height: 18),
+          _StepTitle('اكتشف بكل راحة'),
+          SizedBox(height: 20),
           _MockCard(
             child: Column(
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.search, color: SahelColors.textMuted),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    Icon(Icons.search, color: SahelColors.textMuted),
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text('ابحث عن صيانة تكييف، سباكة…',
                           style: TextStyle(
                               color: SahelColors.textSoft, fontSize: 13)),
                     ),
-                    const Icon(Icons.location_on,
+                    Icon(Icons.location_on,
                         size: 16, color: SahelColors.primary),
-                    const Text('الرياض',
+                    Text('الرياض',
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: SahelColors.primary700)),
                   ],
                 ),
-                const Divider(height: 24),
-                const Wrap(
+                Divider(height: 24),
+                Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
@@ -342,12 +328,12 @@ class _DiscoverStep extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const _FeatureLine(
+          SizedBox(height: 20),
+          _FeatureLine(
             icon: Icons.location_on,
             text: 'تصفح ذكي وبحث فوري في الرياض وجميع مدن المملكة.',
           ),
-          const _FeatureLine(
+          _FeatureLine(
             icon: Icons.loyalty,
             text: 'عروض وباقات حصرية بأسعار تنافسية ومحددة مسبقاً.',
           ),
@@ -377,16 +363,16 @@ class _ChatStep extends StatelessWidget {
           _MockCard(
             child: Column(
               children: [
-                Row(
+                const Row(
                   children: [
                     CircleAvatar(
                       radius: 22,
                       backgroundColor: SahelColors.primary100,
-                      child: const Icon(Icons.engineering,
+                      child: Icon(Icons.engineering,
                           color: SahelColors.primary700),
                     ),
-                    const SizedBox(width: 10),
-                    const Column(
+                    SizedBox(width: 10),
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -615,14 +601,8 @@ class _TrustChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: SahelColors.slate200),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
+        border: Border.all(color: SahelColors.border),
+        boxShadow: SahelElevations.xs,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -652,14 +632,8 @@ class _StepIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: SahelColors.slate200),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x140F172A),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: SahelColors.border),
+        boxShadow: SahelElevations.md,
       ),
       child: Icon(icon, size: 36, color: color),
     );
@@ -730,14 +704,8 @@ class _MockCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: SahelColors.slate200),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 12,
-            offset: Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: SahelColors.border),
+        boxShadow: SahelElevations.sm,
       ),
       child: child,
     );
@@ -849,7 +817,7 @@ class _RoleCard extends StatelessWidget {
             BoxShadow(
               color: selected
                   ? SahelColors.primary.withValues(alpha: 0.15)
-                  : const Color(0x0A0F172A),
+                  : SahelColors.shadowSm,
               blurRadius: selected ? 20 : 8,
               offset: const Offset(0, 4),
             ),
@@ -920,15 +888,4 @@ class _RoleCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Teal glow for the welcome logo card.
-class SahelElevationsGlow {
-  static const List<BoxShadow> shadow = [
-    BoxShadow(
-      color: Color(0x330D9488),
-      blurRadius: 32,
-      offset: Offset(0, 10),
-    ),
-  ];
 }

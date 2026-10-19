@@ -103,7 +103,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isUnread
-                          ? SahelColors.primary50.withOpacity(0.5)
+                          ? SahelColors.primary50.withValues(alpha: 0.5)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: SahelColors.slate200),
@@ -113,7 +113,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
                       children: [
                         CircleAvatar(
                             radius: 20,
-                            backgroundColor: color.withOpacity(0.12),
+                            backgroundColor: color.withValues(alpha: 0.12),
                             child: Icon(icon, color: color)),
                         const SizedBox(width: 12),
                         Expanded(

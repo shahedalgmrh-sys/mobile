@@ -36,24 +36,18 @@ class ShimmerServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 210,
+    return const SizedBox(
+      height: 280,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ShimmerCard(height: 140),
-          const SizedBox(height: 12),
-          Row(
-            children: const [
-              ShimmerCard(width: 180, height: 14, radius: 7),
-              Spacer(),
-              ShimmerCard(width: 60, height: 14, radius: 7),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const ShimmerCard(width: 140, height: 12, radius: 6),
-          const SizedBox(height: 16),
-          const ShimmerCard(width: double.infinity, height: 38, radius: 10.5),
+          ShimmerCard(height: 176, radius: 16),
+          SizedBox(height: 12),
+          ShimmerCard(width: 180, height: 14, radius: 7),
+          SizedBox(height: 8),
+          ShimmerCard(width: 140, height: 12, radius: 6),
+          SizedBox(height: 12),
+          ShimmerCard(width: double.infinity, height: 40, radius: 12),
         ],
       ),
     );

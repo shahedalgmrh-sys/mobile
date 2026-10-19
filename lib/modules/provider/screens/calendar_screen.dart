@@ -134,7 +134,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           fontWeight: FontWeight.w700, color: fg)),
                   Text(str(customerUser['name'] ?? customer['name']),
                       style: TextStyle(
-                          color: fg.withOpacity(0.7), fontSize: 12)),
+                          color: fg.withValues(alpha: 0.7), fontSize: 12)),
                 ],
               ),
             ),

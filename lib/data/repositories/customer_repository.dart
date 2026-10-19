@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../sources/remote_sources.dart';
 import 'parsers.dart';
 
@@ -12,6 +14,16 @@ class CustomerRepository {
 
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateMe(data)));
+
+  Future<Map<String, dynamic>> updateAvatar(String filePath) async {
+    final file = await MultipartFile.fromFile(
+      filePath,
+      filename: filePath.split(RegExp(r'[\\/]')).last,
+    );
+    return asMap(apiData(await source.updateAvatar(file)));
+  }
+
+  Future<void> deleteAvatar() async => apiData(await source.deleteAvatar());
 
   Future<void> changePassword(
           String current, String password, String confirmation) async =>
@@ -42,6 +54,18 @@ class CustomerRepository {
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async =>
       asMap(apiData(await source.createBooking(data)));
 
+  /// Time slots available for a given service on a specific date.
+  Future<List<Map<String, dynamic>>> availableSlots({
+    String? serviceId,
+    String? service,
+    required String date,
+  }) async =>
+      dataList(apiData(await source.availableSlots(
+        serviceId: serviceId,
+        service: service,
+        date: date,
+      )));
+
   Future<Map<String, dynamic>> booking(String id) async =>
       asMap(apiData(await source.showBooking(id)));
 
@@ -68,6 +92,9 @@ class CustomerRepository {
   Future<Map<String, dynamic>> invoice(String paymentId) async =>
       asMap(apiData(await source.invoice(paymentId)));
 
+  Future<Map<String, dynamic>> payment(String paymentId) async =>
+      asMap(apiData(await source.payment(paymentId)));
+
   // Wallet
   Future<Map<String, dynamic>> wallet() async =>
       asMap(apiData(await source.wallet()));
@@ -77,6 +104,9 @@ class CustomerRepository {
 
   Future<Map<String, dynamic>> addFunds(double amount, String method) async =>
       asMap(apiData(await source.addFunds(amount, method)));
+
+  Future<Map<String, dynamic>> confirmWalletPayment(String paymentId) async =>
+      asMap(apiData(await source.confirmWalletPayment(paymentId)));
 
   // Favorites
   Future<Map<String, dynamic>> favorites() async =>
@@ -149,4 +179,7 @@ class CustomerRepository {
 
   Future<Map<String, dynamic>> search(String q, {Map<String, dynamic>? filters}) async =>
       asMap(apiData(await source.search(q, filters: filters)));
+
+  Future<Map<String, dynamic>> reports(String type) async =>
+      asMap(apiData(await source.reports(type)));
 }

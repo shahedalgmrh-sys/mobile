@@ -7,6 +7,7 @@ import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
 import '../../../shared/theme/sahel_colors.dart';
+import '../../../shared/theme/sahel_theme.dart';
 import '../../../models/booking_status.dart';
 
 class BookingRequestsFeedScreen extends ConsumerWidget {
@@ -133,15 +134,10 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SahelColors.slate200),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x0A0F172A),
-              blurRadius: 8,
-              offset: Offset(0, 2))
-        ],
+        border: Border.all(color: SahelColors.border),
+        boxShadow: SahelElevations.sm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
