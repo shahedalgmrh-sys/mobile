@@ -23,10 +23,7 @@
 
 > Flutter يأتي معه Dart — لا تحتاج تثبيت Dart منفصلاً.
 
-بعد تثبيت Flutter: فك الضغط في `C:\flutter-sdk\flutter` وأضف `C:\flutter-sdk\flutter\bin` إلى PATH، ثم افتح طرفية جديدة:
-
-```bash
-flutter doctor
+بعد تثبيت Flutter: فك الضغط في `C:\flutter-sdk\flutter` وأضف `C:\flutter-sdk\flutter\bin` إلى PATH، ثم افتح طرفية ج
 flutter doctor --android-licenses
 ```
 
