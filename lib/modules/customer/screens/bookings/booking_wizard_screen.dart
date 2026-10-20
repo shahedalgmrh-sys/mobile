@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
@@ -18,17 +20,11 @@ class BookingWizardScreen extends ConsumerStatefulWidget {
       _BookingWizardScreenState();
 }
 
-class _BookingWizardScreenState
-    extends ConsumerState<BookingWizardScreen> {
+class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   final PageController _pageController = PageController();
   int _step = 0;
 
-  final _frequencies = const [
-    'مرة واحدة',
-    'أسبوعياً',
-    'أسبوعين',
-    'شهرياً'
-  ];
+  final _frequencies = const ['مرة واحدة', 'أسبوعياً', 'أسبوعين', 'شهرياً'];
   int _selectedFrequency = 0;
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
@@ -36,19 +32,25 @@ class _BookingWizardScreenState
   String? _selectedAddressId;
 
   int _selectedDate = 0;
-  final _dates =
-      List.generate(14, (i) => DateTime.now().add(Duration(days: i)));
-  final _timeSlots = const ['09:00', '10:00', '12:00', '15:00', '18:00'];
-  int _selectedSlot = -1;
+  final _dates = List.generate(
+    14,
+    (i) => DateTime.now().add(Duration(days: i)),
+  );
+
+  List<Map<String, dynamic>> _slots = const [];
+  bool _loadingSlots = false;
+  String? _slotError;
+  String? _selectedSlotTime;
 
   static const _paymentLabels = ['محفظة', 'بطاقة', 'عند الاستلام'];
   int _selectedPayment = 0;
   bool _submitting = false;
 
   Service? get _service {
-    final list = ref
-        .read(servicesProvider((q: null, categoryId: null, sort: null))
-            .select((v) => v.valueOrNull));
+    final list = ref.read(
+      servicesProvider((q: null, categoryId: null, sort: null))
+          .select((v) => v.valueOrNull),
+    );
     if (list == null || widget.serviceId == null) return null;
     for (final s in list) {
       if (s is Service &&
@@ -69,6 +71,73 @@ class _BookingWizardScreenState
 
   String get _currency => (_service?.currencyCode ?? 'yer').toUpperCase();
 
+  /// Real service id (numeric) — never the slug — as required by the API.
+  String? get _serviceId => _service?.id ?? widget.serviceId;
+
+  String _dateParam(int index) {
+    final d = _dates[index];
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}'
+        '-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Friendly label for the selected slot (e.g. «10:00 ص»), falling back to
+  /// the raw `H:i` value.
+  String? get _selectedSlotLabel {
+    final t = _selectedSlotTime;
+    if (t == null) return null;
+    for (final s in _slots) {
+      if (str(s['time']) == t) return str(s['label_ar'] ?? s['label'], t);
+    }
+    return t;
+  }
+
+  /// Surfaces the backend's Arabic validation/business messages instead of a
+  /// generic failure string (mirrors `AuthProvider._failureMessage`).
+  String _failureMessage(Object e, [String fallback = 'حدث خطأ غير متوقع.']) {
+    if (e is ApiException) {
+      final f = e.failure;
+      if (f is ValidationFailure) {
+        return f.errors.values.expand((l) => l).join('\n');
+      }
+      if (f is ServerFailure) return f.message;
+      if (f is NetworkFailure) return 'تعذر الاتصال بالخادم. تحقق من الشبكة.';
+      if (f is UnauthorizedFailure) return 'انتهت الجلسة. سجّل الدخول مجدداً.';
+    }
+    return fallback;
+  }
+
+  /// Loads the provider's real available slots for the selected date from
+  /// `GET /api/bookings/available-slots`.
+  Future<void> _loadSlots() async {
+    final id = _serviceId;
+    if (id == null) {
+      setState(() => _slots = const []);
+      return;
+    }
+    setState(() {
+      _loadingSlots = true;
+      _slotError = null;
+      _selectedSlotTime = null;
+    });
+    try {
+      final slots = await ref
+          .read(customerRepositoryProvider)
+          .availableSlots(serviceId: id, date: _dateParam(_selectedDate));
+      if (!mounted) return;
+      setState(() {
+        _slots = slots;
+        _loadingSlots = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _slots = const [];
+        _loadingSlots = false;
+        _slotError = _failureMessage(e, 'تعذر تحميل الأوقات المتاحة.');
+      });
+    }
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -78,28 +147,31 @@ class _BookingWizardScreenState
 
   void _next() {
     if (_step == 1 && _selectedAddressId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('اختر عنواناً أولاً')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('اختر عنواناً أولاً')));
       return;
     }
-    if (_step == 2 && _selectedSlot < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('اختر موعداً أولاً')));
+    if (_step == 2 && _selectedSlotTime == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('اختر موعداً أولاً')));
       return;
     }
     if (_step < 3) {
       _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
       setState(() => _step++);
+      if (_step == 2) _loadSlots();
     }
   }
 
   void _prev() {
     if (_step > 0) {
       _pageController.previousPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut);
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
       setState(() => _step--);
     }
   }
@@ -110,24 +182,22 @@ class _BookingWizardScreenState
     try {
       final res = await ref
           .read(customerRepositoryProvider)
-          .validateCoupon(code,
-              subtotal: _subtotal,
-              serviceId: widget.serviceId);
+          .validateCoupon(code, subtotal: _subtotal, serviceId: _serviceId);
       if (!toBool(res['valid'], true)) {
         setState(() {
           _appliedCoupon = null;
           _appliedDiscount = 0;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(dataList(res['errors'])
-                      .map((e) => str(e))
-                      .join(' ')
-                      .isEmpty
-                  ? 'كوبون غير صالح'
-                  : dataList(res['errors'])
-                      .map((e) => str(e))
-                      .join(' '))));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                dataList(res['errors']).map((e) => str(e)).join(' ').isEmpty
+                    ? 'كوبون غير صالح'
+                    : dataList(res['errors']).map((e) => str(e)).join(' '),
+              ),
+            ),
+          );
         }
         return;
       }
@@ -136,8 +206,8 @@ class _BookingWizardScreenState
         _appliedDiscount = toDouble(res['discount']);
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تطبيق الكوبون')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تم تطبيق الكوبون')));
       }
     } catch (_) {
       setState(() {
@@ -145,8 +215,8 @@ class _BookingWizardScreenState
         _appliedDiscount = 0;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('كوبون غير صالح')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('كوبون غير صالح')));
       }
     }
   }
@@ -155,17 +225,13 @@ class _BookingWizardScreenState
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      final d = _dates[_selectedDate];
-      final booking = await ref
-          .read(customerRepositoryProvider)
-          .createBooking({
-        'service_id': widget.serviceId ??
-            widget.serviceId,
+      final booking = await ref.read(customerRepositoryProvider).createBooking({
+        'service_id': _serviceId,
         'customer_address_id': _selectedAddressId,
-        'booking_date':
-            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
-        'booking_time': _timeSlots[_selectedSlot],
-        'notes': 'التكرار: ${_frequencies[_selectedFrequency]} · الدفع: ${_paymentLabels[_selectedPayment]}',
+        'booking_date': _dateParam(_selectedDate),
+        'booking_time': _selectedSlotTime,
+        'notes':
+            'التكرار: ${_frequencies[_selectedFrequency]} · الدفع: ${_paymentLabels[_selectedPayment]}',
         if (_appliedCoupon != null)
           'coupon_code': _couponController.text.trim(),
       });
@@ -177,10 +243,15 @@ class _BookingWizardScreenState
       } else {
         context.go('/bookings');
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر إنشاء الحجز')));
+          SnackBar(
+            content: Text(
+              _failureMessage(e, 'تعذر إنشاء الحجز. حاول مرة أخرى.'),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -191,7 +262,10 @@ class _BookingWizardScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('حجز خدمة جديدة', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'حجز خدمة جديدة',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
       ),
       body: Column(
@@ -222,16 +296,28 @@ class _BookingWizardScreenState
                           shape: BoxShape.circle,
                           color: dotColor,
                           boxShadow: isCurrent
-                              ? [BoxShadow(color: dotColor.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)]
+                              ? [
+                                  BoxShadow(
+                                    color: dotColor.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
                               : null,
                         ),
                         child: Center(
                           child: isDone
-                              ? const Icon(Icons.check, color: Colors.white, size: 18)
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 18,
+                                )
                               : Text(
                                   '${i + 1}',
                                   style: TextStyle(
-                                    color: isCurrent ? Colors.white : SahelColors.textMuted,
+                                    color: isCurrent
+                                        ? Colors.white
+                                        : SahelColors.textMuted,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14,
                                   ),
@@ -243,7 +329,9 @@ class _BookingWizardScreenState
                           width: 32,
                           height: 3,
                           decoration: BoxDecoration(
-                            color: i < _step ? SahelColors.primary600 : SahelColors.border,
+                            color: i < _step
+                                ? SahelColors.primary600
+                                : SahelColors.border,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -271,10 +359,7 @@ class _BookingWizardScreenState
               children: [
                 if (_step > 0)
                   Expanded(
-                    child: SahelButton.soft(
-                      label: 'السابق',
-                      onPressed: _prev,
-                    ),
+                    child: SahelButton.soft(label: 'السابق', onPressed: _prev),
                   ),
                 if (_step > 0) const SizedBox(width: 12),
                 Expanded(
@@ -317,32 +402,43 @@ class _BookingWizardScreenState
                     gradient: SahelColors.primaryGradient,
                     borderRadius: SahelRadii.mdRadius,
                   ),
-                  child: const Icon(Icons.cleaning_services, color: Colors.white, size: 32),
+                  child: const Icon(
+                    Icons.cleaning_services,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_service?.titleAr ?? 'الخدمة المختارة',
-                          style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800)),
+                      Text(
+                        _service?.titleAr ?? 'الخدمة المختارة',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         _service?.durationMinutes != null
                             ? 'المدة المتوقعة: ${(_service!.durationMinutes! / 60).toStringAsFixed(1)} ساعة'
                             : '',
                         style: const TextStyle(
-                            fontSize: 12, color: SahelColors.textMuted),
+                          fontSize: 12,
+                          color: SahelColors.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                          '${_subtotal.toStringAsFixed(0)} $_currency',
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: SahelColors.primary700)),
+                        '${_subtotal.toStringAsFixed(0)} $_currency',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: SahelColors.primary700,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -351,7 +447,10 @@ class _BookingWizardScreenState
           ),
         ),
         const SizedBox(height: 20),
-        const Text('تكرار الخدمة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'تكرار الخدمة',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -359,17 +458,31 @@ class _BookingWizardScreenState
           children: List.generate(_frequencies.length, (i) {
             final selected = _selectedFrequency == i;
             return ChoiceChip(
-              label: Text(_frequencies[i], style: TextStyle(fontWeight: FontWeight.w700, color: selected ? Colors.white : SahelColors.text)),
+              label: Text(
+                _frequencies[i],
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : SahelColors.text,
+                ),
+              ),
               selected: selected,
               selectedColor: SahelColors.primary600,
               backgroundColor: SahelColors.surface2,
-              shape: RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius, side: BorderSide(color: selected ? SahelColors.primary600 : SahelColors.border)),
+              shape: RoundedRectangleBorder(
+                borderRadius: SahelRadii.pillRadius,
+                side: BorderSide(
+                  color: selected ? SahelColors.primary600 : SahelColors.border,
+                ),
+              ),
               onSelected: (_) => setState(() => _selectedFrequency = i),
             );
           }),
         ),
         const SizedBox(height: 24),
-        const Text('كوبون الخصم', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'كوبون الخصم',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         Container(
           height: 50,
@@ -394,10 +507,11 @@ class _BookingWizardScreenState
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: SahelButton.soft(
-                    label: 'تطبيق',
-                    height: 42,
-                    width: 90,
-                    onTap: _applyCoupon),
+                  label: 'تطبيق',
+                  height: 42,
+                  width: 90,
+                  onTap: _applyCoupon,
+                ),
               ),
             ],
           ),
@@ -406,7 +520,10 @@ class _BookingWizardScreenState
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(color: SahelColors.successSoft, borderRadius: SahelRadii.mdRadius),
+            decoration: BoxDecoration(
+              color: SahelColors.successSoft,
+              borderRadius: SahelRadii.mdRadius,
+            ),
             child: Row(
               children: [
                 const Icon(Icons.check_circle, color: SahelColors.success),
@@ -414,12 +531,20 @@ class _BookingWizardScreenState
                 const Expanded(
                   child: Text(
                     'تم تطبيق الخصم بنجاح (15%)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: SahelColors.success),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: SahelColors.success,
+                    ),
                   ),
                 ),
                 Text(
                   '-${_discount.toStringAsFixed(0)} $_currency',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: SahelColors.success),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: SahelColors.success,
+                  ),
                 ),
               ],
             ),
@@ -434,7 +559,10 @@ class _BookingWizardScreenState
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const Text('اختر عنوان التوصيل', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'اختر عنوان التوصيل',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         addresses.when(
           loading: () => const Padding(
@@ -443,22 +571,26 @@ class _BookingWizardScreenState
           ),
           error: (e, _) => const Padding(
             padding: EdgeInsets.all(16),
-            child: Text('تعذر تحميل العناوين',
-                style: TextStyle(color: SahelColors.textMuted)),
+            child: Text(
+              'تعذر تحميل العناوين',
+              style: TextStyle(color: SahelColors.textMuted),
+            ),
           ),
           data: (items) {
             if (items.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.all(16),
                 child: Text(
-                    'لا توجد عناوين محفوظة — أضف عنواناً جديداً',
-                    style: TextStyle(color: SahelColors.textMuted)),
+                  'لا توجد عناوين محفوظة — أضف عنواناً جديداً',
+                  style: TextStyle(color: SahelColors.textMuted),
+                ),
               );
             }
-            _selectedAddressId ??= items
-                .where((a) => toBool(a['is_default'] ?? a['is_primary']))
-                .map((a) => str(a['id']))
-                .firstOrNull ??
+            _selectedAddressId ??=
+                items
+                    .where((a) => toBool(a['is_default'] ?? a['is_primary']))
+                    .map((a) => str(a['id']))
+                    .firstOrNull ??
                 str(items.first['id']);
             return Column(
               children: [
@@ -466,11 +598,10 @@ class _BookingWizardScreenState
                   _addressTile(
                     id: str(a['id']),
                     label: str(a['label'] ?? a['title'], 'عنوان'),
-                    body: str(a['full_address'] ??
-                        a['address'] ??
-                        a['address_line']),
-                    isDefault:
-                        toBool(a['is_default'] ?? a['is_primary']),
+                    body: str(
+                      a['full_address'] ?? a['address'] ?? a['address_line'],
+                    ),
+                    isDefault: toBool(a['is_default'] ?? a['is_primary']),
                   ),
               ],
             );
@@ -481,11 +612,23 @@ class _BookingWizardScreenState
           onPressed: () => context.push('/addresses'),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(50),
-            side: const BorderSide(color: SahelColors.primary600, style: BorderStyle.solid),
+            side: const BorderSide(
+              color: SahelColors.primary600,
+              style: BorderStyle.solid,
+            ),
             shape: RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
           ),
-          icon: const Icon(Icons.add_location_alt_outlined, color: SahelColors.primary600),
-          label: const Text('إضافة عنوان جديد', style: TextStyle(fontWeight: FontWeight.w700, color: SahelColors.primary700)),
+          icon: const Icon(
+            Icons.add_location_alt_outlined,
+            color: SahelColors.primary600,
+          ),
+          label: const Text(
+            'إضافة عنوان جديد',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: SahelColors.primary700,
+            ),
+          ),
         ),
       ],
     );
@@ -507,7 +650,9 @@ class _BookingWizardScreenState
           decoration: BoxDecoration(
             borderRadius: SahelRadii.mdRadius,
             color: selected ? SahelColors.primary50 : SahelColors.surface2,
-            border: Border.all(color: selected ? SahelColors.primary600 : SahelColors.border),
+            border: Border.all(
+              color: selected ? SahelColors.primary600 : SahelColors.border,
+            ),
           ),
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -516,10 +661,16 @@ class _BookingWizardScreenState
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: selected ? SahelColors.primary600 : SahelColors.surface,
+                  color: selected
+                      ? SahelColors.primary600
+                      : SahelColors.surface,
                   borderRadius: SahelRadii.smRadius,
                 ),
-                child: Icon(Icons.location_on, color: selected ? Colors.white : SahelColors.primary600, size: 22),
+                child: Icon(
+                  Icons.location_on,
+                  color: selected ? Colors.white : SahelColors.primary600,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -528,18 +679,43 @@ class _BookingWizardScreenState
                   children: [
                     Row(
                       children: [
-                        Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         if (isDefault)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(color: SahelColors.primary100, borderRadius: SahelRadii.pillRadius),
-                            child: const Text('افتراضي', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: SahelColors.primary700)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: SahelColors.primary100,
+                              borderRadius: SahelRadii.pillRadius,
+                            ),
+                            child: const Text(
+                              'افتراضي',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: SahelColors.primary700,
+                              ),
+                            ),
                           ),
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Text(body, style: const TextStyle(fontSize: 12, color: SahelColors.textMuted)),
+                    Text(
+                      body,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: SahelColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -558,7 +734,10 @@ class _BookingWizardScreenState
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const Text('اختر تاريخ الحجز', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'اختر تاريخ الحجز',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         SizedBox(
           height: 84,
@@ -569,24 +748,65 @@ class _BookingWizardScreenState
             itemBuilder: (ctx, i) {
               final d = _dates[i];
               final selected = _selectedDate == i;
-              final dayNames = ['أحد', 'اثن', 'ثلا', 'أربع', 'خمي', 'جمع', 'سبت'];
+              final dayNames = [
+                'أحد',
+                'اثن',
+                'ثلا',
+                'أربع',
+                'خمي',
+                'جمع',
+                'سبت',
+              ];
               return InkWell(
-                onTap: () => setState(() => _selectedDate = i),
+                onTap: () {
+                  setState(() => _selectedDate = i);
+                  _loadSlots();
+                },
                 borderRadius: SahelRadii.mdRadius,
                 child: Container(
                   width: 60,
                   decoration: BoxDecoration(
-                    color: selected ? SahelColors.primary600 : SahelColors.surface2,
+                    color: selected
+                        ? SahelColors.primary600
+                        : SahelColors.surface2,
                     borderRadius: SahelRadii.mdRadius,
-                    border: Border.all(color: selected ? SahelColors.primary600 : SahelColors.border),
+                    border: Border.all(
+                      color: selected
+                          ? SahelColors.primary600
+                          : SahelColors.border,
+                    ),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
                     children: [
-                      Text(dayNames[d.weekday % 7], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: selected ? Colors.white : SahelColors.textMuted)),
+                      Text(
+                        dayNames[d.weekday % 7],
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? Colors.white
+                              : SahelColors.textMuted,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('${d.day}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: selected ? Colors.white : SahelColors.text)),
-                      Text('${d.month}', style: TextStyle(fontSize: 10, color: selected ? Colors.white70 : SahelColors.textMuted)),
+                      Text(
+                        '${d.day}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: selected ? Colors.white : SahelColors.text,
+                        ),
+                      ),
+                      Text(
+                        '${d.month}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: selected
+                              ? Colors.white70
+                              : SahelColors.textMuted,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -594,39 +814,130 @@ class _BookingWizardScreenState
             },
           ),
         ),
-        const SizedBox(height: 24),
-        const Text('اختر الوقت', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: List.generate(_timeSlots.length, (i) {
-            final selected = _selectedSlot == i;
-            return InkWell(
-              onTap: () => setState(() => _selectedSlot = i),
+        if (_selectedSlotLabel != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: SahelColors.primarySurface,
               borderRadius: SahelRadii.mdRadius,
-              child: Container(
-                  width: 92,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.event_available,
+                  size: 18,
+                  color: SahelColors.primary700,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'الموعد المحدد: ${_selectedSlotLabel!}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: SahelColors.primary700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        const Text(
+          'اختر الوقت',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        if (_loadingSlots)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_slotError != null)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              _slotError!,
+              style: const TextStyle(color: SahelColors.textMuted),
+            ),
+          )
+        else if (_slots.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'لا توجد أوقات متاحة في هذا اليوم — اختر يوماً آخر',
+              style: TextStyle(color: SahelColors.textMuted),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: List.generate(_slots.length, (i) {
+              final slot = _slots[i];
+              final time = str(slot['time']);
+              final label = str(slot['label_ar'] ?? slot['label'], time);
+              final selected = _selectedSlotTime == time;
+              return InkWell(
+                onTap: () => setState(() => _selectedSlotTime = time),
+                borderRadius: SahelRadii.mdRadius,
+                child: Container(
+                  width: 102,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: selected ? SahelColors.primary600 : SahelColors.surface2,
+                    color: selected
+                        ? SahelColors.primary600
+                        : SahelColors.surface2,
                     borderRadius: SahelRadii.mdRadius,
-                    border: Border.all(color: selected ? SahelColors.primary600 : SahelColors.border),
+                    border: Border.all(
+                      color: selected
+                          ? SahelColors.primary600
+                          : SahelColors.border,
+                    ),
                   ),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_timeSlots[i], style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: selected ? Colors.white : SahelColors.text)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (selected) ...[
+                            const Icon(
+                              Icons.check,
+                              size: 16,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: selected ? Colors.white : SahelColors.text,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         'متاح',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: selected ? Colors.white70 : SahelColors.success),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? Colors.white70
+                              : SahelColors.success,
+                        ),
                       ),
                     ],
                   ),
                 ),
-            );
-          }),
-        ),
+              );
+            }),
+          ),
       ],
     );
   }
@@ -637,17 +948,36 @@ class _BookingWizardScreenState
         ? 'الرصيد المتاح'
         : 'الرصيد المتاح: ${str(wallet['formatted_balance'] ?? wallet['balance'])}';
     final methods = [
-      (icon: Icons.account_balance_wallet, name: 'المحفظة الرقمية', desc: walletBalance),
-      (icon: Icons.credit_card, name: 'بطاقة بنكية', desc: 'مدى / Visa / Mastercard'),
-      (icon: Icons.monetization_on, name: 'الدفع عند الاستلام', desc: 'عند إكمال الخدمة'),
+      (
+        icon: Icons.account_balance_wallet,
+        name: 'المحفظة الرقمية',
+        desc: walletBalance,
+      ),
+      (
+        icon: Icons.credit_card,
+        name: 'بطاقة بنكية',
+        desc: 'مدى / Visa / Mastercard',
+      ),
+      (
+        icon: Icons.monetization_on,
+        name: 'الدفع عند الاستلام',
+        desc: 'عند إكمال الخدمة',
+      ),
     ];
-    const label = TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: SahelColors.text);
+    const label = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: SahelColors.text,
+    );
     const muted = TextStyle(fontSize: 12, color: SahelColors.textMuted);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const Text('طريقة الدفع', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'طريقة الدفع',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         ...List.generate(methods.length, (i) {
           final m = methods[i];
@@ -660,8 +990,14 @@ class _BookingWizardScreenState
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: SahelRadii.mdRadius,
-                  color: selected ? SahelColors.primary50 : SahelColors.surface2,
-                  border: Border.all(color: selected ? SahelColors.primary600 : SahelColors.border),
+                  color: selected
+                      ? SahelColors.primary50
+                      : SahelColors.surface2,
+                  border: Border.all(
+                    color: selected
+                        ? SahelColors.primary600
+                        : SahelColors.border,
+                  ),
                 ),
                 padding: const EdgeInsets.all(14),
                 child: Row(
@@ -670,10 +1006,15 @@ class _BookingWizardScreenState
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: selected ? SahelColors.primary600 : SahelColors.surface,
+                        color: selected
+                            ? SahelColors.primary600
+                            : SahelColors.surface,
                         borderRadius: SahelRadii.smRadius,
                       ),
-                      child: Icon(m.icon, color: selected ? Colors.white : SahelColors.primary600),
+                      child: Icon(
+                        m.icon,
+                        color: selected ? Colors.white : SahelColors.primary600,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -687,8 +1028,12 @@ class _BookingWizardScreenState
                       ),
                     ),
                     Icon(
-                      selected ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: selected ? SahelColors.primary600 : SahelColors.textSoft,
+                      selected
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color: selected
+                          ? SahelColors.primary600
+                          : SahelColors.textSoft,
                     ),
                   ],
                 ),
@@ -699,35 +1044,68 @@ class _BookingWizardScreenState
         const SizedBox(height: 24),
         Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius, side: const BorderSide(color: SahelColors.border)),
+          shape: RoundedRectangleBorder(
+            borderRadius: SahelRadii.lgRadius,
+            side: const BorderSide(color: SahelColors.border),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ملخص الفاتورة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text(
+                  'ملخص الفاتورة',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 12),
                 ...[
-                  ('القيمة الأساسية', '${_subtotal.toStringAsFixed(0)} $_currency'),
+                  (
+                    'القيمة الأساسية',
+                    '${_subtotal.toStringAsFixed(0)} $_currency',
+                  ),
                   ('الخصم', '-${_discount.toStringAsFixed(0)} $_currency'),
-                  ('رسوم المنصة', '${_platformFee.toStringAsFixed(0)} $_currency'),
+                  (
+                    'رسوم المنصة',
+                    '${_platformFee.toStringAsFixed(0)} $_currency',
+                  ),
                   ('الضريبة 15%', '${_tax.toStringAsFixed(0)} $_currency'),
-                ].map((r) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Text(r.$1, style: muted),
-                          const Spacer(),
-                          Text(r.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                        ],
-                      ),
-                    )),
+                ].map(
+                  (r) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(r.$1, style: muted),
+                        const Spacer(),
+                        Text(
+                          r.$2,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const Divider(height: 24),
                 Row(
                   children: [
-                    const Text('الإجمالي', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    const Text(
+                      'الإجمالي',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const Spacer(),
-                    Text('${_total.toStringAsFixed(0)} $_currency', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: SahelColors.primary700)),
+                    Text(
+                      '${_total.toStringAsFixed(0)} $_currency',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: SahelColors.primary700,
+                      ),
+                    ),
                   ],
                 ),
               ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../models/review.dart';
 import '../theme/sahel_colors.dart';
 import '../theme/sahel_radii.dart';
@@ -7,15 +8,12 @@ import '../theme/sahel_radii.dart';
 class ReviewCard extends StatelessWidget {
   final Review r;
 
-  const ReviewCard({
-    super.key,
-    required this.r,
-  });
+  const ReviewCard({super.key, required this.r});
 
   @override
   Widget build(BuildContext context) {
     const xs = BoxShadow(
-      color: Color(0x0A0F172A),
+      color: SahelColors.shadowSm,
       blurRadius: 4,
       offset: Offset(0, 1),
     );
@@ -133,8 +131,11 @@ class ReviewCard extends StatelessWidget {
                       width: 60,
                       height: 60,
                       color: SahelColors.slate200,
-                      child:
-                          const Icon(Icons.image_not_supported, size: 20, color: SahelColors.muted),
+                      child: const Icon(
+                        Icons.image_not_supported,
+                        size: 20,
+                        color: SahelColors.muted,
+                      ),
                     ),
                   ),
                 );

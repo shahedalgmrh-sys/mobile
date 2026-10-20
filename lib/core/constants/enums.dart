@@ -98,9 +98,9 @@ extension BookingStatusX on BookingStatus {
   Color get color {
     switch (this) {
       case BookingStatus.pending:
-        return Colors.amber;
+        return SahelColors.amber;
       case BookingStatus.accepted:
-        return Colors.teal;
+        return SahelColors.primary;
       case BookingStatus.inProgress:
         return SahelColors.violet;
       case BookingStatus.paid:
@@ -110,7 +110,7 @@ extension BookingStatusX on BookingStatus {
       case BookingStatus.rejected:
         return SahelColors.rose;
       case BookingStatus.rescheduled:
-        return Colors.teal;
+        return SahelColors.primary;
       case BookingStatus.cancelled:
         return SahelColors.slate;
       case BookingStatus.refunded:
@@ -119,11 +119,7 @@ extension BookingStatusX on BookingStatus {
   }
 }
 
-enum UserRole {
-  customer,
-  provider,
-  admin,
-}
+enum UserRole { customer, provider, admin }
 
 extension UserRoleX on UserRole {
   String toJson() {
@@ -151,11 +147,7 @@ extension UserRoleX on UserRole {
   }
 }
 
-enum CurrencyCode {
-  yer,
-  sar,
-  usd,
-}
+enum CurrencyCode { yer, sar, usd }
 
 extension CurrencyCodeX on CurrencyCode {
   String toJson() {
@@ -194,10 +186,7 @@ extension CurrencyCodeX on CurrencyCode {
   }
 }
 
-enum LanguageCode {
-  ar,
-  en,
-}
+enum LanguageCode { ar, en }
 
 extension LanguageCodeX on LanguageCode {
   String toJson() {
@@ -223,10 +212,7 @@ extension LanguageCodeX on LanguageCode {
   bool get isRTL => this == LanguageCode.ar;
 }
 
-enum ReviewType {
-  clientToProvider,
-  providerToClient,
-}
+enum ReviewType { clientToProvider, providerToClient }
 
 extension ReviewTypeX on ReviewType {
   String toJson() {
@@ -250,12 +236,7 @@ extension ReviewTypeX on ReviewType {
   }
 }
 
-enum ComplaintStatus {
-  pending,
-  investigating,
-  resolved,
-  rejected,
-}
+enum ComplaintStatus { pending, investigating, resolved, rejected }
 
 extension ComplaintStatusX on ComplaintStatus {
   String toJson() {
@@ -334,11 +315,7 @@ extension WalletTransactionTypeX on WalletTransactionType {
   }
 }
 
-enum MessageStatus {
-  sent,
-  delivered,
-  read,
-}
+enum MessageStatus { sent, delivered, read }
 
 extension MessageStatusX on MessageStatus {
   String toJson() {

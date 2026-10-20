@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import '../../models/service.dart';
 import '../theme/sahel_colors.dart';
 import '../theme/sahel_theme.dart';
@@ -101,13 +102,27 @@ class ServiceCard extends StatelessWidget {
     return null;
   }
 
-  double? get _discountPercent => service?.discountPercent ??
+  double? get _discountPercent =>
+      service?.discountPercent ??
       ((_originalPrice != null && _price != null && _originalPrice! > 0)
           ? ((_originalPrice! - _price!) / _originalPrice! * 100)
           : null);
   double get _rating => (service?.ratingAvg ?? rating) ?? 4.8;
   int get _reviews => (service?.reviewsCount ?? reviews) ?? 0;
   String? get _imageUrl => service?.imageUrl;
+  String get _currencyLabel {
+    final code = (service?.currencyCode ?? 'SAR').toUpperCase();
+    switch (code) {
+      case 'YER':
+        return 'ر.ي';
+      case 'SAR':
+        return 'ر.س';
+      case 'USD':
+        return '\$';
+      default:
+        return code;
+    }
+  }
 
   String? get _duration {
     if (durationLabel != null) return durationLabel;
@@ -117,6 +132,18 @@ class ServiceCard extends StatelessWidget {
     final hours = minutes ~/ 60;
     final rest = minutes % 60;
     return rest == 0 ? '$hours ساعات' : '$hours ساعة و$rest دقيقة';
+  }
+
+  /// Card title. Inside a bounded cell it is allowed to shrink so a long
+  /// Arabic title can never overflow the card.
+  Widget _titleText(bool bounded) {
+    final text = Text(
+      _title,
+      style: SahelTextStyles.titleCard,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    return bounded ? Flexible(child: text) : text;
   }
 
   @override
@@ -137,18 +164,13 @@ class ServiceCard extends StatelessWidget {
             border: Border.all(color: SahelColors.border),
             boxShadow: SahelElevations.xs,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Media(
-                imageUrl: _imageUrl,
-                icon: icon,
-                eyebrow: eyebrow,
-                discountPercent: _discountPercent,
-                isFavorite: isFavorite,
-                onFavorite: onFavorite,
-              ),
-              Padding(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // Inside a fixed-extent grid cell the middle block is allowed to
+              // absorb the slack so the pricing ribbon stays glued to the
+              // bottom; in an unbounded list it keeps its natural height.
+              final bounded = constraints.hasBoundedHeight;
+              final middle = Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,19 +202,17 @@ class ServiceCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(Icons.verified,
-                            size: 16, color: SahelColors.success),
+                        const Icon(
+                          Icons.verified,
+                          size: 16,
+                          color: SahelColors.success,
+                        ),
                         const Spacer(),
                         _RatingPill(rating: _rating, reviews: _reviews),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      _title,
-                      style: SahelTextStyles.titleCard,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    _titleText(bounded),
                     if (_duration != null || specLabel != null) ...[
                       const SizedBox(height: 8),
                       Row(
@@ -204,20 +224,38 @@ class ServiceCard extends StatelessWidget {
                           if (specLabel != null)
                             Flexible(
                               child: _Spec(
-                                  icon: Icons.inventory_2, text: specLabel!),
+                                icon: Icons.inventory_2,
+                                text: specLabel!,
+                              ),
                             ),
                         ],
                       ),
                     ],
                   ],
                 ),
-              ),
-              _ActionRibbon(
-                price: _price ?? 0,
-                originalPrice: _originalPrice,
-                onBookNow: onBookNow ?? onTap,
-              ),
-            ],
+              );
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Media(
+                    imageUrl: _imageUrl,
+                    icon: icon,
+                    eyebrow: eyebrow,
+                    discountPercent: _discountPercent,
+                    isFavorite: isFavorite,
+                    onFavorite: onFavorite,
+                  ),
+                  if (bounded) Expanded(child: middle) else middle,
+                  _ActionRibbon(
+                    price: _price ?? 0,
+                    currencyLabel: _currencyLabel,
+                    originalPrice: _originalPrice,
+                    onBookNow: onBookNow ?? onTap,
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -267,8 +305,10 @@ class _Media extends StatelessWidget {
               bottom: 12,
               right: 12,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: SahelColors.surface.withValues(alpha: 0.92),
                   borderRadius: SahelRadii.pillRadius,
@@ -276,8 +316,11 @@ class _Media extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon ?? Icons.home_repair_service,
-                        size: 14, color: SahelColors.primary),
+                    Icon(
+                      icon ?? Icons.home_repair_service,
+                      size: 14,
+                      color: SahelColors.primary,
+                    ),
                     const SizedBox(width: 4),
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 140),
@@ -297,8 +340,10 @@ class _Media extends StatelessWidget {
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: SahelColors.red600,
                     borderRadius: SahelRadii.pillRadius,
@@ -317,10 +362,7 @@ class _Media extends StatelessWidget {
               Positioned(
                 top: 12,
                 left: 12,
-                child: _HeartButton(
-                  isFavorite: isFavorite,
-                  onTap: onFavorite,
-                ),
+                child: _HeartButton(isFavorite: isFavorite, onTap: onFavorite),
               ),
           ],
         ),
@@ -329,13 +371,13 @@ class _Media extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        color: SahelColors.surfaceInset,
-        child: Icon(
-          icon ?? Icons.home_repair_service,
-          size: 48,
-          color: SahelColors.primary200,
-        ),
-      );
+    color: SahelColors.surfaceInset,
+    child: Icon(
+      icon ?? Icons.home_repair_service,
+      size: 48,
+      color: SahelColors.primary200,
+    ),
+  );
 }
 
 class _HeartButton extends StatelessWidget {
@@ -347,7 +389,7 @@ class _HeartButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.25),
+      color: SahelColors.slate900.withValues(alpha: 0.25),
       shape: const CircleBorder(),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -438,78 +480,97 @@ class _Spec extends StatelessWidget {
 class _ActionRibbon extends StatelessWidget {
   const _ActionRibbon({
     required this.price,
+    required this.currencyLabel,
     this.originalPrice,
     this.onBookNow,
   });
 
   final double price;
+  final String currencyLabel;
   final double? originalPrice;
   final VoidCallback? onBookNow;
 
   @override
   Widget build(BuildContext context) {
     final hasOriginal = originalPrice != null && originalPrice! > price;
-    return Container(
-      decoration: const BoxDecoration(
-        color: SahelColors.surfaceSubtle,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
-        border: Border(top: BorderSide(color: SahelColors.border)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'السعر يبدأ من',
-                style: TextStyle(fontSize: 12, color: SahelColors.textMuted),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    price.toStringAsFixed(0),
-                    style: SahelTextStyles.price,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 240;
+        final priceBlock = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'السعر يبدأ من',
+              style: TextStyle(fontSize: 12, color: SahelColors.textMuted),
+            ),
+            const SizedBox(height: 2),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 4,
+              runSpacing: 2,
+              children: [
+                Text(price.toStringAsFixed(0), style: SahelTextStyles.price),
+                Text(
+                  currencyLabel,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: SahelColors.primary,
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'ر.س',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: SahelColors.primary,
+                ),
+                if (hasOriginal)
+                  Text(
+                    originalPrice!.toStringAsFixed(0),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: SahelColors.textSoft,
+                      decoration: TextDecoration.lineThrough,
                     ),
                   ),
-                  if (hasOriginal) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      originalPrice!.toStringAsFixed(0),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: SahelColors.textSoft,
-                        decoration: TextDecoration.lineThrough,
-                      ),
+              ],
+            ),
+          ],
+        );
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: SahelColors.surfaceSubtle,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
+            border: Border(top: BorderSide(color: SahelColors.border)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    priceBlock,
+                    const SizedBox(height: 10),
+                    SahelButton(
+                      label: 'احجز الآن',
+                      variant: SahelButtonVariant.filled,
+                      onPressed: onBookNow,
+                      height: 40,
+                      borderRadius: SahelRadii.pillRadius,
                     ),
                   ],
-                ],
-              ),
-            ],
-          ),
-          const Spacer(),
-          SahelButton(
-            label: 'احجز الآن',
-            variant: SahelButtonVariant.filled,
-            onPressed: onBookNow,
-            width: 128,
-            height: 40,
-            borderRadius: SahelRadii.pillRadius,
-          ),
-        ],
-      ),
+                )
+              : Row(
+                  children: [
+                    Expanded(child: priceBlock),
+                    const SizedBox(width: 12),
+                    SahelButton(
+                      label: 'احجز الآن',
+                      variant: SahelButtonVariant.filled,
+                      onPressed: onBookNow,
+                      width: 128,
+                      height: 40,
+                      borderRadius: SahelRadii.pillRadius,
+                    ),
+                  ],
+                ),
+        );
+      },
     );
   }
 }
