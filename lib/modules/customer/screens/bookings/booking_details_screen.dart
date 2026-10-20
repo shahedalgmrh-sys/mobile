@@ -8,7 +8,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
-import 'package:saber_flutter/shared/widgets/booking_status_pill.dart';
+import 'package:saber_flutter/shared/widgets/status_pill.dart';
 import 'package:saber_flutter/shared/widgets/booking_status_stepper.dart';
 import 'package:saber_flutter/shared/widgets/provider_mini_card.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
@@ -33,11 +33,9 @@ class BookingDetailsScreen extends ConsumerWidget {
         actions: [
           booking.maybeWhen(
             data: (b) => Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: BookingStatusPill(
-                status:
-                    BookingStatusX.fromJson(str(b['status'], 'pending')),
+                status: BookingStatusX.fromJson(str(b['status'], 'pending')),
               ),
             ),
             orElse: () => const SizedBox.shrink(),
@@ -59,13 +57,19 @@ class BookingDetailsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_outlined,
-                  size: 56, color: SahelColors.textMuted),
+              const Icon(
+                Icons.cloud_off_outlined,
+                size: 56,
+                color: SahelColors.textMuted,
+              ),
               const SizedBox(height: 12),
-              const Text('تعذر تحميل تفاصيل الحجز',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: SahelColors.textMuted)),
+              const Text(
+                'تعذر تحميل تفاصيل الحجز',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: SahelColors.textMuted,
+                ),
+              ),
               TextButton.icon(
                 onPressed: () =>
                     ref.invalidate(customerBookingProvider(bookingId)),
@@ -87,15 +91,25 @@ class _BookingDetailsBody extends ConsumerWidget {
   const _BookingDetailsBody({required this.booking, required this.bookingId});
 
   static const titleSmall = TextStyle(
-      fontSize: 13, fontWeight: FontWeight.w700, color: SahelColors.text);
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
+    color: SahelColors.text,
+  );
   static const bodySmall = TextStyle(
-      fontSize: 12, color: SahelColors.textMuted, fontWeight: FontWeight.w500);
+    fontSize: 12,
+    color: SahelColors.textMuted,
+    fontWeight: FontWeight.w500,
+  );
   static const muted = TextStyle(
-      color: SahelColors.textMuted,
-      fontWeight: FontWeight.w500,
-      fontSize: 13);
+    color: SahelColors.textMuted,
+    fontWeight: FontWeight.w500,
+    fontSize: 13,
+  );
   static const amountStyle = TextStyle(
-      fontWeight: FontWeight.w700, fontSize: 13, color: SahelColors.text);
+    fontWeight: FontWeight.w700,
+    fontSize: 13,
+    color: SahelColors.text,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -106,20 +120,21 @@ class _BookingDetailsBody extends ConsumerWidget {
     final address = asMap(booking['address']);
     final images = asList(booking['images'] ?? booking['attachments']);
     final isPaid = toBool(booking['is_paid']) || status == BookingStatus.paid;
-    final canCancel = status == BookingStatus.pending ||
-        status == BookingStatus.accepted;
-    final canTrack = status == BookingStatus.accepted ||
-        status == BookingStatus.inProgress;
+    final canCancel =
+        status == BookingStatus.pending || status == BookingStatus.accepted;
+    final canTrack =
+        status == BookingStatus.accepted || status == BookingStatus.inProgress;
     final phone = str(providerUser['phone'] ?? provider['phone']);
 
-    final addressText = str(address['full_address'] ??
-        address['address'] ??
-        booking['address_text'] ??
-        booking['address']);
+    final addressText = str(
+      address['full_address'] ??
+          address['address'] ??
+          booking['address_text'] ??
+          booking['address'],
+    );
 
     return RefreshIndicator(
-      onRefresh: () async =>
-          ref.invalidate(customerBookingProvider(bookingId)),
+      onRefresh: () async => ref.invalidate(customerBookingProvider(bookingId)),
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -139,54 +154,67 @@ class _BookingDetailsBody extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Text('الخدمة',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text(
+                        'الخدمة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                       const Spacer(),
                       Text(
                         str(service['name'], '—'),
                         style: const TextStyle(
-                            color: SahelColors.primary700,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13),
+                          color: SahelColors.primary700,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('موعد التنفيذ',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text(
+                        'موعد التنفيذ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                       const Spacer(),
                       Text(
                         [
                           str(booking['booking_date']),
-                          str(booking['booking_time'] ??
-                              booking['time_slot']),
+                          str(booking['booking_time'] ?? booking['time_slot']),
                         ].where((e) => e.isNotEmpty).join(' · '),
                         style: const TextStyle(
-                            color: SahelColors.primary700,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13),
+                          color: SahelColors.primary700,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('الفني المكلف',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 14)),
+                      const Text(
+                        'الفني المكلف',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                       const Spacer(),
                       ProviderMiniCard(
-                        businessName: str(provider['business_name'] ??
-                            providerUser['name']),
-                        avatarUrl:
-                            strOrNull(provider['business_logo'] ??
-                                providerUser['avatar']),
-                        ratingAvg:
-                            toDoubleOrNull(provider['average_rating']),
+                        businessName: str(
+                          provider['business_name'] ?? providerUser['name'],
+                        ),
+                        avatarUrl: strOrNull(
+                          provider['business_logo'] ?? providerUser['avatar'],
+                        ),
+                        ratingAvg: toDoubleOrNull(provider['average_rating']),
                         isVerified: toBool(provider['is_verified']),
                       ),
                     ],
@@ -196,16 +224,20 @@ class _BookingDetailsBody extends ConsumerWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.location_on,
-                            color: SahelColors.primary600, size: 18),
+                        const Icon(
+                          Icons.location_on,
+                          color: SahelColors.primary600,
+                          size: 18,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             addressText,
                             style: const TextStyle(
-                                fontSize: 13,
-                                height: 1.5,
-                                color: SahelColors.text),
+                              fontSize: 13,
+                              height: 1.5,
+                              color: SahelColors.text,
+                            ),
                           ),
                         ),
                       ],
@@ -217,8 +249,9 @@ class _BookingDetailsBody extends ConsumerWidget {
                     const Text('ملاحظات العميل:', style: titleSmall),
                     const SizedBox(height: 4),
                     Text(
-                        str(booking['notes'] ?? booking['customer_notes']),
-                        style: bodySmall),
+                      str(booking['notes'] ?? booking['customer_notes']),
+                      style: bodySmall,
+                    ),
                   ],
                   if (images.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -248,9 +281,10 @@ class _BookingDetailsBody extends ConsumerWidget {
                   const SizedBox(height: 12),
                   const Divider(),
                   const SizedBox(height: 12),
-                  const Text('الإجراءات السريعة',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Text(
+                    'الإجراءات السريعة',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 16),
                   Wrap(
                     runSpacing: 12,
@@ -301,30 +335,45 @@ class _BookingDetailsBody extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('الفاتورة',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w700)),
+                  const Text(
+                    'الفاتورة',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(height: 12),
-                  _amountRow('القيمة الأساسية',
-                      str(booking['formatted_subtotal'] ?? booking['subtotal'])),
+                  _amountRow(
+                    'القيمة الأساسية',
+                    str(booking['formatted_subtotal'] ?? booking['subtotal']),
+                  ),
                   const SizedBox(height: 8),
                   if (toDoubleOrNull(booking['discount']) != null &&
                       toDouble(booking['discount']) > 0) ...[
                     _amountRow(
-                        'الخصم',
-                        '−${str(booking['formatted_discount'] ?? booking['discount'])}',
-                        color: SahelColors.success),
+                      'الخصم',
+                      '−${str(booking['formatted_discount'] ?? booking['discount'])}',
+                      color: SahelColors.success,
+                    ),
                     const SizedBox(height: 8),
                   ],
                   if (toDoubleOrNull(booking['platform_fee']) != null) ...[
-                    _amountRow('رسوم المنصة',
-                        str(booking['formatted_platform_fee'] ?? booking['platform_fee'])),
+                    _amountRow(
+                      'رسوم المنصة',
+                      str(
+                        booking['formatted_platform_fee'] ??
+                            booking['platform_fee'],
+                      ),
+                    ),
                     const SizedBox(height: 8),
                   ],
                   if (toDoubleOrNull(booking['tax'] ?? booking['vat']) !=
                       null) ...[
-                    _amountRow('الضريبة',
-                        str(booking['formatted_tax'] ?? booking['tax'] ?? booking['vat'])),
+                    _amountRow(
+                      'الضريبة',
+                      str(
+                        booking['formatted_tax'] ??
+                            booking['tax'] ??
+                            booking['vat'],
+                      ),
+                    ),
                     const SizedBox(height: 8),
                   ],
                   const SizedBox(height: 12),
@@ -332,13 +381,19 @@ class _BookingDetailsBody extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Text('الإجمالي',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w800)),
+                      const Text(
+                        'الإجمالي',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                       const Spacer(),
                       Text(
-                        str(booking['formatted_total'] ?? booking['total'],
-                            '—'),
+                        str(
+                          booking['formatted_total'] ?? booking['total'],
+                          '—',
+                        ),
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
@@ -350,15 +405,19 @@ class _BookingDetailsBody extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.account_balance_wallet,
-                          color: SahelColors.primary600, size: 20),
+                      const Icon(
+                        Icons.account_balance_wallet,
+                        color: SahelColors.primary600,
+                        size: 20,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'طريقة الدفع: ${str(booking['payment_method'], '—')}',
                         style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: SahelColors.text),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: SahelColors.text,
+                        ),
                       ),
                       const Spacer(),
                       Chip(
@@ -377,8 +436,7 @@ class _BookingDetailsBody extends ConsumerWidget {
                             : SahelColors.amberSoft,
                         side: BorderSide.none,
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ],
                   ),
@@ -405,16 +463,16 @@ class _BookingDetailsBody extends ConsumerWidget {
             const Text(
               'لا يمكن إلغاء هذا الحجز',
               style: TextStyle(
-                  color: SahelColors.textMuted,
-                  fontWeight: FontWeight.w600),
+                color: SahelColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.center,
             ),
           if (status == BookingStatus.completed) ...[
             const SizedBox(height: 12),
             SahelButton.soft(
               label: 'تقييم الخدمة',
-              onPressed: () =>
-                  context.push('/bookings/$bookingId/review'),
+              onPressed: () => context.push('/bookings/$bookingId/review'),
             ),
             const SizedBox(height: 12),
             SahelButton.soft(
@@ -428,25 +486,26 @@ class _BookingDetailsBody extends ConsumerWidget {
   }
 
   Widget _imgPlaceholder() => Container(
-        width: 96,
-        height: 96,
-        decoration: BoxDecoration(
-          color: SahelColors.surface3,
-          borderRadius: SahelRadii.smRadius,
-          border: Border.all(color: SahelColors.border),
-        ),
-        child:
-            const Icon(Icons.image, color: SahelColors.textMuted, size: 32),
-      );
+    width: 96,
+    height: 96,
+    decoration: BoxDecoration(
+      color: SahelColors.surface3,
+      borderRadius: SahelRadii.smRadius,
+      border: Border.all(color: SahelColors.border),
+    ),
+    child: const Icon(Icons.image, color: SahelColors.textMuted, size: 32),
+  );
 
   Widget _amountRow(String label, String value, {Color? color}) => Row(
-        children: [
-          Text(label, style: muted),
-          const Spacer(),
-          Text(value.isEmpty ? '—' : value,
-              style: amountStyle.copyWith(color: color)),
-        ],
-      );
+    children: [
+      Text(label, style: muted),
+      const Spacer(),
+      Text(
+        value.isEmpty ? '—' : value,
+        style: amountStyle.copyWith(color: color),
+      ),
+    ],
+  );
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
     final reason = await _askReason(context);
@@ -459,8 +518,8 @@ class _BookingDetailsBody extends ConsumerWidget {
       ref.invalidate(customerBookingsProvider);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر إلغاء الحجز')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر إلغاء الحجز')));
       }
     }
   }
@@ -472,8 +531,8 @@ class _BookingDetailsBody extends ConsumerWidget {
       if (context.mounted) context.go('/bookings');
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر إعادة الحجز')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر إعادة الحجز')));
       }
     }
   }
@@ -500,17 +559,17 @@ class _BookingDetailsBody extends ConsumerWidget {
         title: const Text('سبب الإلغاء'),
         content: TextField(
           controller: controller,
-          decoration:
-              const InputDecoration(hintText: 'اذكر سبب الإلغاء…'),
+          decoration: const InputDecoration(hintText: 'اذكر سبب الإلغاء…'),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('تراجع')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('تراجع'),
+          ),
           TextButton(
-              onPressed: () =>
-                  Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('تأكيد الإلغاء')),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('تأكيد الإلغاء'),
+          ),
         ],
       ),
     );

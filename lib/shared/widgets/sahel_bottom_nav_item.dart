@@ -32,12 +32,12 @@ class SahelBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Color(0x0D0F172A),
+            color: SahelColors.slate900.withValues(alpha: 0.05),
             blurRadius: 12,
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -48,9 +48,7 @@ class SahelBottomNavBar extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: SahelColors.surface.withValues(alpha: 0.92),
-              border: const Border(
-                top: BorderSide(color: SahelColors.border),
-              ),
+              border: const Border(top: BorderSide(color: SahelColors.border)),
             ),
             child: SafeArea(
               top: false,

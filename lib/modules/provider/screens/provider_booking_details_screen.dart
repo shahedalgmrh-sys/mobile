@@ -4,19 +4,17 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/shared/widgets/booking_stepper.dart';
+import 'package:saber_flutter/shared/widgets/booking_status_stepper.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
+
 import '../../../models/booking_status.dart';
 import '../../../shared/theme/sahel_colors.dart';
 
 class ProviderBookingDetailsScreen extends ConsumerWidget {
   final String id;
 
-  const ProviderBookingDetailsScreen({
-    super.key,
-    required this.id,
-  });
+  const ProviderBookingDetailsScreen({super.key, required this.id});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,8 +71,8 @@ class _BodyState extends ConsumerState<_Body> {
       ref.invalidate(providerDashboardProvider);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر تنفيذ العملية')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر تنفيذ العملية')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -85,8 +83,7 @@ class _BodyState extends ConsumerState<_Body> {
   Widget build(BuildContext context) {
     final b = widget.booking;
     final repo = ref.read(providerRepositoryProvider);
-    final status =
-        BookingStatusX.fromJson(str(b['status'], 'pending'));
+    final status = BookingStatusX.fromJson(str(b['status'], 'pending'));
     final service = asMap(b['service']);
     final customer = asMap(b['customer'] ?? b['user']);
     final address = asMap(b['address']);
@@ -102,30 +99,40 @@ class _BodyState extends ConsumerState<_Body> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('تفاصيل الخدمة',
-                  style: TextStyle(
-                      color: SahelColors.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+              const Text(
+                'تفاصيل الخدمة',
+                style: TextStyle(
+                  color: SahelColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(str(service['name'], 'خدمة'),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 16)),
+              Text(
+                str(service['name'], 'خدمة'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 10),
               Text(
                 [
                   str(b['booking_date']),
                   str(b['booking_time'] ?? b['time_slot']),
                 ].where((e) => e.isNotEmpty).join(' · '),
-                style: const TextStyle(
-                    color: SahelColors.muted, fontSize: 13),
+                style: const TextStyle(color: SahelColors.muted, fontSize: 13),
               ),
               if (str(address['full_address'] ?? address['address'])
                   .isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text(str(address['full_address'] ?? address['address']),
-                    style: const TextStyle(
-                        color: SahelColors.muted, fontSize: 13)),
+                Text(
+                  str(address['full_address'] ?? address['address']),
+                  style: const TextStyle(
+                    color: SahelColors.muted,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ],
           ),
@@ -135,32 +142,41 @@ class _BodyState extends ConsumerState<_Body> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('العميل',
-                  style: TextStyle(
-                      color: SahelColors.muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+              const Text(
+                'العميل',
+                style: TextStyle(
+                  color: SahelColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   CircleAvatar(
-                      child: Text(
-                          str(customer['name'], 'ع').isNotEmpty
-                              ? str(customer['name'])[0]
-                              : 'ع')),
+                    child: Text(
+                      str(customer['name'], 'ع').isNotEmpty
+                          ? str(customer['name'])[0]
+                          : 'ع',
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(str(customer['name'], 'عميل'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700)),
+                        Text(
+                          str(customer['name'], 'عميل'),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         if (phone.isNotEmpty)
-                          Text(phone,
-                              style: const TextStyle(
-                                  color: SahelColors.muted,
-                                  fontSize: 12)),
+                          Text(
+                            phone,
+                            style: const TextStyle(
+                              color: SahelColors.muted,
+                              fontSize: 12,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -173,10 +189,13 @@ class _BodyState extends ConsumerState<_Body> {
                         }
                       },
                       child: const CircleAvatar(
-                          backgroundColor: SahelColors.primary100,
-                          child: Icon(Icons.phone,
-                              color: SahelColors.primary700,
-                              size: 18)),
+                        backgroundColor: SahelColors.primary100,
+                        child: Icon(
+                          Icons.phone,
+                          color: SahelColors.primary700,
+                          size: 18,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -187,15 +206,19 @@ class _BodyState extends ConsumerState<_Body> {
         _card(
           Row(
             children: [
-              const Text('المبلغ المستحق',
-                  style: TextStyle(color: SahelColors.muted)),
+              const Text(
+                'المبلغ المستحق',
+                style: TextStyle(color: SahelColors.muted),
+              ),
               const Spacer(),
               Text(
-                  str(b['formatted_total'] ?? b['total'], '—'),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: SahelColors.primary700)),
+                str(b['formatted_total'] ?? b['total'], '—'),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                  color: SahelColors.primary700,
+                ),
+              ),
             ],
           ),
         ),
@@ -213,33 +236,37 @@ class _BodyState extends ConsumerState<_Body> {
               children: [
                 Expanded(
                   child: SahelButton.soft(
-                      label: 'رفض الحجز',
-                      onTap: () => _act(() => repo.rejectBooking(id)),
-                      height: 46),
+                    label: 'رفض الحجز',
+                    onTap: () => _act(() => repo.rejectBooking(id)),
+                    height: 46,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: SahelButton(
-                      label: 'قبول',
-                      variant: SahelButtonVariant.gradient,
-                      onPressed: () => _act(() => repo.acceptBooking(id)),
-                      height: 46),
+                    label: 'قبول',
+                    variant: SahelButtonVariant.gradient,
+                    onPressed: () => _act(() => repo.acceptBooking(id)),
+                    height: 46,
+                  ),
                 ),
               ],
             ),
           ],
           if (status == BookingStatus.accepted)
             SahelButton(
-                label: 'بدء التنفيذ',
-                variant: SahelButtonVariant.amber,
-                onPressed: () => _act(() => repo.startBooking(id)),
-                height: 46),
+              label: 'بدء التنفيذ',
+              variant: SahelButtonVariant.amber,
+              onPressed: () => _act(() => repo.startBooking(id)),
+              height: 46,
+            ),
           if (status == BookingStatus.inProgress)
             SahelButton(
-                label: 'إنهاء الحجز',
-                variant: SahelButtonVariant.filled,
-                onPressed: () => _act(() => repo.completeBooking(id)),
-                height: 46),
+              label: 'إنهاء الحجز',
+              variant: SahelButtonVariant.filled,
+              onPressed: () => _act(() => repo.completeBooking(id)),
+              height: 46,
+            ),
         ],
         const SizedBox(height: 20),
       ],

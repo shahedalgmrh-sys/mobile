@@ -6,7 +6,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
-import 'package:saber_flutter/shared/widgets/booking_status_pill.dart';
+import 'package:saber_flutter/shared/widgets/status_pill.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 class BookingsListScreen extends ConsumerWidget {
@@ -36,17 +36,17 @@ class BookingsListScreen extends ConsumerWidget {
             isScrollable: true,
             labelColor: SahelColors.primary700,
             unselectedLabelColor: SahelColors.textMuted,
-            labelStyle:
-                const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
             indicatorColor: SahelColors.primary700,
             indicatorWeight: 3,
             tabs: [for (final t in _tabs) Tab(text: t.label)],
           ),
         ),
         body: TabBarView(
-          children: [
-            for (final t in _tabs) _BookingsTab(status: t.status),
-          ],
+          children: [for (final t in _tabs) _BookingsTab(status: t.status)],
         ),
       ),
     );
@@ -96,22 +96,24 @@ class _BookingCard extends StatelessWidget {
   const _BookingCard({required this.booking});
 
   BookingStatus _status(String s) => switch (s) {
-        'pending' => BookingStatus.pending,
-        'accepted' => BookingStatus.accepted,
-        'in_progress' => BookingStatus.inProgress,
-        'completed' => BookingStatus.completed,
-        'cancelled' => BookingStatus.cancelled,
-        _ => BookingStatus.pending,
-      };
+    'pending' => BookingStatus.pending,
+    'accepted' => BookingStatus.accepted,
+    'in_progress' => BookingStatus.inProgress,
+    'completed' => BookingStatus.completed,
+    'cancelled' => BookingStatus.cancelled,
+    _ => BookingStatus.pending,
+  };
 
   @override
   Widget build(BuildContext context) {
     final service = asMap(booking['service']);
     final number = str(booking['booking_number'] ?? booking['id']);
     final date = str(booking['booking_date'] ?? booking['scheduled_at']);
-    final price = str(booking['formatted_total'] ??
-        booking['display_price'] ??
-        booking['total']);
+    final price = str(
+      booking['formatted_total'] ??
+          booking['display_price'] ??
+          booking['total'],
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -137,8 +139,11 @@ class _BookingCard extends StatelessWidget {
                     gradient: SahelColors.primaryGradient,
                     borderRadius: SahelRadii.smRadius,
                   ),
-                  child: const Icon(Icons.home_repair_service,
-                      color: Colors.white, size: 24),
+                  child: const Icon(
+                    Icons.home_repair_service,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -153,11 +158,14 @@ class _BookingCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w700, fontSize: 14),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                           BookingStatusPill(
-                              status: _status(str(booking['status']))),
+                            status: _status(str(booking['status'])),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -196,8 +204,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.event_busy_outlined,
-              size: 56, color: SahelColors.textMuted),
+          Icon(
+            Icons.event_busy_outlined,
+            size: 56,
+            color: SahelColors.textMuted,
+          ),
           SizedBox(height: 12),
           Text(
             'لا توجد حجوزات هنا بعد',
@@ -222,8 +233,11 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_outlined,
-              size: 56, color: SahelColors.textMuted),
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 56,
+            color: SahelColors.textMuted,
+          ),
           const SizedBox(height: 12),
           const Text(
             'تعذر تحميل الحجوزات',

@@ -9,8 +9,7 @@ class CustomerRepository {
   final CustomerRemoteSource source;
   const CustomerRepository(this.source);
 
-  Future<Map<String, dynamic>> me() async =>
-      asMap(apiData(await source.me()));
+  Future<Map<String, dynamic>> me() async => asMap(apiData(await source.me()));
 
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateMe(data)));
@@ -26,7 +25,10 @@ class CustomerRepository {
   Future<void> deleteAvatar() async => apiData(await source.deleteAvatar());
 
   Future<void> changePassword(
-          String current, String password, String confirmation) async =>
+    String current,
+    String password,
+    String confirmation,
+  ) async =>
       apiData(await source.changePassword(current, password, confirmation));
 
   Future<void> updatePreferences(Map<String, dynamic> data) async =>
@@ -42,13 +44,18 @@ class CustomerRepository {
   Future<Map<String, dynamic>> storeAddress(Map<String, dynamic> data) async =>
       asMap(apiData(await source.storeAddress(data)));
 
-  Future<Map<String, dynamic>> updateAddress(String id, Map<String, dynamic> data) async =>
-      asMap(apiData(await source.updateAddress(id, data)));
+  Future<Map<String, dynamic>> updateAddress(
+    String id,
+    Map<String, dynamic> data,
+  ) async => asMap(apiData(await source.updateAddress(id, data)));
 
   Future<void> destroyAddress(String id) => source.destroyAddress(id);
 
   // Bookings
-  Future<List<Map<String, dynamic>>> bookings({String? status, int? page}) async =>
+  Future<List<Map<String, dynamic>>> bookings({
+    String? status,
+    int? page,
+  }) async =>
       dataList(apiData(await source.bookings(status: status, page: page)));
 
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async =>
@@ -59,12 +66,15 @@ class CustomerRepository {
     String? serviceId,
     String? service,
     required String date,
-  }) async =>
-      dataList(apiData(await source.availableSlots(
+  }) async => dataList(
+    apiData(
+      await source.availableSlots(
         serviceId: serviceId,
         service: service,
         date: date,
-      )));
+      ),
+    ),
+  );
 
   Future<Map<String, dynamic>> booking(String id) async =>
       asMap(apiData(await source.showBooking(id)));
@@ -75,9 +85,14 @@ class CustomerRepository {
   Future<Map<String, dynamic>> cancelBooking(String id, String reason) async =>
       asMap(apiData(await source.cancelBooking(id, reason)));
 
-  Future<Map<String, dynamic>> rescheduleBooking(String id, String date, String time,
-          {String? reason}) async =>
-      asMap(apiData(await source.rescheduleBooking(id, date, time, reason: reason)));
+  Future<Map<String, dynamic>> rescheduleBooking(
+    String id,
+    String date,
+    String time, {
+    String? reason,
+  }) async => asMap(
+    apiData(await source.rescheduleBooking(id, date, time, reason: reason)),
+  );
 
   Future<Map<String, dynamic>> rebook(String id) async =>
       asMap(apiData(await source.rebook(id)));
@@ -126,12 +141,15 @@ class CustomerRepository {
     required String bookingId,
     required int rating,
     String? comment,
-  }) async =>
-      asMap(apiData(await source.storeReview({
-            'booking_id': bookingId,
-            'rating': rating,
-            if (comment != null) 'comment': comment,
-          })));
+  }) async => asMap(
+    apiData(
+      await source.storeReview({
+        'booking_id': bookingId,
+        'rating': rating,
+        if (comment != null) 'comment': comment,
+      }),
+    ),
+  );
 
   Future<List<Map<String, dynamic>>> complaints() async =>
       dataList(apiData(await source.complaints()));
@@ -141,13 +159,16 @@ class CustomerRepository {
     required String subject,
     required String description,
     String priority = 'medium',
-  }) async =>
-      asMap(apiData(await source.storeComplaint({
-            if (bookingId != null) 'booking_id': bookingId,
-            'subject': subject,
-            'description': description,
-            'priority': priority,
-          })));
+  }) async => asMap(
+    apiData(
+      await source.storeComplaint({
+        if (bookingId != null) 'booking_id': bookingId,
+        'subject': subject,
+        'description': description,
+        'priority': priority,
+      }),
+    ),
+  );
 
   // Chat
   Future<List<Map<String, dynamic>>> conversations() async =>
@@ -166,20 +187,66 @@ class CustomerRepository {
   Future<List<Map<String, dynamic>>> unreadNotifications() async =>
       dataList(apiData(await source.unreadNotifications()));
 
-  Future<void> markNotificationRead(String id) => source.markNotificationRead(id);
+  Future<void> markNotificationRead(String id) =>
+      source.markNotificationRead(id);
 
   // Coupons & search
   Future<List<Map<String, dynamic>>> coupons() async =>
       dataList(apiData(await source.coupons()));
 
-  Future<Map<String, dynamic>> validateCoupon(String code,
-          {required double subtotal, String? serviceId}) async =>
-      asMap(apiData(await source.validateCoupon(code,
-          subtotal: subtotal, serviceId: serviceId)));
+  Future<Map<String, dynamic>> validateCoupon(
+    String code, {
+    required double subtotal,
+    String? serviceId,
+  }) async => asMap(
+    apiData(
+      await source.validateCoupon(
+        code,
+        subtotal: subtotal,
+        serviceId: serviceId,
+      ),
+    ),
+  );
 
-  Future<Map<String, dynamic>> search(String q, {Map<String, dynamic>? filters}) async =>
-      asMap(apiData(await source.search(q, filters: filters)));
+  Future<SearchPage> search(
+    String q, {
+    Map<String, dynamic>? filters,
+    int? page,
+  }) async {
+    // Read the raw envelope here: `apiData` unwraps `data` and would drop the
+    // sibling `meta` block that drives pagination.
+    final response = await source.search(q, filters: filters, page: page);
+    final envelope = asMap(response.data);
+    final items = dataList(
+      envelope.containsKey('data') ? envelope['data'] : response.data,
+    );
+    final meta = asMap(envelope['meta']);
+    final current = toInt(meta['current_page'], page ?? 1);
+    return SearchPage(
+      items: items,
+      currentPage: current,
+      lastPage: toInt(meta['last_page'], current),
+      total: toInt(meta['total'], items.length),
+    );
+  }
 
   Future<Map<String, dynamic>> reports(String type) async =>
       asMap(apiData(await source.reports(type)));
+}
+
+/// One page of `/customer/search` results plus the API's pagination metadata.
+class SearchPage {
+  const SearchPage({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+
+  bool get hasMore => currentPage < lastPage;
 }

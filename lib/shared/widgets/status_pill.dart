@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/models/booking_status.dart';
 
-enum StatusTone {
-  teal,
-  amber,
-  red,
-  violet,
-  green,
-  slate,
-  sky,
-}
+enum StatusTone { teal, amber, red, violet, green, slate, sky }
 
 class BookingStatusPill extends StatelessWidget {
   final BookingStatus status;
 
-  const BookingStatusPill({
-    super.key,
-    required this.status,
-  });
+  const BookingStatusPill({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -42,23 +32,23 @@ class BookingStatusPill extends StatelessWidget {
   (Color, Color, String) _statusConfig(BookingStatus s) {
     switch (s) {
       case BookingStatus.pending:
-        return (const Color(0xFFFFF7E6), const Color(0xFFB45309), 'قيد الانتظار');
+        return (SahelColors.amberSoft, SahelColors.amber700, 'قيد الانتظار');
       case BookingStatus.accepted:
-        return (const Color(0xFFEFF6FF), const Color(0xFF0369A1), 'تم القبول');
+        return (SahelColors.infoSoft, SahelColors.info, 'تم القبول');
       case BookingStatus.inProgress:
-        return (const Color(0xFFCCFBF1), const Color(0xFF0F766E), 'قيد التنفيذ');
+        return (SahelColors.primary100, SahelColors.primary600, 'قيد التنفيذ');
       case BookingStatus.paid:
-        return (const Color(0xFFECFDF5), const Color(0xFF059669), 'مدفوع');
+        return (SahelColors.successSoft, SahelColors.success, 'مدفوع');
       case BookingStatus.completed:
-        return (const Color(0xFFECFDF5), const Color(0xFF059669), 'مكتمل');
+        return (SahelColors.successSoft, SahelColors.success, 'مكتمل');
       case BookingStatus.rejected:
-        return (const Color(0xFFF1F5F9), const Color(0xFF64748B), 'مرفوض');
+        return (SahelColors.surfaceInset, SahelColors.textMuted, 'مرفوض');
       case BookingStatus.cancelled:
-        return (const Color(0xFFFEF2F2), const Color(0xFFDC2626), 'ملغي');
+        return (SahelColors.dangerSoft, SahelColors.danger, 'ملغي');
       case BookingStatus.rescheduled:
-        return (const Color(0xFFF3F0FF), const Color(0xFF6D28D9), 'إعادة جدولة');
+        return (SahelColors.violetSoft, SahelColors.violet, 'إعادة جدولة');
       case BookingStatus.refunded:
-        return (const Color(0xFFFEF3C7), const Color(0xFF92400E), 'تم الاسترداد');
+        return (SahelColors.amberSoft, SahelColors.amber800, 'تم الاسترداد');
     }
   }
 }
@@ -73,20 +63,14 @@ class StatusPill extends StatelessWidget {
     this.tone = StatusTone.teal,
   });
 
-  factory StatusPill.teal({required String text}) => StatusPill(
-        text: text,
-        tone: StatusTone.teal,
-      );
+  factory StatusPill.teal({required String text}) =>
+      StatusPill(text: text, tone: StatusTone.teal);
 
-  factory StatusPill.verifiedTeal({required String text}) => StatusPill(
-        text: text,
-        tone: StatusTone.teal,
-      );
+  factory StatusPill.verifiedTeal({required String text}) =>
+      StatusPill(text: text, tone: StatusTone.teal);
 
-  factory StatusPill.slate({required String text}) => StatusPill(
-        text: text,
-        tone: StatusTone.slate,
-      );
+  factory StatusPill.slate({required String text}) =>
+      StatusPill(text: text, tone: StatusTone.slate);
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +85,11 @@ class StatusPill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (tone == StatusTone.teal) ...[
-            const Icon(Icons.check_circle, size: 12, color: Color(0xFF0F766E)),
+            const Icon(
+              Icons.check_circle,
+              size: 12,
+              color: SahelColors.primary600,
+            ),
             const SizedBox(width: 4),
           ],
           Text(
@@ -120,19 +108,19 @@ class StatusPill extends StatelessWidget {
   (Color, Color) _toneConfig(StatusTone t) {
     switch (t) {
       case StatusTone.teal:
-        return (const Color(0xFFCCFBF1), const Color(0xFF0F766E));
+        return (SahelColors.primary100, SahelColors.primary600);
       case StatusTone.amber:
-        return (const Color(0xFFFFF7E6), const Color(0xFFB45309));
+        return (SahelColors.amberSoft, SahelColors.amber700);
       case StatusTone.red:
-        return (const Color(0xFFFEF2F2), const Color(0xFFDC2626));
+        return (SahelColors.dangerSoft, SahelColors.danger);
       case StatusTone.violet:
-        return (const Color(0xFFF3F0FF), const Color(0xFF6D28D9));
+        return (SahelColors.violetSoft, SahelColors.violet);
       case StatusTone.green:
-        return (const Color(0xFFECFDF5), const Color(0xFF059669));
+        return (SahelColors.successSoft, SahelColors.success);
       case StatusTone.slate:
-        return (const Color(0xFFF1F5F9), const Color(0xFF64748B));
+        return (SahelColors.surfaceInset, SahelColors.textMuted);
       case StatusTone.sky:
-        return (const Color(0xFFEFF6FF), const Color(0xFF0369A1));
+        return (SahelColors.infoSoft, SahelColors.info);
     }
   }
 }
