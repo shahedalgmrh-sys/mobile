@@ -89,6 +89,7 @@ Service serviceFromJson(Map<String, dynamic> j) {
     discountPercent: toDoubleOrNull(j['discount_percent']),
     durationMinutes: toIntOrNull(j['duration_minutes']),
     categoryId: str(category['id'] ?? j['category_id']),
+    distanceKm: toDoubleOrNull(j['distance_km']),
   );
 }
 
@@ -105,6 +106,8 @@ ProviderModel providerFromJson(Map<String, dynamic> j) {
     totalReviews: toInt(j['total_reviews'] ?? j['reviews_count']),
     isVerified: toBool(j['is_verified'] ?? (j['verification_status'] == 'verified')),
     isOnline: toBool(j['is_available']),
+    lat: toDoubleOrNull(j['latitude']),
+    lng: toDoubleOrNull(j['longitude']),
     city: strOrNull(j['city'] ?? j['city_ar']),
     completedBookings: toInt(j['total_bookings'] ?? j['completed_bookings_count']),
     hourlyRate: toDoubleOrNull(j['hourly_rate'] ?? j['hourly_rate_from']),

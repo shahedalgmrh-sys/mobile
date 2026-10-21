@@ -184,9 +184,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/search',
-        builder: (_, state) => SearchScreen(
+        builder: (_, state) {
+          final extra = state.extra is Map ? Map<String, dynamic>.from(state.extra as Map) : const <String, dynamic>{};
+          return SearchScreen(
           initialCategory: state.uri.queryParameters['category'],
-        ),
+          initialNearby: extra['nearby'] == true ||
+              state.uri.queryParameters['nearby'] == '1',
+        );
+        },
       ),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),

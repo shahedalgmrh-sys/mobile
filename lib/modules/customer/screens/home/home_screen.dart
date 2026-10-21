@@ -5,6 +5,7 @@ import 'package:saber_flutter/data/repositories/catalog_repository.dart';
 import 'package:saber_flutter/models/provider.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
+import 'package:saber_flutter/providers/location_provider.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/category_tile.dart';
@@ -190,38 +191,69 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _LocationPill extends StatelessWidget {
+class _LocationPill extends ConsumerWidget {
   const _LocationPill({required this.city});
 
   final String city;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 190),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: SahelColors.surfaceInset,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final location = ref.watch(appLocationProvider).valueOrNull;
+    final label = location?.city ?? city;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: SahelRadii.pillRadius,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.location_on, size: 16, color: SahelColors.primary),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              city,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12.5,
-                color: SahelColors.text,
+        onTap: () async {
+          try {
+            await ref
+                .read(appLocationProvider.notifier)
+                .useCurrentLocation(forceRefresh: true);
+          } catch (error) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  error.toString().replaceFirst('Exception: ', ''),
+                ),
               ),
-            ),
+            );
+          }
+          if (!context.mounted) return;
+          context.push('/search', extra: {'nearby': true});
+        },
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 190),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: SahelColors.surfaceInset,
+            borderRadius: SahelRadii.pillRadius,
           ),
-          const Icon(Icons.expand_more, size: 16, color: SahelColors.textMuted),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.location_on, size: 16, color: SahelColors.primary),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: SahelColors.text,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.expand_more,
+                size: 16,
+                color: SahelColors.textMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

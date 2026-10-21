@@ -13,6 +13,7 @@ class Service {
   final double? discountPercent;
   final int? durationMinutes;
   final String categoryId;
+  final double? distanceKm;
 
   const Service({
     required this.id,
@@ -29,5 +30,6 @@ class Service {
     this.discountPercent,
     this.durationMinutes,
     required this.categoryId,
+    this.distanceKm,
   });
 }
