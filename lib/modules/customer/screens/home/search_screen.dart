@@ -7,15 +7,21 @@ import 'package:saber_flutter/data/repositories/catalog_repository.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
+import 'package:saber_flutter/providers/location_provider.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key, this.initialCategory});
+  const SearchScreen({
+    super.key,
+    this.initialCategory,
+    this.initialNearby = false,
+  });
 
   final String? initialCategory;
+  final bool initialNearby;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -31,12 +37,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _ratingFilter = false;
   String? _cityId;
   String _sort = 'relevance';
+  bool _nearbyEnabled = false;
+  double _radiusKm = 10;
+  bool _requestingLocation = false;
 
   @override
   void initState() {
     super.initState();
     _categoryId = widget.initialCategory;
     _scroll.addListener(_onScroll);
+    if (widget.initialNearby) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _enableNearby(forceRefresh: true);
+      });
+    }
   }
 
   @override
@@ -44,6 +58,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialCategory != widget.initialCategory) {
       setState(() => _categoryId = widget.initialCategory);
+    }
+    if (oldWidget.initialNearby != widget.initialNearby && widget.initialNearby) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _enableNearby(forceRefresh: true);
+      });
     }
   }
 
@@ -60,11 +79,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   CustomerSearchFilters get _searchParams => (
     q: _query,
     categoryId: _categoryId,
-    cityId: _cityId,
+    cityId: _nearbyEnabled ? null : _cityId,
     minPrice: _priceRange.start,
     maxPrice: _priceRange.end,
     minRating: _ratingFilter ? 4.5 : null,
-    sort: _sort,
+    latitude:
+        _nearbyEnabled ? ref.read(appLocationProvider).valueOrNull?.latitude : null,
+    longitude:
+        _nearbyEnabled ? ref.read(appLocationProvider).valueOrNull?.longitude : null,
+    radiusKm: _nearbyEnabled ? _radiusKm : null,
+    sort: _nearbyEnabled ? 'nearest' : _sort,
   );
 
   /// Prefetches the next page once the list comes within ~320px of the end.
@@ -102,7 +126,37 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _ratingFilter = false;
       _cityId = null;
       _sort = 'relevance';
+      _nearbyEnabled = false;
+      _radiusKm = 10;
     });
+  }
+
+  Future<void> _enableNearby({bool forceRefresh = false}) async {
+    if (_requestingLocation) return;
+    setState(() => _requestingLocation = true);
+
+    try {
+      final location = await ref
+          .read(appLocationProvider.notifier)
+          .useCurrentLocation(forceRefresh: forceRefresh);
+
+      if (!mounted) return;
+      setState(() {
+        _nearbyEnabled = location != null;
+        if (_nearbyEnabled) {
+          _cityId = null;
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _requestingLocation = false);
+      }
+    }
   }
 
   @override
@@ -111,6 +165,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final cities = ref.watch(citiesProvider).valueOrNull ?? const [];
     final services = ref.watch(customerSearchProvider(_searchParams));
     final total = services.valueOrNull?.total;
+    final location = ref.watch(appLocationProvider);
+    final currentLocation = location.valueOrNull;
 
     return Scaffold(
       backgroundColor: SahelColors.bg,
@@ -191,6 +247,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       isExpanded: true,
                       value: _cityId,
                       hint: const Text('كل المدن'),
+                      disabledHint: const Text('تم تعطيل اختيار المدينة أثناء البحث القريب'),
                       items: [
                         const DropdownMenuItem<String>(
                           value: '',
@@ -205,25 +262,151 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             ),
                           ),
                       ],
-                      onChanged: (v) => setState(
-                        () => _cityId = (v == null || v.isEmpty) ? null : v,
-                      ),
+                      onChanged: _nearbyEnabled
+                          ? null
+                          : (v) => setState(
+                                () => _cityId =
+                                    (v == null || v.isEmpty) ? null : v,
+                              ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const _FilterSectionTitle('الترتيب'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _sortChip('الأكثر صلة', 'relevance'),
-                    _sortChip('الأعلى تقييماً', 'rating'),
-                    _sortChip('الأقل سعراً', 'price_low'),
-                    _sortChip('الأعلى سعراً', 'price_high'),
-                    _sortChip('الأكثر طلباً', 'popular'),
-                  ],
+                const _FilterSectionTitle('الموقع الحالي'),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _nearbyEnabled
+                        ? SahelColors.primarySurface
+                        : SahelColors.surface2,
+                    borderRadius: SahelRadii.mdRadius,
+                    border: Border.all(
+                      color: _nearbyEnabled
+                          ? SahelColors.primary200
+                          : SahelColors.border,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilterChip(
+                              selected: _nearbyEnabled,
+                              onSelected: (selected) async {
+                                if (!selected) {
+                                  setState(() => _nearbyEnabled = false);
+                                  return;
+                                }
+                                await _enableNearby(forceRefresh: true);
+                              },
+                              avatar: const Icon(
+                                Icons.my_location,
+                                size: 16,
+                                color: SahelColors.primary,
+                              ),
+                              label: Text(
+                                _requestingLocation
+                                    ? 'جارٍ تحديد موقعك...'
+                                    : 'بالقرب مني',
+                              ),
+                              selectedColor: SahelColors.primarySurface,
+                              backgroundColor: SahelColors.surface,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: SahelRadii.pillRadius,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton.icon(
+                            onPressed: _requestingLocation
+                                ? null
+                                : () => _enableNearby(forceRefresh: true),
+                            icon: const Icon(Icons.gps_fixed),
+                            label: const Text('تحديث'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        currentLocation == null
+                            ? 'استخدمي موقعك الحالي لترتيب الخدمات من الأقرب إلى الأبعد.'
+                            : 'الموقع: ${currentLocation.city ?? 'تم تحديد الإحداثيات'}'
+                                ' • الدقة ${currentLocation.accuracy.toStringAsFixed(0)}م'
+                                ' • المصدر: ${currentLocation.source}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.5,
+                          color: SahelColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final radius in [5.0, 10.0, 25.0, 50.0])
+                            ChoiceChip(
+                              label: Text('${radius.toInt()} كم'),
+                              selected: _radiusKm == radius,
+                              onSelected: _nearbyEnabled
+                                  ? (_) => setState(() => _radiusKm = radius)
+                                  : null,
+                              selectedColor: SahelColors.primary600,
+                              labelStyle: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: _radiusKm == radius
+                                    ? Colors.white
+                                    : SahelColors.text,
+                              ),
+                              backgroundColor: SahelColors.surface,
+                              side: BorderSide(
+                                color: _radiusKm == radius
+                                    ? SahelColors.primary600
+                                    : SahelColors.border,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: SahelRadii.pillRadius,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 16),
+                const _FilterSectionTitle('الترتيب'),
+                if (_nearbyEnabled)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: SahelColors.primarySurface,
+                      borderRadius: SahelRadii.mdRadius,
+                    ),
+                    child: const Text(
+                      'أثناء تفعيل "بالقرب مني" يتم ترتيب النتائج تلقائيًا من الأقرب إلى الأبعد.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.5,
+                        color: SahelColors.primary700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _sortChip('الأكثر صلة', 'relevance'),
+                      _sortChip('الأعلى تقييماً', 'rating'),
+                      _sortChip('الأقل سعراً', 'price_low'),
+                      _sortChip('الأعلى سعراً', 'price_high'),
+                      _sortChip('الأكثر طلباً', 'popular'),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 const _FilterSectionTitle('الجودة'),
                 Align(
@@ -313,10 +496,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               final items = state.items.map((json) {
                 final provider = asMap(json['provider']);
                 final category = asMap(json['category']);
+                final service = serviceFromJson(json);
                 return _SearchCardData(
-                  service: serviceFromJson(json),
+                  service: service,
                   providerName: strOrNull(provider['business_name']),
                   categoryLabel: strOrNull(category['name']),
+                  distanceKm: service.distanceKm,
                 );
               }).toList();
               if (items.isEmpty) {
@@ -359,6 +544,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             service: s,
                             providerName: item.providerName,
                             categoryLabel: item.categoryLabel,
+                            specLabel: item.distanceKm == null
+                                ? null
+                                : '${item.distanceKm!.toStringAsFixed(1)} كم',
                             onTap: () => context.push(
                               '/home/services/${s.slug.isNotEmpty ? s.slug : s.id}',
                               extra: s,
@@ -430,11 +618,13 @@ class _SearchCardData {
     required this.service,
     this.providerName,
     this.categoryLabel,
+    this.distanceKm,
   });
 
   final Service service;
   final String? providerName;
   final String? categoryLabel;
+  final double? distanceKm;
 }
 
 class _FilterSectionTitle extends StatelessWidget {

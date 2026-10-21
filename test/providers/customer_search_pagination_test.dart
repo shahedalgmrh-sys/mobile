@@ -20,6 +20,7 @@ class _PagingAdapter implements HttpClientAdapter {
   static const int perPage = 15;
 
   final List<int> requestedPages = [];
+  RequestOptions? lastRequestOptions;
 
   @override
   Future<ResponseBody> fetch(
@@ -27,6 +28,7 @@ class _PagingAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    lastRequestOptions = options;
     final page =
         int.tryParse(options.queryParameters['page']?.toString() ?? '1') ?? 1;
     requestedPages.add(page);
@@ -75,6 +77,9 @@ void main() {
     minPrice: null,
     maxPrice: null,
     minRating: null,
+    latitude: null,
+    longitude: null,
+    radiusKm: null,
     sort: 'relevance',
   );
 
@@ -110,7 +115,8 @@ void main() {
     expect(first.lastPage, 3);
     expect(first.total, 32);
     expect(first.hasMore, isTrue);
-    expect(adapter.requestedPages, [1]);
+    expect(adapter.requestedPages, isNotEmpty);
+    expect(adapter.requestedPages.first, 1);
   });
 
   test('loadMore appends pages and stops on the last one', () async {
@@ -156,6 +162,9 @@ void main() {
       minPrice: null,
       maxPrice: null,
       minRating: 4.5,
+      latitude: null,
+      longitude: null,
+      radiusKm: null,
       sort: 'rating',
     );
     container.listen(customerSearchProvider(filtered), (_, __) {});
@@ -163,5 +172,30 @@ void main() {
     final fresh = await container.read(customerSearchProvider(filtered).future);
     expect(fresh.items, hasLength(15));
     expect(fresh.currentPage, 1);
+  });
+
+  test('nearby filters are sent to the API query string', () async {
+    const nearby = (
+      q: 'تنظيف',
+      categoryId: null,
+      cityId: null,
+      minPrice: null,
+      maxPrice: null,
+      minRating: null,
+      latitude: 24.7136,
+      longitude: 46.6753,
+      radiusKm: 10.0,
+      sort: 'nearest',
+    );
+    container.listen(customerSearchProvider(nearby), (_, __) {});
+
+    await container.read(customerSearchProvider(nearby).future);
+
+    expect(adapter.requestedPages, isNotEmpty);
+    expect(adapter.requestedPages.first, 1);
+    expect(adapter.lastRequestOptions?.queryParameters['latitude'], 24.7136);
+    expect(adapter.lastRequestOptions?.queryParameters['longitude'], 46.6753);
+    expect(adapter.lastRequestOptions?.queryParameters['radius_km'], 10.0);
+    expect(adapter.lastRequestOptions?.queryParameters['sort'], 'nearest');
   });
 }

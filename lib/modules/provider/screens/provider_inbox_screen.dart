@@ -54,13 +54,17 @@ class ProviderInboxScreen extends ConsumerWidget {
                 itemBuilder: (ctx, i) {
                   final c = items[i];
                   final other = asMap(
-                      c['customer'] ?? c['other_party'] ?? c['user']);
+                      c['customer'] ??
+                          c['other_party'] ??
+                          c['participant'] ??
+                          c['user']);
                   final name =
                       str(other['name'] ?? c['title'], 'عميل');
-                  final lastMsg = asMap(c['last_message']);
+                  final lastMsg = asMap(c['last_message'] ?? c['latest_message']);
                   final preview =
                       str(lastMsg['body'] ?? c['last_message_preview']);
                   final unread = toInt(c['unread_count']);
+                  final threadId = str(c['id'] ?? c['conversation_id']);
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -90,8 +94,9 @@ class ProviderInboxScreen extends ConsumerWidget {
                                     fontWeight: FontWeight.w800)),
                           )
                         : null,
-                    onTap: () =>
-                        context.push('/p/inbox/${c['id']}'),
+                    onTap: threadId.isEmpty
+                        ? null
+                        : () => context.push('/p/inbox/$threadId'),
                   );
                 },
               ),

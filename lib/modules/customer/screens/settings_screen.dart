@@ -11,6 +11,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('الإعدادات')),
       body: SafeArea(
@@ -18,10 +19,11 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           children: [
             _group('العامة', [
-              _tile(Icons.translate, 'اللغة', 'العربية',
+              _tile(Icons.translate, 'اللغة',
+                  settings.language == 'en' ? 'English' : 'العربية',
                   () => context.push('/settings/language')),
               _tile(Icons.monetization_on_outlined, 'العملة',
-                  ref.watch(appSettingsProvider).currency.toUpperCase(),
+                  settings.currency.toUpperCase(),
                   () => context.push('/settings/currency')),
             ]),
             _group('الخصوصية والأمان', [

@@ -132,16 +132,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/search',
-              pageBuilder: (_, state) => NoTransitionPage(
-                child: SearchScreen(
-                  initialCategory: state.uri.queryParameters['category'],
-                ),
-              ),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
               path: '/bookings',
               pageBuilder: (_, __) => const NoTransitionPage(child: BookingsListScreen()),
               routes: [
@@ -191,6 +181,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
         ],
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (_, state) {
+          final extra = state.extra is Map ? Map<String, dynamic>.from(state.extra as Map) : const <String, dynamic>{};
+          return SearchScreen(
+          initialCategory: state.uri.queryParameters['category'],
+          initialNearby: extra['nearby'] == true ||
+              state.uri.queryParameters['nearby'] == '1',
+        );
+        },
       ),
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
@@ -259,7 +260,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/p/withdraw', builder: (_, __) => const WithdrawRequestScreen()),
       GoRoute(path: '/p/services', builder: (_, __) => const ServiceCatalogScreen()),
       GoRoute(path: '/p/notifications', builder: (_, __) => const ProviderNotificationsScreen()),
-      GoRoute(path: '/p/settings', builder: (_, __) => const ProviderSettingsScreen()),
+      GoRoute(
+        path: '/p/settings',
+        builder: (_, __) => const ProviderSettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'basic',
+            builder: (_, __) => const ProviderProfileBasicsScreen(),
+          ),
+          GoRoute(
+            path: 'areas',
+            builder: (_, __) => const ProviderServiceAreasScreen(),
+          ),
+          GoRoute(
+            path: 'portfolio',
+            builder: (_, __) => const ProviderPortfolioScreen(),
+          ),
+        ],
+      ),
       GoRoute(path: '/p/kyc', builder: (_, __) => const KycStatusScreen()),
       GoRoute(path: '/p/calendar', builder: (_, __) => const CalendarScreen()),
     ],

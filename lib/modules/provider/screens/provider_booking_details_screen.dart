@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/repositories/provider_repository.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/booking_status_stepper.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
@@ -62,6 +65,17 @@ class _Body extends ConsumerStatefulWidget {
 class _BodyState extends ConsumerState<_Body> {
   bool _busy = false;
 
+  String _failureMessage(Object e) {
+    if (e is ApiException) {
+      final failure = e.failure;
+      if (failure is ServerFailure) return failure.message;
+      if (failure is ValidationFailure) {
+        return failure.errors.values.expand((items) => items).join('\n');
+      }
+    }
+    return 'تعذر تنفيذ العملية';
+  }
+
   Future<void> _act(Future<Map<String, dynamic>> Function() call) async {
     setState(() => _busy = true);
     try {
@@ -69,14 +83,43 @@ class _BodyState extends ConsumerState<_Body> {
       ref.invalidate(providerBookingProvider(widget.bookingId));
       ref.invalidate(providerBookingsProvider);
       ref.invalidate(providerDashboardProvider);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تعذر تنفيذ العملية')));
+            .showSnackBar(SnackBar(content: Text(_failureMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _reject(ProviderRepository repo, String id) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('سبب رفض الحجز'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'اكتب سبب الرفض إن وجد',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('تأكيد الرفض'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    await _act(() => repo.rejectBooking(id, reason: reason));
   }
 
   @override
@@ -237,7 +280,7 @@ class _BodyState extends ConsumerState<_Body> {
                 Expanded(
                   child: SahelButton.soft(
                     label: 'رفض الحجز',
-                    onTap: () => _act(() => repo.rejectBooking(id)),
+                    onTap: () => _reject(repo, id),
                     height: 46,
                   ),
                 ),

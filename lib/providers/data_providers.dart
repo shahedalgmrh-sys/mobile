@@ -129,6 +129,9 @@ typedef CustomerSearchFilters = ({
   double? minPrice,
   double? maxPrice,
   double? minRating,
+  double? latitude,
+  double? longitude,
+  double? radiusKm,
   String? sort,
 });
 
@@ -175,6 +178,9 @@ class CustomerSearchController
     if (params.minPrice != null) 'min_price': params.minPrice,
     if (params.maxPrice != null) 'max_price': params.maxPrice,
     if (params.minRating != null) 'min_rating': params.minRating,
+    if (params.latitude != null) 'latitude': params.latitude,
+    if (params.longitude != null) 'longitude': params.longitude,
+    if (params.radiusKm != null) 'radius_km': params.radiusKm,
     if (params.sort != null) 'sort': params.sort,
     'type': 'services',
   };

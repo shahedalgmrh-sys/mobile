@@ -128,8 +128,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
               ),
               data: (c) {
-                final messages =
-                    asMapList(c['messages'] ?? c['data']);
+                final messages = dataList(
+                  c['messages'] ??
+                      c['chat_messages'] ??
+                      c['items'] ??
+                      c['data'],
+                );
                 if (messages.isEmpty) {
                   return const Center(
                     child: Text('ابدأ المحادثة…',

@@ -104,7 +104,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final id = str(b['id']);
 
     return InkWell(
-      onTap: id.isNotEmpty ? () => context.push('/provider/bookings/$id') : null,
+      onTap: id.isNotEmpty ? () => context.push('/p/bookings/$id') : null,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
