@@ -14,8 +14,6 @@ class CustomerShell extends StatelessWidget {
     SahelNavDestination(
         icon: Icons.home_outlined, activeIcon: Icons.home, label: 'الرئيسية'),
     SahelNavDestination(
-        icon: Icons.search_outlined, activeIcon: Icons.search, label: 'البحث'),
-    SahelNavDestination(
         icon: Icons.calendar_month_outlined,
         activeIcon: Icons.calendar_month,
         label: 'الحجوزات'),

@@ -11,6 +11,18 @@ import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
+class _DayAvailability {
+  const _DayAvailability({
+    required this.slots,
+    this.error,
+  });
+
+  final List<Map<String, dynamic>> slots;
+  final String? error;
+
+  bool get isAvailable => slots.isNotEmpty;
+}
+
 class BookingWizardScreen extends ConsumerStatefulWidget {
   final String? serviceId;
   const BookingWizardScreen({super.key, this.serviceId});
@@ -38,11 +50,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   );
 
   List<Map<String, dynamic>> _slots = const [];
-  bool _loadingSlots = false;
+  bool _loadingCalendarAvailability = false;
   String? _slotError;
   String? _selectedSlotTime;
+  Map<int, _DayAvailability> _availability = const {};
 
-  static const _paymentLabels = ['محفظة', 'بطاقة', 'عند الاستلام'];
+  static const _paymentLabels = ['محفظة المنصة', 'كاش عند الاستلام'];
+  static const _paymentCodes = ['wallet', 'cash'];
   int _selectedPayment = 0;
   bool _submitting = false;
 
@@ -73,6 +87,17 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
   /// Real service id (numeric) — never the slug — as required by the API.
   String? get _serviceId => _service?.id ?? widget.serviceId;
+
+  String get _selectedPaymentCode => _paymentCodes[_selectedPayment];
+
+  _DayAvailability? _availabilityFor(int index) => _availability[index];
+
+  int? _firstAvailableDayIndex(Map<int, _DayAvailability> availability) {
+    for (final entry in availability.entries) {
+      if (entry.value.isAvailable) return entry.key;
+    }
+    return null;
+  }
 
   String _dateParam(int index) {
     final d = _dates[index];
@@ -106,36 +131,81 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return fallback;
   }
 
-  /// Loads the provider's real available slots for the selected date from
-  /// `GET /api/bookings/available-slots`.
-  Future<void> _loadSlots() async {
+  Future<void> _loadCalendarAvailability() async {
     final id = _serviceId;
     if (id == null) {
-      setState(() => _slots = const []);
+      setState(() {
+        _availability = const {};
+        _slots = const [];
+        _slotError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _loadingCalendarAvailability = true;
+      _slotError = null;
+    });
+
+    final repo = ref.read(customerRepositoryProvider);
+    final entries = await Future.wait(
+      List.generate(_dates.length, (index) async {
+        try {
+          final slots = await repo.availableSlots(
+            serviceId: id,
+            date: _dateParam(index),
+          );
+          return MapEntry(index, _DayAvailability(slots: slots));
+        } catch (e) {
+          return MapEntry(
+            index,
+            _DayAvailability(
+              slots: const [],
+              error: _failureMessage(e, 'تعذر فحص التوفر في هذا اليوم.'),
+            ),
+          );
+        }
+      }),
+    );
+
+    if (!mounted) return;
+
+    final availability = {
+      for (final entry in entries) entry.key: entry.value,
+    };
+    final fallbackDate = _firstAvailableDayIndex(availability);
+    final nextSelected = availability[_selectedDate]?.isAvailable == true
+        ? _selectedDate
+        : (fallbackDate ?? _selectedDate);
+    final selectedAvailability = availability[nextSelected];
+
+    setState(() {
+      _availability = availability;
+      _loadingCalendarAvailability = false;
+      _selectedDate = nextSelected;
+      _slots = selectedAvailability?.slots ?? const [];
+      _slotError = selectedAvailability?.error;
+      if (_selectedSlotTime != null &&
+          !_slots.any((slot) => str(slot['time']) == _selectedSlotTime)) {
+        _selectedSlotTime = null;
+      }
+    });
+  }
+
+  void _selectDate(int index) {
+    final availability = _availabilityFor(index);
+    if (_loadingCalendarAvailability || availability == null || !availability.isAvailable) {
       return;
     }
     setState(() {
-      _loadingSlots = true;
-      _slotError = null;
-      _selectedSlotTime = null;
+      _selectedDate = index;
+      _slots = availability.slots;
+      _slotError = availability.error;
+      if (_selectedSlotTime != null &&
+          !_slots.any((slot) => str(slot['time']) == _selectedSlotTime)) {
+        _selectedSlotTime = null;
+      }
     });
-    try {
-      final slots = await ref
-          .read(customerRepositoryProvider)
-          .availableSlots(serviceId: id, date: _dateParam(_selectedDate));
-      if (!mounted) return;
-      setState(() {
-        _slots = slots;
-        _loadingSlots = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _slots = const [];
-        _loadingSlots = false;
-        _slotError = _failureMessage(e, 'تعذر تحميل الأوقات المتاحة.');
-      });
-    }
   }
 
   @override
@@ -162,7 +232,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         curve: Curves.easeInOut,
       );
       setState(() => _step++);
-      if (_step == 2) _loadSlots();
+      if (_step == 2) _loadCalendarAvailability();
     }
   }
 
@@ -225,11 +295,45 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
+      final serviceId = _serviceId;
+      final selectedTime = _selectedSlotTime;
+      if (serviceId == null || selectedTime == null) {
+        throw const ApiException(
+          ServerFailure(code: 0, message: 'اختر الموعد قبل متابعة الحجز.'),
+        );
+      }
+
+      final refreshedSlots = await ref
+          .read(customerRepositoryProvider)
+          .availableSlots(serviceId: serviceId, date: _dateParam(_selectedDate));
+      final slotStillAvailable = refreshedSlots.any(
+        (slot) => str(slot['time']) == selectedTime,
+      );
+      if (!slotStillAvailable) {
+        if (!mounted) return;
+        setState(() {
+          _availability = {
+            ..._availability,
+            _selectedDate: _DayAvailability(slots: refreshedSlots),
+          };
+          _slots = refreshedSlots;
+          _selectedSlotTime = null;
+          _step = 2;
+        });
+        _pageController.jumpToPage(2);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('المزوّد خارج الخدمة في الموعد الذي اخترته الآن.'),
+          ),
+        );
+        return;
+      }
+
       final booking = await ref.read(customerRepositoryProvider).createBooking({
-        'service_id': _serviceId,
+        'service_id': serviceId,
         'customer_address_id': _selectedAddressId,
         'booking_date': _dateParam(_selectedDate),
-        'booking_time': _selectedSlotTime,
+        'booking_time': selectedTime,
         'notes':
             'التكرار: ${_frequencies[_selectedFrequency]} · الدفع: ${_paymentLabels[_selectedPayment]}',
         if (_appliedCoupon != null)
@@ -238,10 +342,28 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       if (!mounted) return;
       ref.invalidate(customerBookingsProvider);
       final newId = booking['id'] ?? booking['booking_id'];
+      String? paymentWarning;
+      if (newId != null && _selectedPaymentCode == 'wallet') {
+        try {
+          await ref
+              .read(customerRepositoryProvider)
+              .payBooking(str(newId), _selectedPaymentCode);
+        } catch (e) {
+          paymentWarning = _failureMessage(
+            e,
+            'تم إنشاء الحجز لكن تعذر خصم المبلغ من المحفظة الآن.',
+          );
+        }
+      }
+      if (!mounted) return;
       if (newId != null) {
         context.pushReplacement('/bookings/$newId');
       } else {
         context.go('/bookings');
+      }
+      if (paymentWarning != null && mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(paymentWarning)));
       }
     } catch (e) {
       if (mounted) {
@@ -739,8 +861,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
+        if (_loadingCalendarAvailability)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: LinearProgressIndicator(minHeight: 3),
+          ),
         SizedBox(
-          height: 84,
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _dates.length,
@@ -748,6 +875,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             itemBuilder: (ctx, i) {
               final d = _dates[i];
               final selected = _selectedDate == i;
+              final availability = _availabilityFor(i);
+              final available = availability?.isAvailable ?? false;
+              final disabled = _loadingCalendarAvailability ||
+                  availability == null ||
+                  !available;
               final dayNames = [
                 'أحد',
                 'اثن',
@@ -758,61 +890,102 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 'سبت',
               ];
               return InkWell(
-                onTap: () {
-                  setState(() => _selectedDate = i);
-                  _loadSlots();
-                },
+                onTap: disabled ? null : () => _selectDate(i),
                 borderRadius: SahelRadii.mdRadius,
                 child: Container(
                   width: 60,
                   decoration: BoxDecoration(
                     color: selected
                         ? SahelColors.primary600
-                        : SahelColors.surface2,
+                        : disabled
+                            ? SahelColors.surface3
+                            : SahelColors.surface2,
                     borderRadius: SahelRadii.mdRadius,
                     border: Border.all(
                       color: selected
                           ? SahelColors.primary600
-                          : SahelColors.border,
+                          : disabled
+                              ? SahelColors.border.withValues(alpha: 0.55)
+                              : SahelColors.border,
                     ),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
                     children: [
-                      Text(
-                        dayNames[d.weekday % 7],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? Colors.white
-                              : SahelColors.textMuted,
-                        ),
+                      Column(
+                        children: [
+                          Text(
+                            dayNames[d.weekday % 7],
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: selected
+                                  ? Colors.white
+                                  : disabled
+                                      ? SahelColors.textSoft
+                                      : SahelColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${d.day}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: selected
+                                  ? Colors.white
+                                  : disabled
+                                      ? SahelColors.textSoft
+                                      : SahelColors.text,
+                            ),
+                          ),
+                          Text(
+                            '${d.month}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: selected
+                                  ? Colors.white70
+                                  : disabled
+                                      ? SahelColors.textSoft
+                                      : SahelColors.textMuted,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${d.day}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: selected ? Colors.white : SahelColors.text,
+                      if (!_loadingCalendarAvailability && availability != null)
+                        Container(
+                          width: 22,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 4),
+                          decoration: BoxDecoration(
+                            color: available
+                                ? SahelColors.success
+                                : SahelColors.danger,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${d.month}',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: selected
-                              ? Colors.white70
-                              : SahelColors.textMuted,
-                        ),
-                      ),
                     ],
                   ),
                 ),
               );
             },
           ),
+        ),
+        const SizedBox(height: 10),
+        const Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            _AvailabilityLegend(
+              color: SahelColors.success,
+              label: 'أخضر غامق: متوفر',
+            ),
+            _AvailabilityLegend(
+              color: SahelColors.danger,
+              label: 'أحمر: غير متوفر',
+            ),
+          ],
         ),
         if (_selectedSlotLabel != null) ...[
           const SizedBox(height: 12),
@@ -850,7 +1023,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
-        if (_loadingSlots)
+        if (_loadingCalendarAvailability)
           const Padding(
             padding: EdgeInsets.all(24),
             child: Center(child: CircularProgressIndicator()),
@@ -950,18 +1123,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     final methods = [
       (
         icon: Icons.account_balance_wallet,
-        name: 'المحفظة الرقمية',
-        desc: walletBalance,
-      ),
-      (
-        icon: Icons.credit_card,
-        name: 'بطاقة بنكية',
-        desc: 'مدى / Visa / Mastercard',
+        name: 'محفظة المنصة',
+        desc: '$walletBalance · يتم الخصم مباشرة بعد تأكيد الحجز',
       ),
       (
         icon: Icons.monetization_on,
-        name: 'الدفع عند الاستلام',
-        desc: 'عند إكمال الخدمة',
+        name: 'كاش عند الاستلام',
+        desc: 'تدفع للمزوّد عند تنفيذ الخدمة',
       ),
     ];
     const label = TextStyle(
@@ -977,6 +1145,22 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const Text(
           'طريقة الدفع',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: SahelColors.primarySurface,
+            borderRadius: SahelRadii.mdRadius,
+          ),
+          child: const Text(
+            'المتاح حالياً داخل التطبيق: محفظة المنصة أو الدفع كاش عند الاستلام.',
+            style: TextStyle(
+              color: SahelColors.primary700,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         ...List.generate(methods.length, (i) {
@@ -1110,6 +1294,42 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AvailabilityLegend extends StatelessWidget {
+  const _AvailabilityLegend({
+    required this.color,
+    required this.label,
+  });
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 4,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: SahelColors.textMuted,
           ),
         ),
       ],

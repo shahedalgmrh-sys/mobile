@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
@@ -93,6 +95,17 @@ class _RequestCard extends ConsumerStatefulWidget {
 class _RequestCardState extends ConsumerState<_RequestCard> {
   bool _busy = false;
 
+  String _failureMessage(Object e) {
+    if (e is ApiException) {
+      final failure = e.failure;
+      if (failure is ServerFailure) return failure.message;
+      if (failure is ValidationFailure) {
+        return failure.errors.values.expand((items) => items).join('\n');
+      }
+    }
+    return 'تعذر تنفيذ العملية';
+  }
+
   Future<void> _act(String action) async {
     setState(() => _busy = true);
     final repo = ref.read(providerRepositoryProvider);
@@ -101,19 +114,58 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
       if (action == 'accept') {
         await repo.acceptBooking(id);
       } else {
-        await repo.rejectBooking(id);
+        final reason = await _askRejectReason();
+        if (reason == null) return;
+        await repo.rejectBooking(id, reason: reason);
       }
       ref.invalidate(providerBookingsProvider);
       ref.invalidate(providerDashboardProvider);
-    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر تنفيذ العملية')),
+          SnackBar(
+            content: Text(
+              action == 'accept' ? 'تم قبول الطلب' : 'تم رفض الطلب',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_failureMessage(e))),
         );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<String?> _askRejectReason() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('سبب الرفض'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'اكتب سبب الرفض إن وجد',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('تأكيد الرفض'),
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 
   @override

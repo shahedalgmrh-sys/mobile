@@ -57,19 +57,21 @@ class MessagesListScreen extends ConsumerWidget {
                   final c = items[i];
                   final other = asMap(c['other_party'] ??
                       c['provider'] ??
-                      c['participant']);
+                      c['participant'] ??
+                      c['user']);
                   final otherUser = asMap(other['user']);
                   final name = str(other['business_name'] ??
                       otherUser['name'] ??
                       c['title'],
                       'محادثة');
-                  final lastMsg = asMap(c['last_message']);
+                  final lastMsg = asMap(c['last_message'] ?? c['latest_message']);
                   final preview = str(
                       lastMsg['body'] ?? c['last_message_preview']);
                   final at = str(lastMsg['created_at'] ??
                       c['last_message_at'] ??
                       c['updated_at']);
                   final unread = toInt(c['unread_count']);
+                  final threadId = str(c['id'] ?? c['conversation_id']);
 
                   return ListTile(
                     leading: CircleAvatar(
@@ -112,8 +114,9 @@ class MessagesListScreen extends ConsumerWidget {
                           ),
                       ],
                     ),
-                    onTap: () =>
-                        context.push('/inbox/${c['id']}'),
+                    onTap: threadId.isEmpty
+                        ? null
+                        : () => context.push('/inbox/$threadId'),
                   );
                 },
               ),

@@ -12,10 +12,10 @@ class ProviderBookingsScreen extends ConsumerWidget {
   const ProviderBookingsScreen({super.key});
 
   static const _tabs = [
-    (label: 'الجديدة', status: 'accepted'),
+    (label: 'الجديدة', status: 'pending'),
+    (label: 'المقبولة', status: 'accepted'),
     (label: 'قيد التنفيذ', status: 'in_progress'),
     (label: 'المكتملة', status: 'completed'),
-    (label: 'الملغية', status: 'cancelled'),
   ];
 
   @override

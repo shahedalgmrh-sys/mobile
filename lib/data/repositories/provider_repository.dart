@@ -96,6 +96,26 @@ class ProviderRepository {
   Future<List<Map<String, dynamic>>> portfolio() async =>
       dataList(apiData(await source.portfolio()));
 
+  Future<Map<String, dynamic>> storePortfolio({
+    required String title,
+    String? description,
+    required String imagePath,
+  }) async => asMap(
+    apiData(
+      await source.storePortfolio(
+        {
+          'title': title,
+          if (description != null && description.isNotEmpty)
+            'description': description,
+        },
+        image: await MultipartFile.fromFile(
+          imagePath,
+          filename: imagePath.split(RegExp(r'[\\/]')).last,
+        ),
+      ),
+    ),
+  );
+
   Future<void> destroyPortfolio(String id) => source.destroyPortfolio(id);
 
   // Wallet & withdrawals
@@ -117,11 +137,17 @@ class ProviderRepository {
   Future<void> replyReview(String id, String reply) => source.replyReview(id, reply);
 
   // Chat
-  Future<List<Map<String, dynamic>>> conversations() async =>
-      dataList(apiData(await source.conversations()));
+  Future<List<Map<String, dynamic>>> conversations() async {
+    final payload = apiData(await source.conversations());
+    final map = asMap(payload);
+    return dataList(map['conversations'] ?? map['items'] ?? payload);
+  }
 
-  Future<Map<String, dynamic>> conversation(String id) async =>
-      asMap(apiData(await source.conversation(id)));
+  Future<Map<String, dynamic>> conversation(String id) async {
+    final payload = apiData(await source.conversation(id));
+    final map = asMap(payload);
+    return asMap(map['conversation'] ?? map['thread'] ?? payload);
+  }
 
   Future<Map<String, dynamic>> sendMessage(String id, String body) async =>
       asMap(apiData(await source.sendMessage(id, body)));

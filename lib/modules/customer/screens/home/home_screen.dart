@@ -145,7 +145,7 @@ class _HomeHeader extends StatelessWidget {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => context.go('/search'),
+                      onTap: () => context.push('/search'),
                       child: Container(
                         height: 46,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -178,7 +178,7 @@ class _HomeHeader extends StatelessWidget {
                   _IconCircle(
                     icon: Icons.tune,
                     color: SahelColors.primary,
-                    onTap: () => context.go('/search'),
+                    onTap: () => context.push('/search'),
                   ),
                 ],
               ),
@@ -300,7 +300,7 @@ class _HomeContent extends StatelessWidget {
             title: 'الخدمات الأكثر حجزاً هذا الشهر',
             subtitle: 'هذه الخدمات يثق بها عملاؤنا أكثر من غيرها',
             actionLabel: 'عرض الكل',
-            onAction: () => context.go('/search'),
+            onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
           for (final service in popular) ...[
@@ -321,7 +321,7 @@ class _HomeContent extends StatelessWidget {
             title: 'تعرف على أفضل المزوّدين',
             subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة',
             actionLabel: 'كل المزوّدين',
-            onAction: () => context.go('/search'),
+            onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
           for (final provider in data.featuredProviders) ...[
@@ -416,7 +416,7 @@ class _CategoriesSection extends StatelessWidget {
         _SectionHeader(
           title: 'الأقسام الرئيسية',
           actionLabel: 'الكل',
-          onAction: () => context.go('/search'),
+          onAction: () => context.push('/search'),
         ),
         const SizedBox(height: 12),
         if (categories.isEmpty)
@@ -437,7 +437,7 @@ class _CategoriesSection extends StatelessWidget {
                   color: styles[i % styles.length].$2,
                   bgColor: styles[i % styles.length].$3,
                   onTap: () =>
-                      context.go('/search?category=${categories[i].id}'),
+                      context.push('/search?category=${categories[i].id}'),
                 ),
             ],
           ),
@@ -591,7 +591,7 @@ class _PromoHero extends StatelessWidget {
                     SahelButton.whiteBgPrimaryText(
                       label: 'احجز الآن',
                       width: 120,
-                      onPressed: () => context.go('/search'),
+                      onPressed: () => context.push('/search'),
                     ),
                   ],
                 ),
