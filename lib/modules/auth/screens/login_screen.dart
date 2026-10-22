@@ -78,7 +78,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Text(
                       'مرحباً بعودتك 👋'.t(lang),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 28,
                         height: 1.3,
                         fontWeight: FontWeight.w800,
@@ -137,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         child: Text(
                           'نسيت كلمة المرور؟'.t(lang),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                           ),
@@ -179,12 +179,12 @@ class _OrDivider extends StatelessWidget {
     final lang = Localizations.localeOf(context).languageCode;
     return Row(
       children: [
-        Expanded(child: Divider(color: SahelColors.border)),
+        const Expanded(child: Divider(color: SahelColors.border)),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text('أو'.t(lang), style: SahelTextStyles.caption),
         ),
-        Expanded(child: Divider(color: SahelColors.border)),
+        const Expanded(child: Divider(color: SahelColors.border)),
       ],
     );
   }
