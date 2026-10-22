@@ -214,6 +214,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/addresses', builder: (_, __) => const AddressBookScreen()),
       GoRoute(path: '/profile/reviews', builder: (_, __) => const MyReviewsScreen()),
       GoRoute(path: '/profile/coupons', builder: (_, __) => const CouponsScreen()),
+      GoRoute(path: '/payments', builder: (_, __) => const CustomerPaymentsScreen()),
       GoRoute(path: '/profile/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
       GoRoute(path: '/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
       GoRoute(path: '/complaints/new', builder: (_, __) => const SubmitComplaintScreen()),

@@ -122,9 +122,12 @@ class AppLocationNotifier extends AsyncNotifier<AppLocation?> {
     }
 
     final lastKnown = await Geolocator.getLastKnownPosition();
+    final lastKnownFresh = lastKnown != null &&
+        DateTime.now().difference(lastKnown.timestamp) <
+            const Duration(minutes: 5);
     final candidates = <AppLocation>[
-      if (lastKnown != null)
-        await _toLocation(lastKnown, source: 'آخر موقع معروف'),
+      if (lastKnownFresh)
+        await _toLocation(lastKnown!, source: 'آخر موقع معروف'),
       if (cached != null) cached,
     ];
 
