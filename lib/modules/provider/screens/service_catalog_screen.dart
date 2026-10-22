@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
@@ -18,7 +19,7 @@ class ServiceCatalogScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton(
         backgroundColor: SahelColors.primary600,
         foregroundColor: Colors.white,
-        onPressed: () {},
+        onPressed: () => context.push('/p/services/new'),
         child: const Icon(Icons.add),
       ),
       appBar: AppBar(title: const Text('كتالوج الخدمات')),
@@ -181,15 +182,16 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
               Expanded(
                   child: SahelButton.soft(
                       label: 'تعديل',
-                      onTap: () {},
+                      onTap: () =>
+                          context.push('/p/services/edit', extra: s),
                       height: 36,
                       width: 0)),
               const SizedBox(width: 8),
               Expanded(
                   child: SahelButton(
-                      label: 'الحجوزات',
+                      label: 'خيارات',
                       variant: SahelButtonVariant.outline,
-                      onPressed: () {},
+                      onPressed: () => _showOptions(context),
                       height: 36,
                       width: 0)),
             ],
@@ -197,5 +199,98 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
         ],
       ),
     );
+  }
+
+  Future<void> _showOptions(BuildContext context) async {
+    final title = str(widget.service['name'] ?? widget.service['title'], 'خدمة');
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text(title,
+                  style:
+                      const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy_all_outlined),
+              title: const Text('تكرار الخدمة'),
+              subtitle: const Text('نسخة جاهزة للتعديل',
+                  style: TextStyle(fontSize: 11, color: SahelColors.muted)),
+              onTap: () => Navigator.pop(ctx, 'duplicate'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline,
+                  color: SahelColors.danger),
+              title: const Text('حذف الخدمة',
+                  style: TextStyle(color: SahelColors.danger)),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+    final repo = ref.read(providerRepositoryProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final id = str(widget.service['id']);
+    if (action == 'duplicate') {
+      setState(() => _busy = true);
+      try {
+        await repo.duplicateService(id);
+        ref.invalidate(providerServicesProvider);
+        if (!mounted) return;
+        messenger.showSnackBar(const SnackBar(content: Text('تم إنشاء نسخة ✓')));
+      } catch (_) {
+        if (mounted) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('تعذر تكرار الخدمة')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف الخدمة؟'),
+        content: const Text('ستُزال الخدمة نهائياً من كتالوجك.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حذف',
+                  style: TextStyle(color: SahelColors.danger))),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final deleteMessenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      await repo.destroyService(id);
+      ref.invalidate(providerServicesProvider);
+      if (!mounted) return;
+      deleteMessenger.showSnackBar(const SnackBar(content: Text('تم حذف الخدمة ✓')));
+    } catch (_) {
+      if (mounted) {
+        deleteMessenger.showSnackBar(
+          const SnackBar(content: Text('تعذر حذف الخدمة')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 }

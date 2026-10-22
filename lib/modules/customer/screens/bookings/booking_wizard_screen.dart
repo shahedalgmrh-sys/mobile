@@ -1,10 +1,14 @@
+import 'dart:math' show atan2, cos, sin, pi, sqrt;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/repositories/customer_repository.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
+import 'package:saber_flutter/core/constants/payment_methods.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
@@ -38,25 +42,27 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
   final _frequencies = const ['مرة واحدة', 'أسبوعياً', 'أسبوعين', 'شهرياً'];
   int _selectedFrequency = 0;
+  String? _selectedPricingId;
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
 
   String? _selectedAddressId;
 
-  int _selectedDate = 0;
-  final _dates = List.generate(
-    14,
-    (i) => DateTime.now().add(Duration(days: i)),
-  );
+  DateTime _selectedDay = DateTime.now();
+  DateTime _calMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
   List<Map<String, dynamic>> _slots = const [];
   bool _loadingCalendarAvailability = false;
   String? _slotError;
   String? _selectedSlotTime;
-  Map<int, _DayAvailability> _availability = const {};
+  Map<String, _DayAvailability> _availability = const {};
 
-  static const _paymentLabels = ['محفظة المنصة', 'كاش عند الاستلام'];
-  static const _paymentCodes = ['wallet', 'cash'];
+  /// Cache key for a calendar day: `yyyy-MM-dd`.
+  static String _dayKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
   int _selectedPayment = 0;
   bool _submitting = false;
 
@@ -75,7 +81,18 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return null;
   }
 
-  double get _subtotal => _service?.basePrice ?? 0;
+  /// Selected pricing tier's effective price when one is picked, otherwise
+  /// the service base price.
+  double get _subtotal {
+    final service = _service;
+    if (service == null) return 0;
+    if (_selectedPricingId != null) {
+      for (final tier in service.pricing) {
+        if (tier.id == _selectedPricingId) return tier.effectivePrice;
+      }
+    }
+    return service.basePrice;
+  }
   double _appliedDiscount = 0;
   double get _discount => _appliedCoupon == null ? 0 : _appliedDiscount;
 
@@ -88,22 +105,20 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   /// Real service id (numeric) — never the slug — as required by the API.
   String? get _serviceId => _service?.id ?? widget.serviceId;
 
-  String get _selectedPaymentCode => _paymentCodes[_selectedPayment];
-
-  _DayAvailability? _availabilityFor(int index) => _availability[index];
-
-  int? _firstAvailableDayIndex(Map<int, _DayAvailability> availability) {
-    for (final entry in availability.entries) {
-      if (entry.value.isAvailable) return entry.key;
-    }
-    return null;
+  String get _selectedPaymentCode {
+    final i = _selectedPayment.clamp(0, PaymentMethods.booking.length - 1);
+    return PaymentMethods.booking[i].$1;
   }
 
-  String _dateParam(int index) {
-    final d = _dates[index];
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}'
-        '-${d.day.toString().padLeft(2, '0')}';
+  /// Free-text note only used when the service has no pricing tiers — the
+  /// frequency chips then have no server-side meaning (kept informational).
+  String? get _bookingNotes {
+    final service = _service;
+    if (service == null || service.pricing.isNotEmpty) return null;
+    return 'التكرار: ${_frequencies[_selectedFrequency]}';
   }
+
+  String _dateParam(DateTime d) => _dayKey(d);
 
   /// Friendly label for the selected slot (e.g. «10:00 ص»), falling back to
   /// the raw `H:i` value.
@@ -114,6 +129,17 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       if (str(s['time']) == t) return str(s['label_ar'] ?? s['label'], t);
     }
     return t;
+  }
+
+  /// Friendly label for the selected day («الأحد 12 أكتوبر 2026»).
+  String _selectedDayLabel() {
+    const months = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    ];
+    const days = ['اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت', 'أحد'];
+    final d = _selectedDay;
+    return '${days[d.weekday - 1]} ${d.day} ${months[d.month - 1]} ${d.year}';
   }
 
   /// Surfaces the backend's Arabic validation/business messages instead of a
@@ -131,6 +157,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return fallback;
   }
 
+  /// Loads per-day availability for the whole displayed month (from today
+  /// onwards), in chunks so the local API is not flooded in one burst.
   Future<void> _loadCalendarAvailability() async {
     final id = _serviceId;
     if (id == null) {
@@ -148,43 +176,55 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     });
 
     final repo = ref.read(customerRepositoryProvider);
-    final entries = await Future.wait(
-      List.generate(_dates.length, (index) async {
-        try {
-          final slots = await repo.availableSlots(
-            serviceId: id,
-            date: _dateParam(index),
-          );
-          return MapEntry(index, _DayAvailability(slots: slots));
-        } catch (e) {
-          return MapEntry(
-            index,
-            _DayAvailability(
-              slots: const [],
-              error: _failureMessage(e, 'تعذر فحص التوفر في هذا اليوم.'),
-            ),
-          );
-        }
-      }),
-    );
+    final today = DateTime.now();
+    final monthStart = DateTime(_calMonth.year, _calMonth.month, 1);
+    final monthEnd = DateTime(_calMonth.year, _calMonth.month + 1, 0);
+    final firstDay = monthStart.isBefore(today) ? today : monthStart;
+    final lastDay =
+        monthEnd.isAfter(today.add(const Duration(days: 90)))
+            ? today.add(const Duration(days: 90))
+            : monthEnd;
+
+    final days = <DateTime>[];
+    for (var d = firstDay;
+        !d.isAfter(lastDay);
+        d = d.add(const Duration(days: 1))) {
+      days.add(d);
+    }
+
+    final loaded = <String, _DayAvailability>{};
+    const chunkSize = 7;
+    for (var i = 0; i < days.length; i += chunkSize) {
+      final chunk = days.skip(i).take(chunkSize).toList();
+      final results = await Future.wait(
+        [for (final d in chunk) _fetchDay(repo, id, d)],
+      );
+      for (final entry in results) {
+        loaded[entry.key] = entry.value;
+      }
+      if (mounted) {
+        setState(() => _availability = {
+              ..._availability,
+              ...loaded,
+            });
+      }
+    }
 
     if (!mounted) return;
 
-    final availability = {
-      for (final entry in entries) entry.key: entry.value,
-    };
-    final fallbackDate = _firstAvailableDayIndex(availability);
-    final nextSelected = availability[_selectedDate]?.isAvailable == true
-        ? _selectedDate
-        : (fallbackDate ?? _selectedDate);
-    final selectedAvailability = availability[nextSelected];
+    final fallbackKey = loaded.keys
+        .where((k) => loaded[k]?.isAvailable == true)
+        .firstOrNull;
+    final selectedKey = _dayKey(_selectedDay);
+    final nextKey = _availability[selectedKey]?.isAvailable == true
+        ? selectedKey
+        : (fallbackKey ?? selectedKey);
 
     setState(() {
-      _availability = availability;
       _loadingCalendarAvailability = false;
-      _selectedDate = nextSelected;
-      _slots = selectedAvailability?.slots ?? const [];
-      _slotError = selectedAvailability?.error;
+      _selectedDay = DateTime.tryParse(nextKey) ?? _selectedDay;
+      _slots = _availability[nextKey]?.slots ?? const [];
+      _slotError = _availability[nextKey]?.error;
       if (_selectedSlotTime != null &&
           !_slots.any((slot) => str(slot['time']) == _selectedSlotTime)) {
         _selectedSlotTime = null;
@@ -192,13 +232,37 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     });
   }
 
-  void _selectDate(int index) {
-    final availability = _availabilityFor(index);
-    if (_loadingCalendarAvailability || availability == null || !availability.isAvailable) {
+  Future<MapEntry<String, _DayAvailability>> _fetchDay(
+    CustomerRepository repo,
+    String serviceId,
+    DateTime day,
+  ) async {
+    try {
+      final slots = await repo.availableSlots(
+        serviceId: serviceId,
+        date: _dayKey(day),
+      );
+      return MapEntry(_dayKey(day), _DayAvailability(slots: slots));
+    } catch (e) {
+      return MapEntry(
+        _dayKey(day),
+        _DayAvailability(
+          slots: const [],
+          error: _failureMessage(e, 'تعذر فحص التوفر في هذا اليوم.'),
+        ),
+      );
+    }
+  }
+
+  void _selectDay(DateTime day) {
+    final availability = _availability[_dayKey(day)];
+    if (_loadingCalendarAvailability ||
+        availability == null ||
+        !availability.isAvailable) {
       return;
     }
     setState(() {
-      _selectedDate = index;
+      _selectedDay = day;
       _slots = availability.slots;
       _slotError = availability.error;
       if (_selectedSlotTime != null &&
@@ -215,16 +279,24 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     super.dispose();
   }
 
-  void _next() {
+  Future<void> _next() async {
     if (_step == 1 && _selectedAddressId == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('اختر عنواناً أولاً')));
       return;
     }
     if (_step == 2 && _selectedSlotTime == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('اختر موعداً أولاً')));
-      return;
+      // The spec: an available day opens the interactive clock directly.
+      final slotsAsync = _slots;
+      if (slotsAsync.isNotEmpty) {
+        await _openTimeDial();
+        if (_selectedSlotTime == null || !mounted) return;
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('اختر موعداً أولاً')));
+        return;
+      }
     }
     if (_step < 3) {
       _pageController.nextPage(
@@ -236,6 +308,20 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     }
   }
 
+  void _pageMonth(int delta) {
+    setState(() {
+      _calMonth = DateTime(_calMonth.year, _calMonth.month + delta, 1);
+    });
+    _loadCalendarAvailability();
+  }
+
+  static String _monthLabel(DateTime d) {
+    const months = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    ];
+    return '${months[d.month - 1]} ${d.year}';
+  }
   void _prev() {
     if (_step > 0) {
       _pageController.previousPage(
@@ -305,7 +391,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
       final refreshedSlots = await ref
           .read(customerRepositoryProvider)
-          .availableSlots(serviceId: serviceId, date: _dateParam(_selectedDate));
+          .availableSlots(serviceId: serviceId, date: _dateParam(_selectedDay));
       final slotStillAvailable = refreshedSlots.any(
         (slot) => str(slot['time']) == selectedTime,
       );
@@ -314,7 +400,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         setState(() {
           _availability = {
             ..._availability,
-            _selectedDate: _DayAvailability(slots: refreshedSlots),
+            _dayKey(_selectedDay): _DayAvailability(slots: refreshedSlots),
           };
           _slots = refreshedSlots;
           _selectedSlotTime = null;
@@ -332,10 +418,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       final booking = await ref.read(customerRepositoryProvider).createBooking({
         'service_id': serviceId,
         'customer_address_id': _selectedAddressId,
-        'booking_date': _dateParam(_selectedDate),
+        'booking_date': _dateParam(_selectedDay),
         'booking_time': selectedTime,
-        'notes':
-            'التكرار: ${_frequencies[_selectedFrequency]} · الدفع: ${_paymentLabels[_selectedPayment]}',
+        if (_bookingNotes != null) 'notes': _bookingNotes,
+        if (_selectedPricingId != null)
+          'service_pricing_id': _selectedPricingId,
         if (_appliedCoupon != null)
           'coupon_code': _couponController.text.trim(),
       });
@@ -343,7 +430,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       ref.invalidate(customerBookingsProvider);
       final newId = booking['id'] ?? booking['booking_id'];
       String? paymentWarning;
-      if (newId != null && _selectedPaymentCode == 'wallet') {
+      // cash pays no API call (settled with the provider); wallet and
+      // electronic methods attempt /pay — electronic may fail locally with a
+      // gateway-not-configured message which we surface verbatim.
+      if (newId != null && _selectedPaymentCode != 'cash') {
         try {
           await ref
               .read(customerRepositoryProvider)
@@ -351,7 +441,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         } catch (e) {
           paymentWarning = _failureMessage(
             e,
-            'تم إنشاء الحجز لكن تعذر خصم المبلغ من المحفظة الآن.',
+            'تم إنشاء الحجز لكن تعذر إتمام الدفع — يمكنك الدفع من تفاصيل الحجز.',
           );
         }
       }
@@ -504,6 +594,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildStep1() {
+    final tiers = _service?.pricing ?? const <ServicePricing>[];
+    final selectedTierId = _selectedPricingId;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
@@ -569,37 +661,76 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'تكرار الخدمة',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(_frequencies.length, (i) {
-            final selected = _selectedFrequency == i;
-            return ChoiceChip(
-              label: Text(
-                _frequencies[i],
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: selected ? Colors.white : SahelColors.text,
+        if (tiers.isNotEmpty) ...[
+          const Text(
+            'فئة السعر',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tier in tiers)
+                ChoiceChip(
+                  label: Text(
+                    '${tier.name} · ${tier.effectivePrice.toStringAsFixed(0)} $_currency',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selectedTierId == tier.id
+                          ? Colors.white
+                          : SahelColors.text,
+                    ),
+                  ),
+                  selected: selectedTierId == tier.id,
+                  selectedColor: SahelColors.primary600,
+                  backgroundColor: SahelColors.surface2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: SahelRadii.pillRadius,
+                    side: BorderSide(
+                      color: selectedTierId == tier.id
+                          ? SahelColors.primary600
+                          : SahelColors.border,
+                    ),
+                  ),
+                  onSelected: (_) =>
+                      setState(() => _selectedPricingId = tier.id),
                 ),
-              ),
-              selected: selected,
-              selectedColor: SahelColors.primary600,
-              backgroundColor: SahelColors.surface2,
-              shape: RoundedRectangleBorder(
-                borderRadius: SahelRadii.pillRadius,
-                side: BorderSide(
-                  color: selected ? SahelColors.primary600 : SahelColors.border,
+            ],
+          ),
+        ] else ...[
+          const Text(
+            'تكرار الخدمة',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(_frequencies.length, (i) {
+              final selected = _selectedFrequency == i;
+              return ChoiceChip(
+                label: Text(
+                  _frequencies[i],
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : SahelColors.text,
+                  ),
                 ),
-              ),
-              onSelected: (_) => setState(() => _selectedFrequency = i),
-            );
-          }),
-        ),
+                selected: selected,
+                selectedColor: SahelColors.primary600,
+                backgroundColor: SahelColors.surface2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: SahelRadii.pillRadius,
+                  side: BorderSide(
+                    color: selected ? SahelColors.primary600 : SahelColors.border,
+                  ),
+                ),
+                onSelected: (_) => setState(() => _selectedFrequency = i),
+              );
+            }),
+          ),
+        ],
         const SizedBox(height: 24),
         const Text(
           'كوبون الخصم',
@@ -708,12 +839,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
               );
             }
-            _selectedAddressId ??=
-                items
+            _selectedAddressId ??= items
                     .where((a) => toBool(a['is_default'] ?? a['is_primary']))
                     .map((a) => str(a['id']))
                     .firstOrNull ??
-                str(items.first['id']);
+                (items.isNotEmpty ? str(items.first['id']) : null);
             return Column(
               children: [
                 for (final a in items)
@@ -866,110 +996,71 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             padding: EdgeInsets.only(bottom: 12),
             child: LinearProgressIndicator(minHeight: 3),
           ),
-        SizedBox(
-          height: 100,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _dates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (ctx, i) {
-              final d = _dates[i];
-              final selected = _selectedDate == i;
-              final availability = _availabilityFor(i);
-              final available = availability?.isAvailable ?? false;
-              final disabled = _loadingCalendarAvailability ||
-                  availability == null ||
-                  !available;
-              final dayNames = [
-                'أحد',
-                'اثن',
-                'ثلا',
-                'أربع',
-                'خمي',
-                'جمع',
-                'سبت',
-              ];
-              return InkWell(
-                onTap: disabled ? null : () => _selectDate(i),
-                borderRadius: SahelRadii.mdRadius,
-                child: Container(
-                  width: 60,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? SahelColors.primary600
-                        : disabled
-                            ? SahelColors.surface3
-                            : SahelColors.surface2,
-                    borderRadius: SahelRadii.mdRadius,
-                    border: Border.all(
-                      color: selected
-                          ? SahelColors.primary600
-                          : disabled
-                              ? SahelColors.border.withValues(alpha: 0.55)
-                              : SahelColors.border,
-                    ),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: SahelColors.surface,
+            borderRadius: SahelRadii.lgRadius,
+            border: Border.all(color: SahelColors.border),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.calendar_month_outlined,
+                      size: 18, color: SahelColors.primary600),
+                  const SizedBox(width: 6),
+                  const Text('التقويم بالميلادي',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 14)),
+                  const Spacer(),
+                  InkWell(
+                    onTap: _calMonth
+                            .isAfter(DateTime(DateTime.now().year,
+                                DateTime.now().month))
+                        ? () => _pageMonth(-1)
+                        : null,
+                    borderRadius: SahelRadii.smRadius,
+                    child: const Icon(Icons.chevron_right,
+                        size: 20, color: SahelColors.textMuted),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [
-                      Column(
-                        children: [
-                          Text(
-                            dayNames[d.weekday % 7],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: selected
-                                  ? Colors.white
-                                  : disabled
-                                      ? SahelColors.textSoft
-                                      : SahelColors.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${d.day}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: selected
-                                  ? Colors.white
-                                  : disabled
-                                      ? SahelColors.textSoft
-                                      : SahelColors.text,
-                            ),
-                          ),
-                          Text(
-                            '${d.month}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: selected
-                                  ? Colors.white70
-                                  : disabled
-                                      ? SahelColors.textSoft
-                                      : SahelColors.textMuted,
-                            ),
-                          ),
-                        ],
+                  const SizedBox(width: 4),
+                  Text(_monthLabel(_calMonth),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w900, fontSize: 15)),
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () => _pageMonth(1),
+                    borderRadius: SahelRadii.smRadius,
+                    child: const Icon(Icons.chevron_left,
+                        size: 20, color: SahelColors.textMuted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  for (final name in const ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'])
+                    Expanded(
+                      child: Center(
+                        child: Text(name,
+                            style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: SahelColors.textMuted)),
                       ),
-                      if (!_loadingCalendarAvailability && availability != null)
-                        Container(
-                          width: 22,
-                          height: 4,
-                          margin: const EdgeInsets.only(bottom: 4),
-                          decoration: BoxDecoration(
-                            color: available
-                                ? SahelColors.success
-                                : SahelColors.danger,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _MonthCalendarGrid(
+                month: _calMonth,
+                availability: _availability,
+                selectedKey: _dayKey(_selectedDay),
+                loading: _loadingCalendarAvailability,
+                onDayTap: _selectDay,
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 10),
@@ -1005,7 +1096,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'الموعد المحدد: ${_selectedSlotLabel!}',
+                    'الموعد المحدد: ${_selectedDayLabel()} · ${_selectedSlotLabel!}',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -1044,263 +1135,719 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               style: TextStyle(color: SahelColors.textMuted),
             ),
           )
-        else
+        else ...[
+          InkWell(
+            onTap: _openTimeDial,
+            borderRadius: SahelRadii.lgRadius,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: SahelColors.primarySurface,
+                borderRadius: SahelRadii.lgRadius,
+                border: Border.all(color: SahelColors.primary200),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: const BoxDecoration(
+                      color: SahelColors.primary600,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.access_time,
+                        color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedSlotTime == null
+                              ? 'اضغط لاختيار الوقت'
+                              : 'الوقت المقدم: ${_selectedSlotLabel!}',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'ساعة تفاعلية بتصميم التطبيق · فترات كل 30 دقيقة',
+                          style: TextStyle(
+                              fontSize: 11.5, color: SahelColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_left,
+                      color: SahelColors.primary600),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: List.generate(_slots.length, (i) {
-              final slot = _slots[i];
-              final time = str(slot['time']);
-              final label = str(slot['label_ar'] ?? slot['label'], time);
-              final selected = _selectedSlotTime == time;
-              return InkWell(
-                onTap: () => setState(() => _selectedSlotTime = time),
-                borderRadius: SahelRadii.mdRadius,
-                child: Container(
-                  width: 102,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? SahelColors.primary600
-                        : SahelColors.surface2,
-                    borderRadius: SahelRadii.mdRadius,
-                    border: Border.all(
-                      color: selected
-                          ? SahelColors.primary600
-                          : SahelColors.border,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (selected) ...[
-                            const Icon(
-                              Icons.check,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 4),
-                          ],
-                          Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: selected ? Colors.white : SahelColors.text,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'متاح',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? Colors.white70
-                              : SahelColors.success,
-                        ),
-                      ),
-                    ],
-                  ),
+            children: [
+              for (final slot in _slots)
+                ChoiceChip(
+                  label: Text(str(slot['label_ar'] ?? slot['label'], str(slot['time'])),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  selected: _selectedSlotTime == str(slot['time']),
+                  selectedColor: SahelColors.primary600,
+                  labelStyle: TextStyle(
+                      color: _selectedSlotTime == str(slot['time'])
+                          ? Colors.white
+                          : SahelColors.text),
+                  onSelected: (_) =>
+                      setState(() => _selectedSlotTime = str(slot['time'])),
                 ),
-              );
-            }),
+            ],
           ),
+        ],
       ],
     );
   }
 
+  /// Opens the circular clock sheet; stores the picked `H:i` value.
+  Future<void> _openTimeDial() async {
+    final initial = _selectedSlotTime ?? '09:00';
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _ClockTimeSheet(
+          slots: _slots,
+          initialTime: _slots.isNotEmpty
+              ? str(_slots.first['time'], initial)
+              : initial),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _selectedSlotTime = picked);
+  }
   Widget _buildStep4() {
     final wallet = ref.watch(customerWalletProvider).valueOrNull;
-    final walletBalance = wallet == null
+    final walletBalanceTxt = wallet == null
         ? 'الرصيد المتاح'
-        : 'الرصيد المتاح: ${str(wallet['formatted_balance'] ?? wallet['balance'])}';
-    final methods = [
-      (
-        icon: Icons.account_balance_wallet,
-        name: 'محفظة المنصة',
-        desc: '$walletBalance · يتم الخصم مباشرة بعد تأكيد الحجز',
-      ),
-      (
-        icon: Icons.monetization_on,
-        name: 'كاش عند الاستلام',
-        desc: 'تدفع للمزوّد عند تنفيذ الخدمة',
-      ),
-    ];
-    const label = TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w700,
-      color: SahelColors.text,
-    );
+        : str(wallet['formatted_balance'] ?? wallet['balance']);
+
+    const payMethod = TextStyle(
+        fontSize: 14, fontWeight: FontWeight.w700, color: SahelColors.text);
     const muted = TextStyle(fontSize: 12, color: SahelColors.textMuted);
+
+    Widget invoiceRow(String t, String v, {Color? color, bool strike = false}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          Text(t, style: muted),
+          const Spacer(),
+          Text(v,
+              style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: color,
+                  decoration: strike ? TextDecoration.lineThrough : null)),
+        ]),
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const Text(
-          'طريقة الدفع',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
+        const Text('طريقة الدفع',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: SahelColors.primarySurface,
-            borderRadius: SahelRadii.mdRadius,
-          ),
-          child: const Text(
-            'المتاح حالياً داخل التطبيق: محفظة المنصة أو الدفع كاش عند الاستلام.',
-            style: TextStyle(
-              color: SahelColors.primary700,
-              fontWeight: FontWeight.w600,
-              height: 1.5,
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'cash',
+              icon: Icon(Icons.payments_outlined, size: 18),
+              label: Text('كاش',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
             ),
-          ),
+            ButtonSegment(
+              value: 'pay',
+              icon: Icon(Icons.credit_score_outlined, size: 18),
+              label: Text('دفع',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+            ),
+          ],
+          selected: {_selectedPaymentCode},
+          onSelectionChanged: (s) {
+            setState(() {
+              _selectedPayment =
+                  s.first == 'cash' ? _cashIndex : _walletIndex;
+            });
+          },
         ),
-        const SizedBox(height: 12),
-        ...List.generate(methods.length, (i) {
-          final m = methods[i];
-          final selected = _selectedPayment == i;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              onTap: () => setState(() => _selectedPayment = i),
+        const SizedBox(height: 14),
+        if (_selectedPaymentCode == 'cash') ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: SahelColors.warningSoft,
               borderRadius: SahelRadii.mdRadius,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: SahelRadii.mdRadius,
-                  color: selected
-                      ? SahelColors.primary50
-                      : SahelColors.surface2,
-                  border: Border.all(
-                    color: selected
-                        ? SahelColors.primary600
-                        : SahelColors.border,
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.info_outline, size: 18, color: SahelColors.warning),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'كاش عند الاستلام — تدفع المبلغ للمزوّد نقداً عند تنفيذ الخدمة، وينعكس ذلك في تفاعل الحجز.',
+                    style: TextStyle(fontSize: 12.5, height: 1.5),
                   ),
                 ),
-                padding: const EdgeInsets.all(14),
-                child: Row(
+              ],
+            ),
+          ),
+        ] else ...[
+          // Wallet card — the only actively available electronic option.
+          Material(
+            color: SahelColors.primary600,
+            borderRadius: SahelRadii.lgRadius,
+            child: InkWell(
+              borderRadius: SahelRadii.lgRadius,
+              onTap: () => setState(() =>
+                  _selectedPayment = _walletIndex),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? SahelColors.primary600
-                            : SahelColors.surface,
-                        borderRadius: SahelRadii.smRadius,
-                      ),
-                      child: Icon(
-                        m.icon,
-                        color: selected ? Colors.white : SahelColors.primary600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(m.name, style: label),
-                          const SizedBox(height: 2),
-                          Text(m.desc, style: muted),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      selected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      color: selected
-                          ? SahelColors.primary600
-                          : SahelColors.textSoft,
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: SahelRadii.smRadius,
+                          ),
+                          child: const Icon(Icons.account_balance_wallet,
+                              color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('محفظة المنصة',
+                                style: payMethod.copyWith(
+                                    color: Colors.white)),
+                            const SizedBox(height: 2),
+                            Text('تُخصم فوراً بعد الدفع',
+                                style: muted.copyWith(
+                                    color: Colors.white70, fontSize: 11)),
+                          ],
+                        ),
+                        const Spacer(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(walletBalanceTxt,
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white)),
+                            Text(
+                                str(wallet?['currency'] ??
+                                        wallet?['display_currency'], '')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color:
+                                        SahelColors.primary200)),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
-          );
-        }),
-        const SizedBox(height: 24),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: SahelRadii.lgRadius,
-            side: const BorderSide(color: SahelColors.border),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'ملخص الفاتورة',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          const SizedBox(height: 10),
+          // Other electronic methods exist on the server but are not
+          // activated in the current environment — shown disabled.
+          for (final (code, l, _) in PaymentMethods.topUp)
+            if (code != 'wallet')
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: SahelColors.surface2,
+                  borderRadius: SahelRadii.mdRadius,
+                  border: Border.all(
+                      color: SahelColors.border.withValues(alpha: 0.6)),
                 ),
-                const SizedBox(height: 12),
-                ...[
-                  (
-                    'القيمة الأساسية',
-                    '${_subtotal.toStringAsFixed(0)} $_currency',
+                child: Row(
+                  children: [
+                    const Icon(Icons.credit_card_off_outlined,
+                        size: 20, color: SahelColors.textSoft),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l, style: payMethod)),
+                    Text('غير مفعّلة حالياً',
+                        style: muted.copyWith(
+                            fontSize: 10, color: SahelColors.textSoft)),
+                  ],
+                ),
+              ),
+        ],
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: SahelColors.surface,
+            borderRadius: SahelRadii.lgRadius,
+            border: Border.all(color: SahelColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('ملخص الفاتورة',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              invoiceRow('القيمة الأساسية',
+                  '${_subtotal.toStringAsFixed(0)} $_currency'),
+              if (_discount > 0)
+                invoiceRow('خصم الكوبون',
+                    '-${_discount.toStringAsFixed(0)} $_currency',
+                    color: SahelColors.success),
+              invoiceRow('رسوم المنصة',
+                  '${_platformFee.toStringAsFixed(0)} $_currency'),
+              invoiceRow('الضريبة 15%',
+                  '${_tax.toStringAsFixed(0)} $_currency'),
+              const Divider(height: 18),
+              invoiceRow('الإجمالي النهائي',
+                  '${_total.toStringAsFixed(0)} $_currency',
+                  color: SahelColors.primary700),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: SahelColors.primarySurface,
+            borderRadius: SahelRadii.mdRadius,
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 18, color: SahelColors.primary700),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'إعداد الدفع آمن ومشفّر. تصلك تفاصيل الحجز وفاتورته مباشرة بعد التأكيد.',
+                  style: TextStyle(fontSize: 11.5, height: 1.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const _walletIndex = 0;
+  static const _cashIndex = 1;
+}
+
+/// Circular clock time picker matching the app identity: 1–12 hour ring,
+/// hour hand, AM/PM segments and minute chips. Returns the server format
+/// `H:i` (24h) or null when cancelled.
+class _ClockTimeSheet extends StatefulWidget {
+  final List<Map<String, dynamic>> slots;
+  final String initialTime; // 24h 'H:i'
+
+  const _ClockTimeSheet({required this.slots, required this.initialTime});
+
+  @override
+  State<_ClockTimeSheet> createState() => _ClockTimeSheetState();
+}
+
+class _ClockTimeSheetState extends State<_ClockTimeSheet> {
+  int _hour12 = 9;
+  int _minute = 0;
+  bool _am = true;
+  static const _minutes = [0, 15, 30, 45];
+
+  @override
+  void initState() {
+    super.initState();
+    final parts = widget.initialTime.split(':');
+    var h = int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 9;
+    var m = int.tryParse(parts.length > 1 ? parts[1] : '') ?? 0;
+    if (!_minutes.contains(m)) {
+      m = _minutes.reduce((a, b) =>
+          (a - m).abs() <= (b - m).abs() ? a : b);
+    }
+    _hour12 = h % 12 == 0 ? 12 : h % 12;
+    _am = h < 12;
+    _minute = m;
+  }
+
+  int get _hour24 => _am ? (_hour12 == 12 ? 0 : _hour12) : (_hour12 == 12 ? 12 : _hour12 + 12);
+
+  String get _serverTime =>
+      '${_hour24.toString().padLeft(2, '0')}:${_minute.toString().padLeft(2, '0')}';
+
+  bool get _slotValid =>
+      widget.slots.any((s) => str(s['time']) == _serverTime);
+
+  void _setFromTap(Offset center, Size size, Offset tap) {
+    final dx = tap.dx - center.dx;
+    final dy = tap.dy - center.dy;
+    if (sqrt(dx * dx + dy * dy) < 26) return;
+    final deg = (atan2(dy, dx) * 180 / pi + 90 + 360) % 360;
+    final hour = (deg / 30).round() % 12;
+    setState(() => _hour12 = hour == 0 ? 12 : hour);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: Icon(Icons.access_time,
+                        size: 20, color: SahelColors.primary600)),
+                const Expanded(
+                    child: Text('اختيار وقت الحجز',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800))),
+                IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close,
+                        color: SahelColors.textMuted)),
+              ],
+            ),
+            SizedBox(
+              width: 262,
+              height: 262,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTapUp: (d) => _setFromTap(
+                    const Offset(131, 131), const Size(262, 262), d.localPosition),
+                child: CustomPaint(
+                  painter: _ClockDialPainter(
+                      hour12: _hour12, minute: _minute),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('صباحاً (ص)')),
+                ButtonSegment(value: false, label: Text('مساءً (م)')),
+              ],
+              selected: {_am},
+              onSelectionChanged: (s) => setState(() => _am = s.first),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final m in _minutes)
+                  FilterChip(
+                    selected: _minute == m,
+                    label: Text(m.toString().padLeft(2, '0'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: _minute == m
+                                ? Colors.white
+                                : SahelColors.text)),
+                    selectedColor: SahelColors.primary600,
+                    checkmarkColor: Colors.white,
+                    onSelected: (_) => setState(() => _minute = m),
                   ),
-                  ('الخصم', '-${_discount.toStringAsFixed(0)} $_currency'),
-                  (
-                    'رسوم المنصة',
-                    '${_platformFee.toStringAsFixed(0)} $_currency',
+              ],
+            ),
+            const SizedBox(height: 10),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _slotValid
+                    ? SahelColors.primarySurface
+                    : SahelColors.dangerSoft,
+                borderRadius: SahelRadii.mdRadius,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                      _slotValid
+                          ? Icons.check_circle
+                          : Icons.error_outline,
+                      size: 18,
+                      color: _slotValid
+                          ? SahelColors.primary700
+                          : SahelColors.danger),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _slotValid
+                          ? 'الوقت المقدم ${_serverLabel()} — متاح ✓'
+                          : 'الوقت المقدم ${_serverLabel()} — خارج الخدمة، اختر وقتاً آخر',
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: _slotValid
+                              ? SahelColors.primary700
+                              : SahelColors.danger),
+                    ),
                   ),
-                  ('الضريبة 15%', '${_tax.toStringAsFixed(0)} $_currency'),
-                ].map(
-                  (r) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('إلغاء')),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _slotValid
+                          ? () => Navigator.pop(context, _serverTime)
+                          : null,
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text('تأكيد اختيار الوقت'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _serverLabel() {
+    final parts = _serverTime.split(':');
+    final h = int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 0;
+    final hour12 = h % 12 == 0 ? 12 : h % 12;
+    return '$hour12:${parts.length > 1 ? parts[1] : '00'} ${_am ? 'ص' : 'م'}';
+  }
+}
+
+class _ClockDialPainter extends CustomPainter {
+  final int hour12;
+  final int minute;
+  _ClockDialPainter({required this.hour12, required this.minute});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 10;
+
+    canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill);
+    canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = SahelColors.border
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2);
+    canvas.drawCircle(center, 5, Paint()..color = SahelColors.primary700);
+
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    for (var i = 1; i <= 12; i++) {
+      final ang = (i * 30 - 90) * pi / 180;
+      final p = Offset(
+          center.dx + (radius - 20) * cos(ang),
+          center.dy + (radius - 20) * sin(ang));
+      tp.text = TextSpan(
+          text: '$i',
+          style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: i == hour12 ? FontWeight.w900 : FontWeight.w600,
+              color: i == hour12
+                  ? SahelColors.primary700
+                  : SahelColors.textMuted));
+      tp.layout();
+      tp.paint(canvas, p - Offset(tp.width / 2, tp.height / 2));
+    }
+
+    final hourAngle = (hour12 * 30 + minute / 2 - 90) * pi / 180;
+    canvas.drawLine(
+        center,
+        center +
+            Offset((radius - 38) * cos(hourAngle),
+                (radius - 38) * sin(hourAngle)),
+        Paint()
+          ..color = SahelColors.primary700
+          ..strokeWidth = 4
+          ..strokeCap = StrokeCap.round);
+    final minuteAngle = (minute * 6 - 90) * pi / 180;
+    canvas.drawLine(
+        center,
+        center +
+            Offset((radius - 16) * cos(minuteAngle),
+                (radius - 16) * sin(minuteAngle)),
+        Paint()
+          ..color = SahelColors.amber500
+          ..strokeWidth = 2.5
+          ..strokeCap = StrokeCap.round);
+  }
+
+  @override
+  bool shouldRepaint(_ClockDialPainter oldDelegate) =>
+      oldDelegate.hour12 != hour12 || oldDelegate.minute != minute;
+}
+
+/// Month day grid with green/red availability bars. Unavailable days are
+/// Month day grid with green/red availability bars. Unavailable days are
+/// non-tappable per the wizard flow requirement.
+class _MonthCalendarGrid extends StatelessWidget {
+  final DateTime month;
+  final Map<String, _DayAvailability> availability;
+  final String selectedKey;
+  final bool loading;
+  final void Function(DateTime) onDayTap;
+
+  const _MonthCalendarGrid({
+    required this.month,
+    required this.availability,
+    required this.selectedKey,
+    required this.loading,
+    required this.onDayTap,
+  });
+
+  static String keyOf(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final first = DateTime(month.year, month.month, 1);
+    final leadingBlanks = first.weekday % 7; // Sunday-first grid
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    final cells = <Widget>[
+      for (var i = 0; i < leadingBlanks; i++)
+        const Expanded(child: SizedBox(height: 1)),
+      for (var day = 1; day <= daysInMonth; day++)
+        () {
+          final d = DateTime(month.year, month.month, day);
+          final key = keyOf(d);
+          final dayAv = availability[key];
+          final isAvailable = dayAv?.isAvailable ?? false;
+          final isPast = d.isBefore(todayStart);
+          final known = dayAv != null;
+          final selectable = !isPast && known && isAvailable && !loading;
+          final selected = key == selectedKey;
+
+          final bg = selected
+              ? SahelColors.primary600
+              : isPast
+                  ? SahelColors.surface3
+                  : (!known || loading)
+                      ? SahelColors.surface2
+                      : (isAvailable
+                          ? SahelColors.primary50
+                          : SahelColors.surface3);
+          final fg = selected
+              ? Colors.white
+              : isPast
+                  ? SahelColors.textSoft
+                  : (!known)
+                      ? SahelColors.textSoft
+                      : (isAvailable
+                          ? SahelColors.primary700
+                          : SahelColors.danger.withValues(alpha: 0.7));
+          final bar = selected
+              ? Colors.white
+              : (!known)
+                  ? SahelColors.border
+                  : (isAvailable ? SahelColors.success : SahelColors.danger);
+
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(2.5),
+              child: Material(
+                color: bg,
+                borderRadius: BorderRadius.circular(12),
+                shape: selected
+                    ? null
+                    : RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: SahelColors.border.withValues(alpha: 0.6),
+                        ),
+                      ),
+                child: InkWell(
+                  onTap: selectable ? () => onDayTap(d) : null,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 7),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(r.$1, style: muted),
-                        const Spacer(),
-                        Text(
-                          r.$2,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                        Text('${d.day}',
+                            style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w900,
+                                color: fg)),
+                        const SizedBox(height: 5),
+                        Container(
+                          width: 16,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: bar,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const Divider(height: 24),
-                Row(
-                  children: [
-                    const Text(
-                      'الإجمالي',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${_total.toStringAsFixed(0)} $_currency',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: SahelColors.primary700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
-    );
+          );
+        }(),
+    ];
+
+    final rows = <Widget>[];
+    for (var i = 0; i < cells.length; i += 7) {
+      final end = (i + 7) <= cells.length ? i + 7 : cells.length;
+      rows.add(Row(children: [
+        for (var j = i; j < end; j++) cells[j],
+        for (var j = end; j < i + 7; j++) const Expanded(child: SizedBox(height: 1)),
+      ]));
+    }
+
+    return Column(children: rows);
   }
 }
-
 class _AvailabilityLegend extends StatelessWidget {
   const _AvailabilityLegend({
     required this.color,

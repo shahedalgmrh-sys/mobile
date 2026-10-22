@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
@@ -22,14 +23,18 @@ class BookingsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = Localizations.localeOf(context).languageCode;
+    final tabs = [
+      for (final t in _tabs) (label: t.label.t(lang), status: t.status),
+    ];
     return DefaultTabController(
       length: _tabs.length,
       initialIndex: 0,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'حجوزاتي',
-            style: TextStyle(fontWeight: FontWeight.w800),
+          title: Text(
+            'حجوزاتي'.t(lang),
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           centerTitle: true,
           bottom: TabBar(
@@ -42,7 +47,7 @@ class BookingsListScreen extends ConsumerWidget {
             ),
             indicatorColor: SahelColors.primary700,
             indicatorWeight: 3,
-            tabs: [for (final t in _tabs) Tab(text: t.label)],
+            tabs: [for (final t in tabs) Tab(text: t.label)],
           ),
         ),
         body: TabBarView(

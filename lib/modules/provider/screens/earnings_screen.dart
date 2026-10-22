@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
+import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import '../../../shared/theme/sahel_colors.dart';
@@ -125,7 +128,8 @@ class EarningsScreen extends ConsumerWidget {
                   }
                   return Column(
                     children: [
-                      for (final w in items) _withdrawalTile(w),
+                      for (final w in items)
+                        _withdrawalTile(context, ref, w),
                     ],
                   );
                 },
@@ -159,13 +163,15 @@ class EarningsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _withdrawalTile(Map<String, dynamic> w) {
+  Widget _withdrawalTile(
+      BuildContext context, WidgetRef ref, Map<String, dynamic> w) {
     final status = str(w['status']);
     final color = status == 'paid' || status == 'completed'
         ? SahelColors.green600
         : status == 'rejected' || status == 'cancelled'
             ? SahelColors.red600
             : SahelColors.amber500;
+    final cancellable = status == 'pending';
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -192,6 +198,21 @@ class EarningsScreen extends ConsumerWidget {
                             : str(w['created_at']).length),
                     style: const TextStyle(
                         fontSize: 12, color: SahelColors.muted)),
+                if (cancellable)
+                  TextButton.icon(
+                    onPressed: () =>
+                        _cancelWithdrawal(context, ref, str(w['id'])),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.all(0),
+                      minimumSize: const Size(0, 28),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.close,
+                        size: 14, color: SahelColors.red600),
+                    label: const Text('إلغاء الطلب',
+                        style:
+                            TextStyle(fontSize: 11, color: SahelColors.red600)),
+                  ),
               ],
             ),
           ),
@@ -213,5 +234,45 @@ class EarningsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Mirrors `POST /provider/withdrawals/{id}/cancel` — server refuses
+  /// non-pending requests (422), surfaced verbatim here.
+  Future<void> _cancelWithdrawal(
+      BuildContext context, WidgetRef ref, String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إلغاء طلب السحب؟'),
+        content: const Text('سيعود المبلغ المطلوب إلى رصيدك المتاح.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('تأكيد')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(providerRepositoryProvider).cancelWithdrawal(id);
+      ref.invalidate(providerWithdrawalsProvider);
+      ref.invalidate(providerWalletProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(const SnackBar(content: Text('تم إلغاء طلب السحب ✓')));
+      }
+    } catch (e) {
+      String msg = 'تعذر إلغاء الطلب';
+      if (e is ApiException) {
+        final f = e.failure;
+        if (f is ServerFailure && f.message.isNotEmpty) msg = f.message;
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(msg),
+              backgroundColor: SahelColors.danger));
+      }
+    }
   }
 }

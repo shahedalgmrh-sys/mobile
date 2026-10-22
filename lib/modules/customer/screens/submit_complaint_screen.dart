@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import '../../../shared/theme/sahel_colors.dart';
 
@@ -10,7 +11,7 @@ class SubmitComplaintScreen extends ConsumerStatefulWidget {
 
   const SubmitComplaintScreen({
     super.key,
-    required this.id,
+    this.id = '',
   });
 
   @override
@@ -46,10 +47,11 @@ class _SubmitComplaintScreenState
     setState(() => _submitting = true);
     try {
       await ref.read(customerRepositoryProvider).storeComplaint(
-            bookingId: widget.id,
+            bookingId: widget.id.isEmpty ? null : widget.id,
             subject: _subject!,
             description: _description.text.trim(),
           );
+      ref.invalidate(customerComplaintsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('تم إرسال البلاغ — سيتواصل معك الدعم')));

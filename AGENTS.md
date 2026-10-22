@@ -31,14 +31,49 @@
   (language/currency persisted → sent as `Accept-Language`/`X-Currency` headers).
 - Router: `lib/app/router/app_router.dart` — role-aware redirects
   (customer → `/home`, provider → `/p/dashboard`).
-- Backend API: `E:\saber\SaberWeb-main\SaberWeb-main` (Laravel). Base prefixes:
+- Backend API: `E:\saber\SaberWeb-latest` (Laravel). Base prefixes:
   `/api` public, `/api/auth`, `/api/customer`, `/api/provider`. Response envelope
   `{status, message, data}` — unwrapped via `apiData()` in `parsers.dart`.
 - There is NO public service-detail endpoint — `ServiceDetailsScreen` receives a
   `Service` via `GoRouterState.extra`, falling back to the services list by slug/id.
 
+## Theme
+- Single source of truth: `lib/app/theme/` (colors/radii/elevations/theme).
+- `lib/shared/theme/` and `lib/sahel_theme/` are 1-line re-export shims — do NOT
+  edit them; edit `app/theme` and they follow. Do not duplicate values.
+
+## Wallet top-up (FIN-01 safe)
+Server contract: `SaberWeb-latest/app/Http/Controllers/Api/CustomerApiController.php`
++ `PaymentService::confirmWalletTopUp`:
+1. `POST /customer/wallet/add-funds {amount (10–50000), payment_method}` → 201
+   `status: pending` with `payment_id` + `checkout_url` (Blade gateway page).
+2. Payment completes via the gateway callback (`checkout_url` — opened
+   externally via url_launcher from `WalletScreen`).
+3. `POST /customer/wallet/confirm-payment/{paymentId}` → 200 (credits wallet,
+   idempotent) · 503 when the gateway is not configured · 422 validation.
+Never credit/assume funds before step 3 succeeds — the server enforces the
+FIN-01 gate and the UI mirrors it (no silent mock confirm).
+
+## Screens
+- Both root-level screens in `modules/{customer,provider}/screens/*.dart` AND
+  the grouped subfolders (`bookings/`, `home/`, `profile/`, …) are live and
+  imported by the router. The earlier "root screens are dead legacy" note is
+  obsolete after the 2026-10-12 cleanup (commit f137a14) — verify imports
+  before deleting anything.
+- `lib/models/` (plain DTOs: service/provider/review/booking_status) is used by
+  widgets/screens; `lib/data/models/` (json_serializable models with `.g.dart`)
+  is the API-facing layer. Both are live — unifying them is a future refactor,
+  not a quick delete.
+- `lib/main_provider.dart` is a legitimate dev run target that boots the app in
+  the provider flavor (`flutter run -t lib/main_provider.dart`). The identical
+  `main_customer.dart` duplicate was removed 2026-10-21.
+
 ## Gotchas
-- Duplicate legacy screens exist at `lib/modules/*/screens/*.dart` root level —
-  they are unimported dead code; the router uses the `*/screens/<subdir>/` versions.
-- Do not edit `SaberWeb-main` (backend/website) — mobile-only scope.
+- API parity doc (`docs/API_PARITY_CHECK.md`) predates the 2026-10-19..21
+  commits: `available-slots`, `customer/me/avatar`,
+  `wallet/confirm-payment/{id}` and `provider/profile/password` are wired at
+  repo and UI layers now. Still UI-unwired: `customer/payments/{id}`
+  (repo method exists) and `provider/profile/{avatar|cover|logo}`.
+- Do not edit `SaberWeb-main` (archive copy) — the reference backend is
+  `SaberWeb-latest`.
 - `BookingStatus.paid` exists — keep status switches exhaustive.

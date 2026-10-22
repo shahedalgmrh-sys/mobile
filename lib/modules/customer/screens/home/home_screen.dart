@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/catalog_repository.dart';
@@ -316,6 +317,7 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     final popular = data.popularServices.isNotEmpty
         ? data.popularServices
         : data.featuredServices;
@@ -324,14 +326,16 @@ class _HomeContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         _PromoHero(offer: data.offers.isNotEmpty ? data.offers.first : null),
+        const SizedBox(height: 16),
+        const _AdsStrip(),
         const SizedBox(height: 24),
         _CategoriesSection(categories: data.categories),
         if (popular.isNotEmpty) ...[
           const SizedBox(height: 24),
           _SectionHeader(
-            title: 'الخدمات الأكثر حجزاً هذا الشهر',
-            subtitle: 'هذه الخدمات يثق بها عملاؤنا أكثر من غيرها',
-            actionLabel: 'عرض الكل',
+            title: 'الخدمات الأكثر حجزاً هذا الشهر'.t(lang),
+            subtitle: 'هذه الخدمات يثق بها عملاؤنا أكثر من غيرها'.t(lang),
+            actionLabel: 'عرض الكل'.t(lang),
             onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
@@ -350,9 +354,9 @@ class _HomeContent extends StatelessWidget {
         if (data.featuredProviders.isNotEmpty) ...[
           const SizedBox(height: 8),
           _SectionHeader(
-            title: 'تعرف على أفضل المزوّدين',
-            subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة',
-            actionLabel: 'كل المزوّدين',
+            title: 'تعرف على أفضل المزوّدين'.t(lang),
+            subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة'.t(lang),
+            actionLabel: 'كل المزوّدين'.t(lang),
             onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
@@ -441,13 +445,14 @@ class _CategoriesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     const styles = HomeScreen._categoryStyles;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          title: 'الأقسام الرئيسية',
-          actionLabel: 'الكل',
+          title: 'الأقسام الرئيسية'.t(lang),
+          actionLabel: 'الكل'.t(lang),
           onAction: () => context.push('/search'),
         ),
         const SizedBox(height: 12),
@@ -474,6 +479,69 @@ class _CategoriesSection extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+class _AdsStrip extends ConsumerWidget {
+  const _AdsStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ads = ref.watch(adsProvider);
+    return ads.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 110,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) {
+                  final ad = items[i];
+                  return Container(
+                    width: 260,
+                    decoration: BoxDecoration(
+                      color: SahelColors.surface2,
+                      borderRadius: SahelRadii.lgRadius,
+                      border: Border.all(color: SahelColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ad.image != null
+                        ? Image.network(ad.image!, fit: BoxFit.cover)
+                        : Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(ad.title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14)),
+                                if (ad.link != null)
+                                  Text(ad.link!,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: SahelColors.primary600)),
+                              ],
+                            ),
+                          ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
     );
   }
 }

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/core/constants/payment_methods.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
 import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
@@ -20,13 +24,14 @@ class BookingDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = Localizations.localeOf(context).languageCode;
     final bookingId = id;
     final booking = ref.watch(customerBookingProvider(bookingId));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'تفاصيل الحجز #$id',
+          '${'تفاصيل الحجز'.t(lang)} #$id',
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
         ),
         centerTitle: true,
@@ -468,6 +473,14 @@ class _BookingDetailsBody extends ConsumerWidget {
               ),
               textAlign: TextAlign.center,
             ),
+          if (status == BookingStatus.pending ||
+              status == BookingStatus.accepted) ...[
+            const SizedBox(height: 12),
+            SahelButton.soft(
+              label: 'تعديل الموعد',
+              onPressed: () => _reschedule(context, ref),
+            ),
+          ],
           if (status == BookingStatus.completed) ...[
             const SizedBox(height: 12),
             SahelButton.soft(
@@ -537,18 +550,198 @@ class _BookingDetailsBody extends ConsumerWidget {
     }
   }
 
-  Future<void> _pay(BuildContext context, WidgetRef ref) async {
+  /// Mirrors the server contract (`booking_date` ≥ today, `booking_time`
+  /// as `H:i`); optional reason recorded server-side.
+  Future<void> _reschedule(BuildContext context, WidgetRef ref) async {
+    final current = ref.watch(customerBookingProvider(bookingId)).valueOrNull;
+    DateTime initial =
+        DateTime.tryParse(str(current?['booking_date'])) ?? DateTime.now();
+    if (initial.isBefore(DateTime.now())) initial = DateTime.now();
+    final timeParts = str(current?['booking_time']).split(':');
+    TimeOfDay initialTime = timeParts.length == 2
+        ? TimeOfDay(
+            hour: int.tryParse(timeParts[0]) ?? 9,
+            minute: int.tryParse(timeParts[1]) ?? 0)
+        : const TimeOfDay(hour: 9, minute: 0);
+
+    final setDate = TextEditingController(text: _fmtDate(initial));
+    final setTime = TextEditingController(
+        text: '${initialTime.hour.toString().padLeft(2, '0')}:'
+            '${initialTime.minute.toString().padLeft(2, '0')}');
+    DateTime pickedDate = initial;
+    TimeOfDay pickedTime = initialTime;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dlgCtx) => AlertDialog(
+        title: const Text('تعديل موعد الحجز'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () async {
+                final d = await showDatePicker(
+                  context: dlgCtx,
+                  initialDate: pickedDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 180)),
+                );
+                if (d != null) {
+                  pickedDate = d;
+                  setDate.text = _fmtDate(d);
+                  (dlgCtx as Element).markNeedsBuild();
+                }
+              },
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: setDate,
+                  decoration: const InputDecoration(
+                    labelText: 'التاريخ الجديد *',
+                    suffixIcon: Icon(Icons.calendar_month_outlined),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () async {
+                final t = await showTimePicker(
+                  context: dlgCtx,
+                  initialTime: pickedTime,
+                );
+                if (t != null) {
+                  pickedTime = t;
+                  setTime.text =
+                      '${t.hour.toString().padLeft(2, '0')}:'
+                      '${t.minute.toString().padLeft(2, '0')}';
+                }
+              },
+              child: AbsorbPointer(
+                child: TextField(
+                  controller: setTime,
+                  decoration: const InputDecoration(
+                    labelText: 'الوقت الجديد *',
+                    suffixIcon: Icon(Icons.schedule),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dlgCtx, false),
+              child: const Text('إلغاء')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dlgCtx, true),
+              child: const Text('تأكيد الموعد الجديد')),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    final timeStr =
+        '${pickedTime.hour.toString().padLeft(2, '0')}:'
+        '${pickedTime.minute.toString().padLeft(2, '0')}';
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(content: Text('جاري تحديث الموعد…')));
     try {
       await ref
           .read(customerRepositoryProvider)
-          .payBooking(bookingId, 'wallet');
+          .rescheduleBooking(bookingId, _fmtDate(pickedDate), timeStr);
       ref.invalidate(customerBookingProvider(bookingId));
+      ref.invalidate(customerBookingsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+              const SnackBar(content: Text('تم تعديل الموعد ✓')));
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(
+              content: Text(_payFailureMessage(e.failure)),
+              backgroundColor: SahelColors.danger));
+      }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تعذر الدفع')));
+          ..clearSnackBars()
+          ..showSnackBar(const SnackBar(content: Text('تعذر تعديل الموعد')));
       }
     }
+  }
+
+  static String _fmtDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pay(BuildContext context, WidgetRef ref) async {
+    final method = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('اختر وسيلة الدفع'),
+        children: [
+          for (final (code, label, _) in PaymentMethods.booking)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, code),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  code == 'wallet'
+                      ? '$label — يُخصم فوراً'
+                      : code == 'cash'
+                          ? '$label — تدفع للمزوّد'
+                          : label,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+    if (method == null || !context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(content: Text('جاري معالجة الدفع…')));
+    try {
+      await ref.read(customerRepositoryProvider).payBooking(bookingId, method);
+      ref.invalidate(customerBookingProvider(bookingId));
+      ref.invalidate(customerPaymentsProvider);
+      ref.invalidate(walletTransactionsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(const SnackBar(content: Text('تم الدفع بنجاح ✓')));
+      }
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(_payFailureMessage(e.failure)),
+              backgroundColor: SahelColors.danger,
+            ),
+          );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(const SnackBar(content: Text('تعذر الدفع')));
+      }
+    }
+  }
+
+  static String _payFailureMessage(Failure f) {
+    if (f is ServerFailure && f.message.isNotEmpty) return f.message;
+    if (f is BusinessRuleFailure && f.message.isNotEmpty) return f.message;
+    return 'تعذر الدفع بهذه الوسيلة — جرّب وسيلة أخرى';
   }
 
   Future<String?> _askReason(BuildContext context) {

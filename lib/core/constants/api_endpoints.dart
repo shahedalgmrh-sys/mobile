@@ -14,6 +14,11 @@ class ApiEndpoints {
   static const String cities = '/cities';
   static String cityAreas(String cityId) => '/cities/$cityId/areas';
   static const String faqs = '/faqs';
+  static const String ads = '/ads';
+  static const String blogs = '/blogs';
+  static String showBlog(String slug) => '/blogs/$slug';
+  static String blogComments(String id) => '/blogs/$id/comments';
+  static String contentPage(String slug) => '/pages/$slug';
   static const String contact = '/contact';
   static const String currencies = '/currencies';
 
@@ -79,6 +84,10 @@ class ApiEndpoints {
   static const String providerDashboard = '/provider/dashboard';
   static const String providerProfileMe = '/provider/profile';
   static const String providerPassword = '/provider/profile/password';
+  static const String providerLogo = '/provider/profile/logo';
+  static String providerAvatarDestroy = '/provider/profile/avatar';
+  static String providerLogoDestroy = '/provider/profile/logo';
+  static String providerCoverDestroy = '/provider/profile/cover';
   static const String providerVerificationStatus = '/provider/verification-status';
   static const String providerVerification = '/provider/verification';
 
@@ -94,6 +103,7 @@ class ApiEndpoints {
   static String bookingStart(String id) => '/provider/bookings/$id/start';
   static String bookingComplete(String id) => '/provider/bookings/$id/complete';
   static String providerBookingCancel(String id) => '/provider/bookings/$id/cancel';
+  static String providerBookingReschedule(String id) => '/provider/bookings/$id/reschedule';
 
   static const String providerAvailability = '/provider/availability';
   static const String workingHours = '/provider/availability/working-hours';

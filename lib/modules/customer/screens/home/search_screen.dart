@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/catalog_repository.dart';
@@ -161,6 +162,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
     final cities = ref.watch(citiesProvider).valueOrNull ?? const [];
     final services = ref.watch(customerSearchProvider(_searchParams));
@@ -212,6 +214,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     const EdgeInsets.symmetric(horizontal: 16),
                   ),
                   onChanged: _onQuery,
+                ),
+                const SizedBox(height: 10),
+                _PopularSearchesChips(
+                  onPick: (q) {
+                    _controller.text = q;
+                    _onQuery(q);
+                  },
                 ),
                 const SizedBox(height: 16),
                 const _FilterSectionTitle('الأقسام'),
@@ -477,7 +486,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              total == null ? 'النتائج' : 'النتائج ($total)',
+              total == null
+                          ? 'النتائج'.t(lang)
+                          : '${'النتائج'.t(lang)} ($total)',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -613,6 +624,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
+class _PopularSearchesChips extends ConsumerWidget {
+  final void Function(String) onPick;
+  const _PopularSearchesChips({required this.onPick});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final popular = ref.watch(popularSearchesProvider);
+    return popular.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _FilterSectionTitle('الأكثر بحثاً'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final q in items)
+                  ActionChip(
+                    label: Text(q),
+                    avatar: const Icon(Icons.trending_up, size: 14),
+                    onPressed: () => onPick(q),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _SearchCardData {
   const _SearchCardData({
     required this.service,
@@ -626,7 +674,6 @@ class _SearchCardData {
   final String? categoryLabel;
   final double? distanceKm;
 }
-
 class _FilterSectionTitle extends StatelessWidget {
   const _FilterSectionTitle(this.title);
 

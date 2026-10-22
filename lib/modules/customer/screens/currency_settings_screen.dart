@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
 import '../../../shared/theme/sahel_colors.dart';
+
+final catalogCurrenciesProvider = FutureProvider<List<Map<String, dynamic>>>(
+  (ref) => ref.watch(catalogRepositoryProvider).currencies(),
+);
 
 class CurrencySettingsScreen extends ConsumerWidget {
   const CurrencySettingsScreen({super.key});
@@ -9,26 +15,65 @@ class CurrencySettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(appSettingsProvider).currency;
+    final currencies = ref.watch(catalogCurrenciesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('العملة')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _opt(ref, selected, 'yer', 'ريال يمني', 'YER · ﷼'),
-            const SizedBox(height: 10),
-            _opt(ref, selected, 'sar', 'ريال سعودي', 'SAR · ر.س'),
-            const SizedBox(height: 10),
-            _opt(ref, selected, 'usd', 'دولار أمريكي', 'USD · \$'),
-          ],
+        child: currencies.when(
+          loading: () => ListView(
+            padding: const EdgeInsets.all(16),
+            children: const [
+              SizedBox(height: 80),
+              Center(child: CircularProgressIndicator()),
+            ],
+          ),
+          error: (_, __) => ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _opt(ref, selected, 'yer', 'ريال يمني', 'YER · ﷼'),
+              const SizedBox(height: 10),
+              _opt(ref, selected, 'sar', 'ريال سعودي', 'SAR · ر.س'),
+              const SizedBox(height: 10),
+              _opt(ref, selected, 'usd', 'دولار أمريكي', 'USD · \$'),
+            ],
+          ),
+          data: (items) {
+            if (items.isEmpty) {
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _opt(ref, selected, 'yer', 'ريال يمني', 'YER · ﷼'),
+                  const SizedBox(height: 10),
+                  _opt(ref, selected, 'sar', 'ريال سعودي', 'SAR · ر.س'),
+                  const SizedBox(height: 10),
+                  _opt(ref, selected, 'usd', 'دولار أمريكي', 'USD · \$'),
+                ],
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                for (int i = 0; i < items.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _opt(
+                    ref,
+                    selected,
+                    str(items[i]['code'] ?? items[i]['currency_code']).toLowerCase(),
+                    str(items[i]['name'] ?? items[i]['name_ar'] ?? items[i]['title'],
+                        'عملة'),
+                    '${str(items[i]['code'] ?? items[i]['currency_code']).toUpperCase()} · ${str(items[i]['symbol'], '')}',
+                  ),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _opt(WidgetRef ref, String selected, String code, String t,
-      String sub) {
+  Widget _opt(WidgetRef ref, String selected, String code, String t, String sub) {
     final isSelected = selected == code;
     return GestureDetector(
       onTap: () => ref.read(appSettingsProvider.notifier).setCurrency(code),
@@ -38,9 +83,7 @@ class CurrencySettingsScreen extends ConsumerWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-              color: isSelected
-                  ? SahelColors.primary500
-                  : SahelColors.slate200,
+              color: isSelected ? SahelColors.primary500 : SahelColors.slate200,
               width: isSelected ? 2 : 1),
         ),
         child: Row(

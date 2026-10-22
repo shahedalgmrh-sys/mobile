@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -128,6 +129,11 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
             ),
           ),
         );
+        // After accepting, open the booking details view directly.
+        if (action == 'accept') {
+          context.push('/p/bookings/$id',
+              extra: widget.booking);
+        }
       }
     } catch (e) {
       if (mounted) {

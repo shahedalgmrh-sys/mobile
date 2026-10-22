@@ -122,6 +122,49 @@ class _BodyState extends ConsumerState<_Body> {
     await _act(() => repo.rejectBooking(id, reason: reason));
   }
 
+  /// Mirrors the server rule: cancellation requires a reason (≤500 chars)
+  /// and is refused for completed/cancelled/rejected bookings server-side.
+  Future<void> _cancelBooking(ProviderRepository repo, String id) async {
+    final controller = TextEditingController();
+    String? reason;
+    var confirmed = false;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) => AlertDialog(
+          title: const Text('إلغاء الحجز'),
+          content: TextField(
+            controller: controller,
+            maxLength: 500,
+            maxLines: 3,
+            onChanged: (v) => setDialog(() => reason = v.trim()),
+            decoration: const InputDecoration(
+              hintText: 'سبب الإلغاء (مطلوب)',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: reason == null || reason!.isEmpty
+                  ? null
+                  : () {
+                      confirmed = true;
+                      Navigator.pop(ctx);
+                    },
+              child: const Text('تأكيد الإلغاء',
+                  style: TextStyle(color: SahelColors.danger)),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!confirmed) return;
+    await _act(() => repo.cancelBooking(id, reason ?? ''));
+  }
+
   @override
   Widget build(BuildContext context) {
     final b = widget.booking;
@@ -198,9 +241,7 @@ class _BodyState extends ConsumerState<_Body> {
                 children: [
                   CircleAvatar(
                     child: Text(
-                      str(customer['name'], 'ع').isNotEmpty
-                          ? str(customer['name'])[0]
-                          : 'ع',
+                      str(customer['name'], 'ع')[0],
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -296,6 +337,14 @@ class _BodyState extends ConsumerState<_Body> {
               ],
             ),
           ],
+          if (status == BookingStatus.pending ||
+              status == BookingStatus.accepted)
+            TextButton.icon(
+              onPressed: () => _cancelBooking(repo, id),
+              icon: const Icon(Icons.close, color: SahelColors.danger),
+              label: const Text('إلغاء الحجز',
+                  style: TextStyle(color: SahelColors.danger)),
+            ),
           if (status == BookingStatus.accepted)
             SahelButton(
               label: 'بدء التنفيذ',

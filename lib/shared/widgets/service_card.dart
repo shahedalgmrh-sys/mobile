@@ -69,12 +69,14 @@ class ServiceCard extends StatelessWidget {
   final String? specLabel;
   final bool isFavorite;
   final VoidCallback? onFavorite;
+  final VoidCallback? onUnavailableTap;
 
   const ServiceCard({
     super.key,
     this.service,
     this.onTap,
     this.onBookNow,
+    this.onUnavailableTap,
     this.title,
     this.price,
     this.originalPrice,
@@ -252,6 +254,8 @@ class ServiceCard extends StatelessWidget {
                     currencyLabel: _currencyLabel,
                     originalPrice: _originalPrice,
                     onBookNow: onBookNow ?? onTap,
+                    onUnavailableTap: onUnavailableTap,
+                    service: service,
                   ),
                 ],
               );
@@ -477,18 +481,51 @@ class _Spec extends StatelessWidget {
   }
 }
 
+class _UnavailableBadge extends StatelessWidget {
+  final bool compact;
+  const _UnavailableBadge({this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: SahelColors.dangerSoft,
+        borderRadius: SahelRadii.pillRadius,
+        border: Border.all(color: SahelColors.danger.withValues(alpha: 0.4)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.block, size: 13, color: SahelColors.danger),
+          SizedBox(width: 4),
+          Text('غير متاحة حالياً',
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: SahelColors.danger)),
+        ],
+      ),
+    );
+  }
+}
+
 class _ActionRibbon extends StatelessWidget {
   const _ActionRibbon({
     required this.price,
     required this.currencyLabel,
     this.originalPrice,
     this.onBookNow,
+    this.onUnavailableTap,
+    this.service,
   });
 
   final double price;
   final String currencyLabel;
   final double? originalPrice;
   final VoidCallback? onBookNow;
+  final VoidCallback? onUnavailableTap;
+  final Service? service;
 
   @override
   Widget build(BuildContext context) {
@@ -544,12 +581,21 @@ class _ActionRibbon extends StatelessWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (service != null && !service!.isAvailable) ...[
+                      const _UnavailableBadge(compact: true),
+                      const SizedBox(height: 8),
+                    ],
                     priceBlock,
                     const SizedBox(height: 10),
                     SahelButton(
-                      label: 'احجز الآن',
+                      label: service != null && !service!.isAvailable
+                          ? 'غير متاحة'
+                          : 'احجز الآن',
                       variant: SahelButtonVariant.filled,
-                      onPressed: onBookNow,
+                      onPressed:
+                          service != null && !service!.isAvailable
+                              ? onUnavailableTap
+                              : onBookNow,
                       height: 40,
                       borderRadius: SahelRadii.pillRadius,
                     ),
@@ -560,9 +606,14 @@ class _ActionRibbon extends StatelessWidget {
                     Expanded(child: priceBlock),
                     const SizedBox(width: 12),
                     SahelButton(
-                      label: 'احجز الآن',
+                      label: service != null && !service!.isAvailable
+                          ? 'غير متاحة'
+                          : 'احجز الآن',
                       variant: SahelButtonVariant.filled,
-                      onPressed: onBookNow,
+                      onPressed:
+                          service != null && !service!.isAvailable
+                              ? onUnavailableTap
+                              : onBookNow,
                       width: 128,
                       height: 40,
                       borderRadius: SahelRadii.pillRadius,

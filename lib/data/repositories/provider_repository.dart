@@ -17,6 +17,19 @@ class ProviderRepository {
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateProfile(data)));
 
+  /// Uploads the business logo (multipart `logo`, jpeg/png ≤4MB per server).
+  Future<Map<String, dynamic>> updateLogo(String filePath) async {
+    final file = await MultipartFile.fromFile(
+      filePath,
+      filename: filePath.split(RegExp(r'[\\/]')).last,
+    );
+    return asMap(apiData(await source.updateProviderLogo(file)));
+  }
+
+  /// Deletes a profile image by kind: `avatar` | `logo` | `cover`.
+  Future<void> deleteProviderImage(String kind) =>
+      source.deleteProviderImage(kind);
+
   Future<void> changePassword(
           String current, String password, String confirmation) async =>
       apiData(await source.changePassword(current, password, confirmation));
@@ -46,8 +59,11 @@ class ProviderRepository {
   Future<Map<String, dynamic>> service(String id) async =>
       asMap(apiData(await source.showService(id)));
 
-  Future<Map<String, dynamic>> storeService(Map<String, dynamic> data) async =>
-      asMap(apiData(await source.storeService(data)));
+  Future<Map<String, dynamic>> storeService(
+    Map<String, dynamic> data, {
+    List<MultipartFile> images = const [],
+  }) async =>
+      asMap(apiData(await source.storeService(data, images: images)));
 
   Future<Map<String, dynamic>> updateService(String id, Map<String, dynamic> data) async =>
       asMap(apiData(await source.updateService(id, data)));
@@ -78,6 +94,18 @@ class ProviderRepository {
 
   Future<Map<String, dynamic>> completeBooking(String id) async =>
       asMap(apiData(await source.completeBooking(id)));
+
+  Future<Map<String, dynamic>> cancelBooking(String id, String reason) async =>
+      asMap(apiData(await source.cancelBooking(id, reason: reason)));
+
+  Future<Map<String, dynamic>> rescheduleBooking(
+    String id,
+    String date,
+    String time, {
+    String? reason,
+  }) async => asMap(
+    apiData(await source.rescheduleBooking(id, date, time, reason: reason)),
+  );
 
   // Availability
   Future<Map<String, dynamic>> availability() async =>
