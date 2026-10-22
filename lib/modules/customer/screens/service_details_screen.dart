@@ -186,11 +186,21 @@ class ServiceDetailsScreen extends ConsumerWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: SahelButton(
-                  label: 'احجز هذه الخدمة',
+                  label: svc.isAvailable ? 'احجز هذه الخدمة' : 'غير متاحة حالياً',
                   variant: SahelButtonVariant.gradient,
-                  prefixIcon: Icons.event,
-                  onPressed: () =>
-                      context.push('/bookings/new?service_id=${svc.id}'),
+                  prefixIcon:
+                      svc.isAvailable ? Icons.event : Icons.block,
+                  onPressed: svc.isAvailable
+                      ? () =>
+                          context.push('/bookings/new?service_id=${svc.id}')
+                      : () {
+                          ScaffoldMessenger.of(context)
+                            ..clearSnackBars()
+                            ..showSnackBar(const SnackBar(
+                                content: Text(
+                                    'هذه الخدمة غير متاحة للحجز في الوقت الحالي'),
+                                backgroundColor: SahelColors.danger));
+                        },
                 ),
               ),
             ],

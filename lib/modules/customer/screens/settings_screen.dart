@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
@@ -12,29 +13,30 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);
+    final lang = Localizations.localeOf(context).languageCode;
     return Scaffold(
       appBar: AppBar(title: const Text('الإعدادات')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _group('العامة', [
-              _tile(Icons.translate, 'اللغة',
+            _group('العامة'.t(lang), [
+              _tile(Icons.translate, 'اللغة'.t(lang),
                   settings.language == 'en' ? 'English' : 'العربية',
                   () => context.push('/settings/language')),
-              _tile(Icons.monetization_on_outlined, 'العملة',
+              _tile(Icons.monetization_on_outlined, 'العملة'.t(lang),
                   settings.currency.toUpperCase(),
                   () => context.push('/settings/currency')),
             ]),
-            _group('الخصوصية والأمان', [
-              _tile(Icons.lock_outline, 'تغيير كلمة المرور', null,
+            _group('الخصوصية والأمان'.t(lang), [
+              _tile(Icons.lock_outline, 'تغيير كلمة المرور'.t(lang), null,
                   () => _changePassword(context, ref)),
-              _tile(Icons.delete_outline, 'حذف الحساب', null,
+              _tile(Icons.delete_outline, 'حذف الحساب'.t(lang), null,
                   () => _deleteAccount(context, ref),
                   danger: true),
             ]),
-            _group('الحساب', [
-              _tile(Icons.logout, 'تسجيل الخروج', null,
+            _group('الحساب'.t(lang), [
+              _tile(Icons.logout, 'تسجيل الخروج'.t(lang), null,
                   () => _logout(context, ref),
                   danger: true),
             ]),

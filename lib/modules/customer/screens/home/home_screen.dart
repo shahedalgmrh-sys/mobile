@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/catalog_repository.dart';
@@ -316,6 +317,7 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     final popular = data.popularServices.isNotEmpty
         ? data.popularServices
         : data.featuredServices;
@@ -329,9 +331,9 @@ class _HomeContent extends StatelessWidget {
         if (popular.isNotEmpty) ...[
           const SizedBox(height: 24),
           _SectionHeader(
-            title: 'الخدمات الأكثر حجزاً هذا الشهر',
-            subtitle: 'هذه الخدمات يثق بها عملاؤنا أكثر من غيرها',
-            actionLabel: 'عرض الكل',
+            title: 'الخدمات الأكثر حجزاً هذا الشهر'.t(lang),
+            subtitle: 'هذه الخدمات يثق بها عملاؤنا أكثر من غيرها'.t(lang),
+            actionLabel: 'عرض الكل'.t(lang),
             onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
@@ -350,9 +352,9 @@ class _HomeContent extends StatelessWidget {
         if (data.featuredProviders.isNotEmpty) ...[
           const SizedBox(height: 8),
           _SectionHeader(
-            title: 'تعرف على أفضل المزوّدين',
-            subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة',
-            actionLabel: 'كل المزوّدين',
+            title: 'تعرف على أفضل المزوّدين'.t(lang),
+            subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة'.t(lang),
+            actionLabel: 'كل المزوّدين'.t(lang),
             onAction: () => context.push('/search'),
           ),
           const SizedBox(height: 12),
@@ -441,13 +443,14 @@ class _CategoriesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     const styles = HomeScreen._categoryStyles;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionHeader(
-          title: 'الأقسام الرئيسية',
-          actionLabel: 'الكل',
+          title: 'الأقسام الرئيسية'.t(lang),
+          actionLabel: 'الكل'.t(lang),
           onAction: () => context.push('/search'),
         ),
         const SizedBox(height: 12),

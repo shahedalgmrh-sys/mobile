@@ -67,19 +67,25 @@ class CustomerRepository {
       asMap(apiData(await source.createBooking(data, idempotencyKey: _uuid.v4())));
 
   /// Time slots available for a given service on a specific date.
+  /// Server shape: `data: {date, service_id, slots: [...]}` — the inner
+  /// `slots` list must be unwrapped explicitly, otherwise every day parses
+  /// as unavailable.
   Future<List<Map<String, dynamic>>> availableSlots({
     String? serviceId,
     String? service,
     required String date,
-  }) async => dataList(
-    apiData(
-      await source.availableSlots(
-        serviceId: serviceId,
-        service: service,
-        date: date,
+  }) async {
+    final d = asMap(
+      apiData(
+        await source.availableSlots(
+          serviceId: serviceId,
+          service: service,
+          date: date,
+        ),
       ),
-    ),
-  );
+    );
+    return dataList(d['slots'] ?? d['available_slots'] ?? d);
+  }
 
   Future<Map<String, dynamic>> booking(String id) async =>
       asMap(apiData(await source.showBooking(id)));

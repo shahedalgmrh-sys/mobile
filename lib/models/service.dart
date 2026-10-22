@@ -44,6 +44,7 @@ class Service {
   final String categoryId;
   final double? distanceKm;
   final List<ServicePricing> pricing;
+  final bool isAvailable;
 
   const Service({
     required this.id,
@@ -62,5 +63,6 @@ class Service {
     required this.categoryId,
     this.distanceKm,
     this.pricing = const [],
+    this.isAvailable = true,
   });
 }

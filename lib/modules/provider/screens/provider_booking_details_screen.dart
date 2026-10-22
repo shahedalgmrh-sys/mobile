@@ -241,9 +241,7 @@ class _BodyState extends ConsumerState<_Body> {
                 children: [
                   CircleAvatar(
                     child: Text(
-                      str(customer['name'], 'ع').isNotEmpty
-                          ? str(customer['name'])[0]
-                          : 'ع',
+                      str(customer['name'], 'ع')[0],
                     ),
                   ),
                   const SizedBox(width: 10),

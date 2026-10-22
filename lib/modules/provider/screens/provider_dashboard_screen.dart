@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -13,13 +14,14 @@ class ProviderDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = Localizations.localeOf(context).languageCode;
     final dash = ref.watch(providerDashboardProvider);
     final bookings = ref.watch(
         providerBookingsProvider((status: 'pending', date: null)));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('لوحة التحكم'),
+        title: Text('لوحة التحكم'.t(lang)),
         actions: [
           IconButton(
             onPressed: () => context.push('/p/notifications'),
@@ -97,9 +99,9 @@ class ProviderDashboardScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          const Expanded(
-                            child: Text('الأرباح الشهرية',
-                                style: TextStyle(
+                          Expanded(
+                            child: Text('الأرباح الشهرية'.t(lang),
+                                style: const TextStyle(
                                     color: Colors.white70, fontSize: 13)),
                           ),
                           Container(
@@ -112,7 +114,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              isOnline ? 'متاح' : 'غير متاح',
+                              isOnline ? 'متاح'.t(lang) : 'غير متاح'.t(lang),
                               style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -130,14 +132,14 @@ class ProviderDashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          _miniStat('الحجوزات',
+                          _miniStat('الحجوزات'.t(lang),
                               totalBookings.isEmpty ? '0' : totalBookings,
                               Icons.calendar_month),
                           const SizedBox(width: 12),
-                          _miniStat('التقييم',
+                          _miniStat('التقييم'.t(lang),
                               rating.isEmpty ? '-' : rating, Icons.star),
                           const SizedBox(width: 12),
-                          _miniStat('جديدة',
+                          _miniStat('جديدة'.t(lang),
                               newCount.isEmpty ? '0' : newCount, Icons.bolt),
                         ],
                       ),
@@ -148,11 +150,11 @@ class ProviderDashboardScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                        child: _card(Icons.list_alt, 'قائمة الخدمات',
+                        child: _card(Icons.list_alt, 'قائمة الخدمات'.t(lang),
                             () => context.push('/p/services'))),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _card(Icons.calendar_today, 'التقويم',
+                        child: _card(Icons.calendar_today, 'التقويم'.t(lang),
                             () => context.push('/p/calendar'))),
                   ],
                 ),
@@ -161,25 +163,25 @@ class ProviderDashboardScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                         child: _card(Icons.account_balance_wallet_outlined,
-                            'سحب الرصيد', () => context.push('/p/withdraw'))),
+                            'سحب الرصيد'.t(lang), () => context.push('/p/withdraw'))),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _card(Icons.verified_user_outlined, 'حالة KYC',
+                        child: _card(Icons.verified_user_outlined, 'حالة KYC'.t(lang),
                             () => context.push('/p/kyc'))),
                   ],
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    const Expanded(
-                      child: Text('طلبات الحجز الجديدة',
-                          style: TextStyle(
+                    Expanded(
+                      child: Text('طلبات الحجز الجديدة'.t(lang),
+                          style: const TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 16)),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/p/requests'),
-                      child: const Text('عرض الكل',
-                          style: TextStyle(
+                      child: Text('عرض الكل'.t(lang),
+                          style: const TextStyle(
                               color: SahelColors.primary600,
                               fontWeight: FontWeight.w700,
                               fontSize: 13)),

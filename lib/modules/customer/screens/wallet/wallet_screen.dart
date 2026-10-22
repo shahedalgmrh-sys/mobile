@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -17,6 +18,7 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = Localizations.localeOf(context).languageCode;
     final wallet = ref.watch(customerWalletProvider);
     final txs = ref.watch(walletTransactionsProvider);
 
@@ -36,7 +38,7 @@ class WalletScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'رصيد المحفظة',
+                      'رصيد المحفظة'.t(lang),
                       style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.8),
@@ -79,7 +81,7 @@ class WalletScreen extends ConsumerWidget {
                 Expanded(
                   child: SahelButton.gradient(
                     icon: Icons.add,
-                    label: 'شحن الرصيد',
+                    label: 'شحن الرصيد'.t(lang),
                     onPressed: () => _showAddFunds(context, ref),
                   ),
                 ),
@@ -87,7 +89,7 @@ class WalletScreen extends ConsumerWidget {
                 Expanded(
                   child: SahelButton.soft(
                     icon: Icons.receipt_long,
-                    label: 'كشف الحساب',
+                    label: 'كشف الحساب'.t(lang),
                     onPressed: () => context.push('/wallet/statement'),
                   ),
                 ),
@@ -96,14 +98,14 @@ class WalletScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Text('آخر العمليات',
+                Text('آخر العمليات'.t(lang),
                     style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 const Spacer(),
                 TextButton(
                   onPressed: () => ref.invalidate(walletTransactionsProvider),
-                  child: const Text('تحديث',
-                      style: TextStyle(
+                  child: Text('تحديث'.t(lang),
+                      style: const TextStyle(
                           color: SahelColors.primary700,
                           fontWeight: FontWeight.w700,
                           fontSize: 12)),

@@ -152,6 +152,7 @@ Service serviceFromJson(Map<String, dynamic> j) {
     categoryId: str(category['id'] ?? j['category_id']),
     distanceKm: toDoubleOrNull(j['distance_km']),
     pricing: dataList(j['pricing']).map(ServicePricing.fromJson).toList(),
+    isAvailable: toBool(j['is_available'] ?? j['is_active'], true),
   );
 }
 

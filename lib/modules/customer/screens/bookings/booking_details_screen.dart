@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/core/constants/payment_methods.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -23,13 +24,14 @@ class BookingDetailsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = Localizations.localeOf(context).languageCode;
     final bookingId = id;
     final booking = ref.watch(customerBookingProvider(bookingId));
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'تفاصيل الحجز #$id',
+          '${'تفاصيل الحجز'.t(lang)} #$id',
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
         ),
         centerTitle: true,

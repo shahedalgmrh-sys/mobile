@@ -617,9 +617,10 @@ class ProviderRemoteSource {
   }) => _run(
     () => client.post(
       ApiEndpoints.providerConversationMessages(id),
+      // Server validation expects `message` (customer API expects `body`).
       data: attachments == null
-          ? {'body': body}
-          : FormData.fromMap({'body': body, 'attachments[]': attachments}),
+          ? {'message': body}
+          : FormData.fromMap({'message': body, 'attachments[]': attachments}),
       options: attachments == null
           ? null
           : Options(contentType: Headers.multipartFormDataContentType),

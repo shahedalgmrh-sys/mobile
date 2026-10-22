@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/catalog_repository.dart';
@@ -161,6 +162,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = Localizations.localeOf(context).languageCode;
     final categories = ref.watch(categoriesProvider).valueOrNull ?? const [];
     final cities = ref.watch(citiesProvider).valueOrNull ?? const [];
     final services = ref.watch(customerSearchProvider(_searchParams));
@@ -477,7 +479,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              total == null ? 'النتائج' : 'النتائج ($total)',
+              total == null
+                          ? 'النتائج'.t(lang)
+                          : '${'النتائج'.t(lang)} ($total)',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
