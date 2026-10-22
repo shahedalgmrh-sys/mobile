@@ -9,4 +9,5 @@ class AppHeaders {
   static const String xAppVersion = 'X-App-Version';
   static const String xClientType = 'X-Client-Type';
   static const String authorization = 'Authorization';
+  static const String xIdempotencyKey = 'X-Idempotency-Key';
 }

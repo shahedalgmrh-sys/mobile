@@ -5,6 +5,7 @@ import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
+import 'package:saber_flutter/core/constants/payment_methods.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
@@ -38,6 +39,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
   final _frequencies = const ['مرة واحدة', 'أسبوعياً', 'أسبوعين', 'شهرياً'];
   int _selectedFrequency = 0;
+  String? _selectedPricingId;
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
 
@@ -55,8 +57,6 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   String? _selectedSlotTime;
   Map<int, _DayAvailability> _availability = const {};
 
-  static const _paymentLabels = ['محفظة المنصة', 'كاش عند الاستلام'];
-  static const _paymentCodes = ['wallet', 'cash'];
   int _selectedPayment = 0;
   bool _submitting = false;
 
@@ -75,7 +75,18 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     return null;
   }
 
-  double get _subtotal => _service?.basePrice ?? 0;
+  /// Selected pricing tier's effective price when one is picked, otherwise
+  /// the service base price.
+  double get _subtotal {
+    final service = _service;
+    if (service == null) return 0;
+    if (_selectedPricingId != null) {
+      for (final tier in service.pricing) {
+        if (tier.id == _selectedPricingId) return tier.effectivePrice;
+      }
+    }
+    return service.basePrice;
+  }
   double _appliedDiscount = 0;
   double get _discount => _appliedCoupon == null ? 0 : _appliedDiscount;
 
@@ -88,7 +99,18 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   /// Real service id (numeric) — never the slug — as required by the API.
   String? get _serviceId => _service?.id ?? widget.serviceId;
 
-  String get _selectedPaymentCode => _paymentCodes[_selectedPayment];
+  String get _selectedPaymentCode {
+    final i = _selectedPayment.clamp(0, PaymentMethods.booking.length - 1);
+    return PaymentMethods.booking[i].$1;
+  }
+
+  /// Free-text note only used when the service has no pricing tiers — the
+  /// frequency chips then have no server-side meaning (kept informational).
+  String? get _bookingNotes {
+    final service = _service;
+    if (service == null || service.pricing.isNotEmpty) return null;
+    return 'التكرار: ${_frequencies[_selectedFrequency]}';
+  }
 
   _DayAvailability? _availabilityFor(int index) => _availability[index];
 
@@ -334,8 +356,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         'customer_address_id': _selectedAddressId,
         'booking_date': _dateParam(_selectedDate),
         'booking_time': selectedTime,
-        'notes':
-            'التكرار: ${_frequencies[_selectedFrequency]} · الدفع: ${_paymentLabels[_selectedPayment]}',
+        if (_bookingNotes != null) 'notes': _bookingNotes,
+        if (_selectedPricingId != null)
+          'service_pricing_id': _selectedPricingId,
         if (_appliedCoupon != null)
           'coupon_code': _couponController.text.trim(),
       });
@@ -343,7 +366,10 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       ref.invalidate(customerBookingsProvider);
       final newId = booking['id'] ?? booking['booking_id'];
       String? paymentWarning;
-      if (newId != null && _selectedPaymentCode == 'wallet') {
+      // cash pays no API call (settled with the provider); wallet and
+      // electronic methods attempt /pay — electronic may fail locally with a
+      // gateway-not-configured message which we surface verbatim.
+      if (newId != null && _selectedPaymentCode != 'cash') {
         try {
           await ref
               .read(customerRepositoryProvider)
@@ -351,7 +377,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         } catch (e) {
           paymentWarning = _failureMessage(
             e,
-            'تم إنشاء الحجز لكن تعذر خصم المبلغ من المحفظة الآن.',
+            'تم إنشاء الحجز لكن تعذر إتمام الدفع — يمكنك الدفع من تفاصيل الحجز.',
           );
         }
       }
@@ -504,6 +530,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   }
 
   Widget _buildStep1() {
+    final tiers = _service?.pricing ?? const <ServicePricing>[];
+    final selectedTierId = _selectedPricingId;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
@@ -569,37 +597,76 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'تكرار الخدمة',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: List.generate(_frequencies.length, (i) {
-            final selected = _selectedFrequency == i;
-            return ChoiceChip(
-              label: Text(
-                _frequencies[i],
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: selected ? Colors.white : SahelColors.text,
+        if (tiers.isNotEmpty) ...[
+          const Text(
+            'فئة السعر',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tier in tiers)
+                ChoiceChip(
+                  label: Text(
+                    '${tier.name} · ${tier.effectivePrice.toStringAsFixed(0)} $_currency',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: selectedTierId == tier.id
+                          ? Colors.white
+                          : SahelColors.text,
+                    ),
+                  ),
+                  selected: selectedTierId == tier.id,
+                  selectedColor: SahelColors.primary600,
+                  backgroundColor: SahelColors.surface2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: SahelRadii.pillRadius,
+                    side: BorderSide(
+                      color: selectedTierId == tier.id
+                          ? SahelColors.primary600
+                          : SahelColors.border,
+                    ),
+                  ),
+                  onSelected: (_) =>
+                      setState(() => _selectedPricingId = tier.id),
                 ),
-              ),
-              selected: selected,
-              selectedColor: SahelColors.primary600,
-              backgroundColor: SahelColors.surface2,
-              shape: RoundedRectangleBorder(
-                borderRadius: SahelRadii.pillRadius,
-                side: BorderSide(
-                  color: selected ? SahelColors.primary600 : SahelColors.border,
+            ],
+          ),
+        ] else ...[
+          const Text(
+            'تكرار الخدمة',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: List.generate(_frequencies.length, (i) {
+              final selected = _selectedFrequency == i;
+              return ChoiceChip(
+                label: Text(
+                  _frequencies[i],
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : SahelColors.text,
+                  ),
                 ),
-              ),
-              onSelected: (_) => setState(() => _selectedFrequency = i),
-            );
-          }),
-        ),
+                selected: selected,
+                selectedColor: SahelColors.primary600,
+                backgroundColor: SahelColors.surface2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: SahelRadii.pillRadius,
+                  side: BorderSide(
+                    color: selected ? SahelColors.primary600 : SahelColors.border,
+                  ),
+                ),
+                onSelected: (_) => setState(() => _selectedFrequency = i),
+              );
+            }),
+          ),
+        ],
         const SizedBox(height: 24),
         const Text(
           'كوبون الخصم',
@@ -1121,16 +1188,24 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         ? 'الرصيد المتاح'
         : 'الرصيد المتاح: ${str(wallet['formatted_balance'] ?? wallet['balance'])}';
     final methods = [
-      (
-        icon: Icons.account_balance_wallet,
-        name: 'محفظة المنصة',
-        desc: '$walletBalance · يتم الخصم مباشرة بعد تأكيد الحجز',
-      ),
-      (
-        icon: Icons.monetization_on,
-        name: 'كاش عند الاستلام',
-        desc: 'تدفع للمزوّد عند تنفيذ الخدمة',
-      ),
+      for (final (code, label, hint) in PaymentMethods.booking)
+        (
+          icon: code == 'wallet'
+              ? Icons.account_balance_wallet
+              : code == 'cash'
+                  ? Icons.monetization_on
+                  : code == 'mada'
+                      ? Icons.credit_card
+                      : code == 'stc_pay'
+                          ? Icons.phone_android
+                          : (code == 'apple_pay' || code == 'google_pay')
+                              ? Icons.phone_iphone
+                              : code == 'stripe'
+                                  ? Icons.account_balance
+                                  : Icons.public,
+          name: label,
+          desc: code == 'wallet' ? '$walletBalance · يتم الخصم مباشرة بعد تأكيد الحجز' : hint,
+        ),
     ];
     const label = TextStyle(
       fontSize: 14,
@@ -1154,7 +1229,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             borderRadius: SahelRadii.mdRadius,
           ),
           child: const Text(
-            'المتاح حالياً داخل التطبيق: محفظة المنصة أو الدفع كاش عند الاستلام.',
+            'المحفظة والكاش يُنفَّذان فوراً؛ وسائل البطاقة تمر عبر بوابة الدفع — إن لم تكن مفعّلة في البيئة الحالية سيصلك إشعار ويمكنك إتمام الدفع من تفاصيل الحجز لاحقاً.',
             style: TextStyle(
               color: SahelColors.primary700,
               fontWeight: FontWeight.w600,

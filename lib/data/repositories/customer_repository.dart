@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:uuid/uuid.dart';
 
 import '../sources/remote_sources.dart';
 import 'parsers.dart';
@@ -7,6 +8,7 @@ import 'parsers.dart';
 /// normalized via [parsers]. Screens/providers consume these directly.
 class CustomerRepository {
   final CustomerRemoteSource source;
+  static const Uuid _uuid = Uuid();
   const CustomerRepository(this.source);
 
   Future<Map<String, dynamic>> me() async => asMap(apiData(await source.me()));
@@ -58,8 +60,11 @@ class CustomerRepository {
   }) async =>
       dataList(apiData(await source.bookings(status: status, page: page)));
 
+  /// Creates a booking. A fresh UUIDv4 idempotency key is attached on every
+  /// client-initiated call so a retried submit cannot create duplicates
+  /// (server honors `X-Idempotency-Key` / `idempotency_key`).
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async =>
-      asMap(apiData(await source.createBooking(data)));
+      asMap(apiData(await source.createBooking(data, idempotencyKey: _uuid.v4())));
 
   /// Time slots available for a given service on a specific date.
   Future<List<Map<String, dynamic>>> availableSlots({

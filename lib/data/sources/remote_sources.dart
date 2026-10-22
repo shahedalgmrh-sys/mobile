@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../core/constants/api_endpoints.dart';
+import '../../core/constants/app_headers.dart';
 import '../../core/errors/failures.dart';
 import '../../core/network/api_client.dart';
 
@@ -152,6 +153,27 @@ class CatalogRemoteSource {
       queryParameters: {if (category != null) 'category': category},
     ),
   );
+  Future<Response> ads() => _run(() => client.get(ApiEndpoints.ads));
+  Future<Response> blogs({int? page}) => _run(
+    () => client.get(
+      ApiEndpoints.blogs,
+      queryParameters: {if (page != null) 'page': page},
+    ),
+  );
+  Future<Response> showBlog(String slug) =>
+      _run(() => client.get(ApiEndpoints.showBlog(slug)));
+  Future<Response> storeBlogComment(String blogId, String body) => _run(
+    () => client.post(
+      ApiEndpoints.blogComments(blogId),
+      data: {'body': body},
+    ),
+  );
+  Future<Response> page(String slug) =>
+      _run(() => client.get(ApiEndpoints.contentPage(slug)));
+  Future<Response> currencies() =>
+      _run(() => client.get(ApiEndpoints.currencies));
+  Future<Response> popularSearches() =>
+      _run(() => client.get(ApiEndpoints.searchPopular));
   Future<Response> contact(Map<String, dynamic> data) =>
       _run(() => client.post(ApiEndpoints.contact, data: data));
 }
@@ -221,8 +243,21 @@ class CustomerRemoteSource {
       },
     ),
   );
-  Future<Response> createBooking(Map<String, dynamic> data) =>
-      _run(() => client.post(ApiEndpoints.customerBookings, data: data));
+  Future<Response> createBooking(
+    Map<String, dynamic> data, {
+    String? idempotencyKey,
+  }) => _run(
+    () => client.post(
+      ApiEndpoints.customerBookings,
+      data: {
+        ...data,
+        if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
+      },
+      options: idempotencyKey == null
+          ? null
+          : Options(headers: {AppHeaders.xIdempotencyKey: idempotencyKey}),
+    ),
+  );
   Future<Response> availableSlots({
     String? serviceId,
     String? service,
@@ -402,6 +437,19 @@ class ProviderRemoteSource {
       _run(() => client.get(ApiEndpoints.providerProfileMe));
   Future<Response> updateProfile(Map<String, dynamic> data) =>
       _run(() => client.put(ApiEndpoints.providerProfileMe, data: data));
+  Future<Response> updateProviderLogo(MultipartFile image) => _run(
+    () => client.post(
+      ApiEndpoints.providerLogo,
+      data: FormData.fromMap({'logo': image}),
+      options: Options(contentType: Headers.multipartFormDataContentType),
+    ),
+  );
+  Future<Response> deleteProviderImage(String kind) => _run(() => client
+      .delete(switch (kind) {
+        'avatar' => ApiEndpoints.providerAvatarDestroy,
+        'logo' => ApiEndpoints.providerLogoDestroy,
+        _ => ApiEndpoints.providerCoverDestroy,
+      }));
   Future<Response> changePassword(
     String current,
     String password,
@@ -438,8 +486,20 @@ class ProviderRemoteSource {
       _run(() => client.get(ApiEndpoints.providerServices));
   Future<Response> showService(String id) =>
       _run(() => client.get(ApiEndpoints.providerService(id)));
-  Future<Response> storeService(Map<String, dynamic> data) =>
-      _run(() => client.post(ApiEndpoints.providerServices, data: data));
+  Future<Response> storeService(
+    Map<String, dynamic> data, {
+    List<MultipartFile>? images,
+  }) => _run(
+    () => client.post(
+      ApiEndpoints.providerServices,
+      data: images == null || images.isEmpty
+          ? data
+          : FormData.fromMap({...data, 'images[]': images}),
+      options: images == null || images.isEmpty
+          ? null
+          : Options(contentType: Headers.multipartFormDataContentType),
+    ),
+  );
   Future<Response> updateService(String id, Map<String, dynamic> data) =>
       _run(() => client.put(ApiEndpoints.providerService(id), data: data));
   Future<Response> destroyService(String id) =>
@@ -474,6 +534,27 @@ class ProviderRemoteSource {
       _run(() => client.post(ApiEndpoints.bookingStart(id)));
   Future<Response> completeBooking(String id) =>
       _run(() => client.post(ApiEndpoints.bookingComplete(id)));
+  Future<Response> cancelBooking(String id, {required String reason}) => _run(
+    () => client.post(
+      ApiEndpoints.providerBookingCancel(id),
+      data: {'reason': reason},
+    ),
+  );
+  Future<Response> rescheduleBooking(
+    String id,
+    String date,
+    String time, {
+    String? reason,
+  }) => _run(
+    () => client.post(
+      ApiEndpoints.providerBookingReschedule(id),
+      data: {
+        'booking_date': date,
+        'booking_time': time,
+        if (reason != null) 'reason': reason,
+      },
+    ),
+  );
 
   // Availability
   Future<Response> availability() =>

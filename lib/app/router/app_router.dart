@@ -25,9 +25,11 @@ import '../../modules/customer/screens/bookings/booking_details_screen.dart';
 import '../../modules/customer/screens/bookings/live_tracking_screen.dart';
 import '../../modules/customer/screens/write_review_screen.dart';
 import '../../modules/customer/screens/submit_complaint_screen.dart';
+import '../../modules/customer/screens/complaints_screen.dart';
 import '../../modules/customer/screens/chat_screen.dart';
 import '../../modules/customer/screens/notifications/notifications_screen.dart';
 import '../../modules/customer/screens/wallet/wallet_screen.dart';
+import '../../modules/customer/screens/wallet/wallet_statement_screen.dart';
 import '../../modules/customer/screens/settings_screen.dart';
 import '../../modules/customer/screens/language_settings_screen.dart';
 import '../../modules/customer/screens/currency_settings_screen.dart';
@@ -43,6 +45,9 @@ import '../../modules/provider/screens/provider_booking_details_screen.dart';
 import '../../modules/provider/screens/earnings_screen.dart';
 import '../../modules/provider/screens/withdraw_request_screen.dart';
 import '../../modules/provider/screens/service_catalog_screen.dart';
+import '../../modules/provider/screens/provider_service_form_screen.dart';
+import '../../modules/provider/screens/provider_service_requests_screen.dart';
+import '../../modules/provider/screens/provider_reviews_screen.dart';
 import '../../modules/provider/screens/provider_inbox_screen.dart';
 import '../../modules/provider/screens/provider_notifications_screen.dart';
 import '../../modules/provider/screens/provider_settings_screen.dart';
@@ -196,6 +201,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
       GoRoute(
+          path: '/wallet/statement', builder: (_, __) => const WalletStatementScreen()),
+      GoRoute(
         path: '/settings',
         builder: (_, __) => const SettingsScreen(),
         routes: [
@@ -207,6 +214,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/addresses', builder: (_, __) => const AddressBookScreen()),
       GoRoute(path: '/profile/reviews', builder: (_, __) => const MyReviewsScreen()),
       GoRoute(path: '/profile/coupons', builder: (_, __) => const CouponsScreen()),
+      GoRoute(path: '/profile/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
+      GoRoute(path: '/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
+      GoRoute(path: '/complaints/new', builder: (_, __) => const SubmitComplaintScreen()),
 
       // ------------------------------------------------ Provider shell
       StatefulShellRoute.indexedStack(
@@ -259,7 +269,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/p/withdraw', builder: (_, __) => const WithdrawRequestScreen()),
       GoRoute(path: '/p/services', builder: (_, __) => const ServiceCatalogScreen()),
+      GoRoute(
+        path: '/p/services/new',
+        builder: (_, __) => const ProviderServiceFormScreen(),
+      ),
+      GoRoute(
+        path: '/p/services/edit',
+        builder: (_, s) {
+          final extra = s.extra is Map ? Map<String, dynamic>.from(s.extra as Map) : const <String, dynamic>{};
+          return ProviderServiceFormScreen(existing: extra);
+        },
+      ),
       GoRoute(path: '/p/notifications', builder: (_, __) => const ProviderNotificationsScreen()),
+      GoRoute(
+          path: '/p/service-requests',
+          builder: (_, __) => const ProviderServiceRequestsScreen()),
+      GoRoute(
+          path: '/p/reviews', builder: (_, __) => const ProviderReviewsScreen()),
       GoRoute(
         path: '/p/settings',
         builder: (_, __) => const ProviderSettingsScreen(),

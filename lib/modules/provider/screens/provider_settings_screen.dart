@@ -59,16 +59,22 @@ class ProviderSettingsScreen extends ConsumerWidget {
             _g('الملف التجاري', [
               _t(Icons.badge_outlined, 'المعلومات الأساسية',
                   () => context.push('/p/settings/basic')),
+              _t(Icons.rate_review_outlined, 'مراجعاتي والردود',
+                  () => context.push('/p/reviews')),
               _t(Icons.verified_user_outlined, 'التحقق (KYC)',
                   () => context.push('/p/kyc')),
               _t(Icons.photo_library_outlined, 'صور الأعمال',
                   () => context.push('/p/settings/portfolio')),
+              _t(Icons.add_a_photo_outlined, 'صور النشاط (شعار/غلاف)',
+                  () => _manageImages(context, ref)),
               _t(Icons.category_outlined, 'تصنيفات الخدمات',
                   () => context.push('/p/services')),
             ]),
             _g('العمليات', [
               _t(Icons.event_available_outlined, 'ساعات العمل',
                   () => context.push('/p/calendar')),
+              _t(Icons.swap_horiz_outlined, 'طلباتي (تعاون المزوّدين)',
+                  () => context.push('/p/service-requests')),
               _t(Icons.notifications_active_outlined,
                   'إشعارات الطلبات',
                   () => context.push('/p/notifications')),
@@ -85,6 +91,10 @@ class ProviderSettingsScreen extends ConsumerWidget {
                 subtitle: language == 'en' ? 'English' : 'العربية',
               ),
             ]),
+            _g('الأمان', [
+              _t(Icons.lock_outline, 'تغيير كلمة المرور',
+                  () => _changePassword(context, ref)),
+            ]),
             _g('الحساب', [
               _t(Icons.logout_outlined, 'تسجيل الخروج', () async {
                 await ref
@@ -92,6 +102,163 @@ class ProviderSettingsScreen extends ConsumerWidget {
                     .logout();
               }),
             ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mirrors the customer settings flow against `/provider/profile/password`.
+  Future<void> _changePassword(
+      BuildContext context, WidgetRef ref) async {
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirm = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تغيير كلمة المرور'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+                controller: current,
+                obscureText: true,
+                decoration: const InputDecoration(
+                    labelText: 'كلمة المرور الحالية')),
+            const SizedBox(height: 12),
+            TextField(
+                controller: next,
+                obscureText: true,
+                decoration: const InputDecoration(
+                    labelText: 'كلمة المرور الجديدة')),
+            const SizedBox(height: 12),
+            TextField(
+                controller: confirm,
+                obscureText: true,
+                decoration: const InputDecoration(
+                    labelText: 'تأكيد كلمة المرور')),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('حفظ')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (next.text != confirm.text || next.text.length < 8) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('كلمة المرور يجب أن تكون 8 أحرف على الأقل ومتطابقة')));
+      }
+      return;
+    }
+    try {
+      await ref
+          .read(providerRepositoryProvider)
+          .changePassword(current.text, next.text, confirm.text);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('تم تغيير كلمة المرور بنجاح')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('تعذر تغيير كلمة المرور — تحقق من الحالية')));
+      }
+    }
+  }
+
+  /// Mirrors the server contract: multipart `POST /provider/profile/logo`
+  /// (jpeg/png ≤4MB) and DELETE endpoints for avatar/logo/cover.
+  Future<void> _manageImages(BuildContext context, WidgetRef ref) async {
+    void snack(String m, {bool error = false}) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(m), backgroundColor: error ? SahelColors.danger : null));
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text('صور النشاط',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: const Text('تغيير شعار النشاط'),
+              subtitle: const Text('JPG أو PNG حتى 4MB',
+                  style: TextStyle(fontSize: 11, color: SahelColors.muted)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final picked = await ImagePicker().pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 88,
+                  maxWidth: 1200,
+                );
+                if (picked == null) return;
+                snack('جاري رفع الشعار…');
+                try {
+                  await ref
+                      .read(providerRepositoryProvider)
+                      .updateLogo(picked.path);
+                  ref.invalidate(providerProfileProvider);
+                  snack('تم تحديث الشعار ✓');
+                } catch (_) {
+                  snack('تعذر رفع الشعار — تأكد أنه JPG/PNG ≤4MB', error: true);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.crop_free_outlined),
+              title: const Text('حذف صورة الغلاف'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  await ref
+                      .read(providerRepositoryProvider)
+                      .deleteProviderImage('cover');
+                  ref.invalidate(providerProfileProvider);
+                  snack('تم حذف الغلاف ✓');
+                } catch (_) {
+                  snack('تعذر حذف الغلاف', error: true);
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_remove_outlined,
+                  color: SahelColors.danger),
+              title: const Text('حذف الصورة الرمزية',
+                  style: TextStyle(color: SahelColors.danger)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                try {
+                  await ref
+                      .read(providerRepositoryProvider)
+                      .deleteProviderImage('avatar');
+                  await ref.read(authNotifierProvider.notifier).refreshUser();
+                  snack('تم حذف الصورة الرمزية ✓');
+                } catch (_) {
+                  snack('تعذر حذف الصورة الرمزية', error: true);
+                }
+              },
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),

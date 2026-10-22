@@ -7,6 +7,7 @@ import 'package:saber_flutter/providers/data_providers.dart';
 import '../../../models/review.dart';
 import '../../../shared/widgets/provider_mini_card.dart';
 import '../../../shared/widgets/review_card.dart';
+import 'package:saber_flutter/shared/widgets/favorite_toggle_button.dart';
 import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import '../../../shared/theme/sahel_colors.dart';
@@ -30,8 +31,10 @@ class ProviderProfileScreen extends ConsumerWidget {
             ? 'ملف المزود'
             : str(asMap(profile.valueOrNull!['provider'])['business_name'],
                 'ملف المزود')),
-      ),
-      body: SafeArea(
+        actions: [
+          FavoriteToggleButton(id: id, isProvider: true),
+        ],
+      ),      body: SafeArea(
         child: profile.when(
           loading: () => ListView(
             padding: const EdgeInsets.all(16),

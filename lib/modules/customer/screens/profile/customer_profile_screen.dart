@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
+import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
@@ -107,6 +111,12 @@ class CustomerProfileScreen extends ConsumerWidget {
         onTap: (ctx) => ctx.push('/support'),
       ),
       (
+        icon: Icons.gavel,
+        title: 'شكاواي',
+        subtitle: 'سجل الشكاوى وردود الدعم',
+        onTap: (ctx) => ctx.push('/profile/complaints'),
+      ),
+      (
         icon: Icons.logout,
         title: 'تسجيل الخروج',
         subtitle: null,
@@ -172,17 +182,41 @@ class CustomerProfileScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 36,
-                          backgroundColor: SahelColors.primary100,
-                          backgroundImage:
-                              strOrNull(user['avatar']) != null
-                                  ? NetworkImage(str(user['avatar']))
-                                  : null,
-                          child: strOrNull(user['avatar']) == null
-                              ? const Icon(Icons.person,
-                                  color: SahelColors.primary700, size: 40)
-                              : null,
+                        GestureDetector(
+                          onTap: () => _showAvatarSheet(context, ref),
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundColor: SahelColors.primary100,
+                                backgroundImage:
+                                    strOrNull(user['avatar']) != null
+                                        ? NetworkImage(str(user['avatar']))
+                                        : null,
+                                child: strOrNull(user['avatar']) == null
+                                    ? const Icon(Icons.person,
+                                        color: SahelColors.primary700,
+                                        size: 40)
+                                    : null,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: SahelColors.primary600,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 2),
+                                  ),
+                                  child: const Icon(Icons.photo_camera,
+                                      color: Colors.white, size: 12),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -336,6 +370,125 @@ class CustomerProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Jumps to `/customer/me/avatar` — pick → multipart upload → refresh auth
+  /// user. Mirrors the web profile settings behavior.
+  void _showAvatarSheet(BuildContext context, WidgetRef ref) {
+    final hasAvatar = strOrNull(
+            ref.read(authNotifierProvider).user?['avatar']) !=
+        null;
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Text('الصورة الشخصية',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            ListTile(
+              leading:
+                  const Icon(Icons.photo_library_outlined),
+              title: const Text('اختيار من المعرض'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _uploadAvatar(context, ref, ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('كالتقاط صورة'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _uploadAvatar(context, ref, ImageSource.camera);
+              },
+            ),
+            if (hasAvatar)
+              ListTile(
+                leading: const Icon(Icons.delete_outline,
+                    color: SahelColors.danger),
+                title: const Text('إزالة الصورة',
+                    style: TextStyle(color: SahelColors.danger)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _deleteAvatar(context, ref);
+                },
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadAvatar(
+    BuildContext context,
+    WidgetRef ref,
+    ImageSource source,
+  ) async {
+    // Show pick dialog first; permissions handled inside image_picker.
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1024,
+    );
+    if (picked == null || !context.mounted) return;
+
+    _snack(context, 'جاري رفع الصورة…');
+    try {
+      await ref
+          .read(customerRepositoryProvider)
+          .updateAvatar(picked.path);
+      await ref.read(authNotifierProvider.notifier).refreshUser();
+      if (context.mounted) _snack(context, 'تم تحديث الصورة الشخصية ✓');
+    } catch (e) {
+      if (context.mounted) {
+        _snack(context, _avatarFailureMessage(e, 'تعذر رفع الصورة'),
+            error: true);
+      }
+    }
+  }
+
+  Future<void> _deleteAvatar(BuildContext context, WidgetRef ref) async {
+    _snack(context, 'جاري إزالة الصورة…');
+    try {
+      await ref.read(customerRepositoryProvider).deleteAvatar();
+      await ref.read(authNotifierProvider.notifier).refreshUser();
+      if (context.mounted) _snack(context, 'تمت إزالة الصورة ✓');
+    } catch (e) {
+      if (context.mounted) {
+        _snack(context, _avatarFailureMessage(e, 'تعذر إزالة الصورة'),
+            error: true);
+      }
+    }
+  }
+
+  static void _snack(BuildContext context, String message,
+      {bool error = false}) {
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        backgroundColor: error ? SahelColors.danger : null,
+      ));
+  }
+
+  static String _avatarFailureMessage(Object e, String fallback) {
+    if (e is ApiException) {
+      final f = e.failure;
+      if (f is ValidationFailure) {
+        final first = f.errors.values.expand((v) => v).firstOrNull;
+        if (first != null) return first;
+      }
+      if (f is ServerFailure) return f.message;
+    }
+    return fallback;
   }
 
   void _showLogoutConfirm(BuildContext context, WidgetRef ref) {

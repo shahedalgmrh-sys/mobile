@@ -1,3 +1,32 @@
+import '../data/repositories/parsers.dart';
+
+class ServicePricing {
+  final String id;
+  final String name;
+  final double price;
+  final double? discountPrice;
+  final double effectivePrice;
+  final int? durationMinutes;
+
+  const ServicePricing({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.effectivePrice,
+    this.discountPrice,
+    this.durationMinutes,
+  });
+
+  factory ServicePricing.fromJson(Map<String, dynamic> j) => ServicePricing(
+    id: str(j['id']),
+    name: str(j['name']),
+    price: toDouble(j['price']),
+    discountPrice: toDoubleOrNull(j['discount_price']),
+    effectivePrice: toDouble(j['effective_price'] ?? j['price']),
+    durationMinutes: toIntOrNull(j['duration_minutes']),
+  );
+}
+
 class Service {
   final String id;
   final String slug;
@@ -14,6 +43,7 @@ class Service {
   final int? durationMinutes;
   final String categoryId;
   final double? distanceKm;
+  final List<ServicePricing> pricing;
 
   const Service({
     required this.id,
@@ -31,5 +61,6 @@ class Service {
     this.durationMinutes,
     required this.categoryId,
     this.distanceKm,
+    this.pricing = const [],
   });
 }

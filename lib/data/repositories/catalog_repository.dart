@@ -54,12 +54,72 @@ class OfferItem {
       );
 }
 
+class BlogItem {
+  final String id;
+  final String title;
+  final String slug;
+  final String? excerpt;
+  final String? image;
+  final String? category;
+  final String? date;
+
+  const BlogItem({
+    required this.id,
+    required this.title,
+    required this.slug,
+    this.excerpt,
+    this.image,
+    this.category,
+    this.date,
+  });
+
+  factory BlogItem.fromJson(Map<String, dynamic> j) {
+    final content = str(j['content'] ?? j['description']);
+    return BlogItem(
+      id: str(j['id']),
+      title: str(j['title'] ?? j['title_ar']),
+      slug: str(j['slug']),
+      excerpt: strOrNull(j['excerpt'] ??
+          (content.length > 140 ? content.substring(0, 140) : content)),
+      image: strOrNull(j['image']),
+      category: strOrNull(j['category']),
+      date: strOrNull(
+          j['date_ar'] ?? j['formatted_published_at'] ?? j['published_at']),
+    );
+  }
+}
+
+class AdBanner {
+  final String id;
+  final String title;
+  final String? image;
+  final String? link;
+  final String? position;
+
+  const AdBanner({
+    required this.id,
+    required this.title,
+    this.image,
+    this.link,
+    this.position,
+  });
+
+  factory AdBanner.fromJson(Map<String, dynamic> j) => AdBanner(
+        id: str(j['id']),
+        title: str(j['title'] ?? j['name']),
+        image: strOrNull(j['image'] ?? j['banner'] ?? j['image_url']),
+        link: strOrNull(j['link'] ?? j['url']),
+        position: strOrNull(j['position']),
+      );
+}
+
 class HomeFeed {
   final List<CategoryItem> categories;
   final List<Service> featuredServices;
   final List<Service> popularServices;
   final List<OfferItem> offers;
   final List<ProviderModel> featuredProviders;
+  final List<BlogItem> latestBlogs;
   final Map<String, dynamic> stats;
 
   const HomeFeed({
@@ -68,6 +128,7 @@ class HomeFeed {
     this.popularServices = const [],
     this.offers = const [],
     this.featuredProviders = const [],
+    this.latestBlogs = const [],
     this.stats = const {},
   });
 }
@@ -90,6 +151,7 @@ Service serviceFromJson(Map<String, dynamic> j) {
     durationMinutes: toIntOrNull(j['duration_minutes']),
     categoryId: str(category['id'] ?? j['category_id']),
     distanceKm: toDoubleOrNull(j['distance_km']),
+    pricing: dataList(j['pricing']).map(ServicePricing.fromJson).toList(),
   );
 }
 
@@ -127,6 +189,7 @@ class CatalogRepository {
       popularServices: dataList(d['popular_services']).map(serviceFromJson).toList(),
       offers: dataList(d['offers']).map(OfferItem.fromJson).toList(),
       featuredProviders: dataList(d['featured_providers']).map(providerFromJson).toList(),
+      latestBlogs: dataList(d['latest_blogs'] ?? d['blogs']).map(BlogItem.fromJson).toList(),
       stats: asMap(d['stats']),
     );
   }
@@ -134,6 +197,44 @@ class CatalogRepository {
   Future<List<CategoryItem>> categories() async {
     final res = await source.categories();
     return dataList(apiData(res)).map(CategoryItem.fromJson).toList();
+  }
+
+  Future<List<AdBanner>> ads() async {
+    final res = await source.ads();
+    return dataList(apiData(res)).map(AdBanner.fromJson).toList();
+  }
+
+  Future<List<BlogItem>> blogs({int? page}) async {
+    final res = await source.blogs(page: page);
+    final envelope = asMap(res.data);
+    final items = dataList(
+      envelope.containsKey('data') ? envelope['data'] : res.data,
+    );
+    return items.map(BlogItem.fromJson).toList();
+  }
+
+  Future<Map<String, dynamic>> showBlog(String slug) async =>
+      asMap(apiData(await source.showBlog(slug)));
+
+  Future<Map<String, dynamic>> contentPage(String slug) async =>
+      asMap(apiData(await source.page(slug)));
+
+  Future<List<Map<String, dynamic>>> currencies() async {
+    final res = await source.currencies();
+    return dataList(apiData(res));
+  }
+
+  Future<List<String>> popularSearches() async {
+    final res = await source.popularSearches();
+    final d = apiData(res);
+    if (d is List) {
+      return d.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    }
+    final map = asMap(d);
+    return dataList(map['queries'] ?? map['terms'] ?? map['popular'])
+        .map((e) => str(asMap(e)['term'] ?? e['term'] ?? e, ''))
+        .where((e) => e.isNotEmpty)
+        .toList();
   }
 
   Future<List<Service>> services({String? q, String? categoryId, String? sort, int? page}) async {

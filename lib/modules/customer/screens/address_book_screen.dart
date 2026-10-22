@@ -75,7 +75,10 @@ class AddressBookScreen extends ConsumerWidget {
 }
 
 class _AddressForm extends ConsumerStatefulWidget {
-  const _AddressForm();
+  final Map<String, dynamic>? existing;
+  const _AddressForm({this.existing});
+
+  bool get isEdit => existing != null;
 
   @override
   ConsumerState<_AddressForm> createState() => _AddressFormState();
@@ -89,6 +92,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   String? _areaId;
   bool _isDefault = false;
   bool _busy = false;
+  bool _initialized = false;
 
   Future<List<Map<String, dynamic>>> _areas() => _cityId == null
       ? Future.value(const <Map<String, dynamic>>[])
@@ -101,15 +105,24 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       return;
     }
     setState(() => _busy = true);
+    final payload = {
+      'label': _label.text.trim().isEmpty ? 'المنزل' : _label.text.trim(),
+      'address_line_1': _address.text.trim(),
+      'phone': _phone.text.trim(),
+      'is_default': _isDefault,
+      if (_cityId != null) 'city_id': _cityId,
+      if (_areaId != null) 'area_id': _areaId,
+    };
     try {
-      await ref.read(customerRepositoryProvider).storeAddress({
-        'label': _label.text.trim().isEmpty ? 'المنزل' : _label.text.trim(),
-        'address_line_1': _address.text.trim(),
-        'phone': _phone.text.trim(),
-        'is_default': _isDefault,
-        if (_cityId != null) 'city_id': _cityId,
-        if (_areaId != null) 'area_id': _areaId,
-      });
+      if (widget.isEdit) {
+        await ref
+            .read(customerRepositoryProvider)
+            .updateAddress(str(widget.existing!['id']), payload);
+      } else {
+        await ref
+            .read(customerRepositoryProvider)
+            .storeAddress(payload);
+      }
       ref.invalidate(customerAddressesProvider);
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -125,11 +138,24 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
   @override
   Widget build(BuildContext context) {
     final cities = ref.watch(citiesProvider).valueOrNull ?? const [];
+    if (!_initialized) {
+      _initialized = true;
+      final e = widget.existing;
+      if (e != null) {
+        _label.text = str(e['label'] ?? e['title']);
+        _address.text =
+            str(e['address'] ?? e['address_line'] ?? e['address_line_1']);
+        _phone.text = str(e['phone']);
+        _cityId = strOrNull(e['city_id'] ?? asMap(e['city'])['id']);
+        _areaId = strOrNull(e['area_id'] ?? asMap(e['area'])['id']);
+        _isDefault = toBool(e['is_default'] ?? e['is_primary'], false);
+      }
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('عنوان جديد',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(widget.isEdit ? 'تعديل العنوان' : 'عنوان جديد',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 16),
         TextField(
             controller: _label,
@@ -190,7 +216,9 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
         SizedBox(
           width: double.infinity,
           child: SahelButton(
-            label: _busy ? 'جارٍ الحفظ…' : 'حفظ العنوان',
+            label: _busy
+                ? 'جارٍ الحفظ…'
+                : (widget.isEdit ? 'حفظ التعديلات' : 'حفظ العنوان'),
             variant: SahelButtonVariant.gradient,
             onPressed: _busy ? null : _save,
           ),
@@ -204,6 +232,21 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
 class _AddressTile extends ConsumerWidget {
   final Map<String, dynamic> address;
   const _AddressTile({required this.address});
+
+  void _editAddress(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            20, 20, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+        child: _AddressForm(existing: address),
+      ),
+    ).then((_) => ref.invalidate(customerAddressesProvider));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -219,8 +262,7 @@ class _AddressTile extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.all(14),      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
@@ -272,6 +314,12 @@ class _AddressTile extends ConsumerWidget {
                     style: const TextStyle(
                         color: SahelColors.muted, fontSize: 12)),
                 const Spacer(),
+                IconButton(
+                  tooltip: 'تعديل',
+                  onPressed: () => _editAddress(context, ref),
+                  icon: const Icon(Icons.edit_outlined,
+                      color: SahelColors.primary600, size: 20),
+                ),
                 IconButton(
                   onPressed: () async {
                     try {
