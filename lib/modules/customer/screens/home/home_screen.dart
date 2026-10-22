@@ -326,6 +326,8 @@ class _HomeContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         _PromoHero(offer: data.offers.isNotEmpty ? data.offers.first : null),
+        const SizedBox(height: 16),
+        const _AdsStrip(),
         const SizedBox(height: 24),
         _CategoriesSection(categories: data.categories),
         if (popular.isNotEmpty) ...[
@@ -477,6 +479,69 @@ class _CategoriesSection extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+class _AdsStrip extends ConsumerWidget {
+  const _AdsStrip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ads = ref.watch(adsProvider);
+    return ads.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 110,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) {
+                  final ad = items[i];
+                  return Container(
+                    width: 260,
+                    decoration: BoxDecoration(
+                      color: SahelColors.surface2,
+                      borderRadius: SahelRadii.lgRadius,
+                      border: Border.all(color: SahelColors.border),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ad.image != null
+                        ? Image.network(ad.image!, fit: BoxFit.cover)
+                        : Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(ad.title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14)),
+                                if (ad.link != null)
+                                  Text(ad.link!,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: SahelColors.primary600)),
+                              ],
+                            ),
+                          ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
     );
   }
 }

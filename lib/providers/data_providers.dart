@@ -11,6 +11,10 @@ final homeFeedProvider = FutureProvider<HomeFeed>(
   (ref) => ref.watch(catalogRepositoryProvider).home(),
 );
 
+final adsProvider = FutureProvider<List<AdBanner>>(
+  (ref) => ref.watch(catalogRepositoryProvider).ads(),
+);
+
 final categoriesProvider = FutureProvider<List<CategoryItem>>(
   (ref) => ref.watch(catalogRepositoryProvider).categories(),
 );
