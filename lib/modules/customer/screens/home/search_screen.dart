@@ -215,6 +215,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   onChanged: _onQuery,
                 ),
+                const SizedBox(height: 10),
+                _PopularSearchesChips(
+                  onPick: (q) {
+                    _controller.text = q;
+                    _onQuery(q);
+                  },
+                ),
                 const SizedBox(height: 16),
                 const _FilterSectionTitle('الأقسام'),
                 Wrap(
@@ -617,6 +624,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
+class _PopularSearchesChips extends ConsumerWidget {
+  final void Function(String) onPick;
+  const _PopularSearchesChips({required this.onPick});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final popular = ref.watch(popularSearchesProvider);
+    return popular.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _FilterSectionTitle('الأكثر بحثاً'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final q in items)
+                  ActionChip(
+                    label: Text(q),
+                    avatar: const Icon(Icons.trending_up, size: 14),
+                    onPressed: () => onPick(q),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _SearchCardData {
   const _SearchCardData({
     required this.service,
@@ -630,7 +674,6 @@ class _SearchCardData {
   final String? categoryLabel;
   final double? distanceKm;
 }
-
 class _FilterSectionTitle extends StatelessWidget {
   const _FilterSectionTitle(this.title);
 
