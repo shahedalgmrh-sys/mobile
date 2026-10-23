@@ -1,3 +1,12 @@
+/// UI-layer models (presentation).
+///
+/// These lightweight view models exist solely for widgets & screens: they are
+/// produced by the shared repository parsers and carry only display-facing
+/// state. They are intentionally SEPARATE from `lib/data/models/*`, which are
+/// the network models (freezed/serialized) used by repositories &remote
+/// sources. A widget must never import `data/models`; a repository must never
+/// emit `lib/models` objects outside its parsers.
+library;
 import '../data/repositories/parsers.dart';
 
 class ServicePricing {

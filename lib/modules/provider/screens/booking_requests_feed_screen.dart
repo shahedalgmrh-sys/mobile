@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -9,9 +9,9 @@ import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
-import '../../../shared/theme/sahel_colors.dart';
-import '../../../shared/theme/sahel_theme.dart';
-import '../../../models/booking_status.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 
 class BookingRequestsFeedScreen extends ConsumerWidget {
   const BookingRequestsFeedScreen({super.key});
@@ -193,7 +193,7 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: SahelColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: SahelRadii.mdRadius,
         border: Border.all(color: SahelColors.border),
         boxShadow: SahelElevations.sm,
       ),

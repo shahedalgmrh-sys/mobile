@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 final catalogCurrenciesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(catalogRepositoryProvider).currencies(),
@@ -80,7 +80,7 @@ class CurrencySettingsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
               color: isSelected ? SahelColors.primary500 : SahelColors.slate200,
@@ -107,7 +107,7 @@ class CurrencySettingsScreen extends ConsumerWidget {
               const CircleAvatar(
                   radius: 12,
                   backgroundColor: SahelColors.primary500,
-                  child: Icon(Icons.check, size: 16, color: Colors.white)),
+                  child: Icon(Icons.check, size: 16, color: SahelColors.onPrimary)),
           ],
         ),
       ),

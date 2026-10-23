@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -59,9 +59,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               width: 104,
               height: 104,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
+                color: SahelColors.onPrimary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                border: Border.all(color: SahelColors.onPrimary.withValues(alpha: 0.18)),
               ),
               child: const Icon(
                 Icons.water_drop,
@@ -75,7 +75,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               style: TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: SahelColors.onPrimary,
                 letterSpacing: 6,
               ),
             ),
@@ -102,11 +102,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ),
             ),
             const Spacer(flex: 3),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 56),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 56),
               child: ClipRRect(
                 borderRadius: SahelRadii.pillRadius,
-                child: const LinearProgressIndicator(
+                child: LinearProgressIndicator(
                   valueColor:
                       AlwaysStoppedAnimation<Color>(SahelColors.primary300),
                   backgroundColor: Color(0x33FFFFFF),

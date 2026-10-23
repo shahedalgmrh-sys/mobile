@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -238,14 +238,14 @@ class _NotificationList extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
+                                decoration: const BoxDecoration(
                                   color: SahelColors.primary600,
                                   borderRadius: SahelRadii.pillRadius,
                                 ),
                                 child: const Text(
                                   'جديد',
                                   style: TextStyle(
-                                      color: Colors.white,
+                                      color: SahelColors.onPrimary,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 10),
                                 ),

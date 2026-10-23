@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 class WithdrawRequestScreen extends ConsumerStatefulWidget {
   const WithdrawRequestScreen({super.key});
@@ -87,7 +88,7 @@ class _WithdrawRequestScreenState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: SahelColors.primary50,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: SahelRadii.mdRadius,
                   border:
                       Border.all(color: SahelColors.primary100),
                 ),
@@ -164,7 +165,7 @@ class _WithdrawRequestScreenState
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color:
@@ -185,7 +186,7 @@ class _WithdrawRequestScreenState
                   radius: 10,
                   backgroundColor: SahelColors.primary500,
                   child: Icon(Icons.check,
-                      size: 14, color: Colors.white)),
+                      size: 14, color: SahelColors.onPrimary)),
           ],
         ),
       ),

@@ -258,7 +258,7 @@ class _SecurityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: SahelColors.primarySurface,
         borderRadius: SahelRadii.pillRadius,
       ),
@@ -315,7 +315,7 @@ class _OtpGlyph extends StatelessWidget {
                   color: SahelColors.primary,
                 ),
                 child: const Icon(Icons.lock_outline,
-                    size: 14, color: Colors.white),
+                    size: 14, color: SahelColors.onPrimary),
               ),
             ),
           ],

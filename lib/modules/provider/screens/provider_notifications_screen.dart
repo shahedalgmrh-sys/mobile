@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ProviderNotificationsScreen extends ConsumerWidget {
   const ProviderNotificationsScreen({super.key});
@@ -104,7 +104,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: isUnread
                           ? SahelColors.primary50.withValues(alpha: 0.5)
-                          : Colors.white,
+                          : SahelColors.onPrimary,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(color: SahelColors.slate200),
                     ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
@@ -233,7 +233,7 @@ class SahelButton extends StatelessWidget {
         case SahelButtonVariant.whiteBg:
           return SahelColors.textSoft;
         default:
-          return Colors.white70;
+          return SahelColors.onPrimary70;
       }
     }
     switch (variant) {
@@ -246,7 +246,7 @@ class SahelButton extends StatelessWidget {
       case SahelButtonVariant.gradient:
       case SahelButtonVariant.danger:
       case SahelButtonVariant.amber:
-        return Colors.white;
+        return SahelColors.onPrimary;
     }
   }
 

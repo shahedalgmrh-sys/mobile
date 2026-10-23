@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
@@ -118,7 +118,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: SahelColors.onPrimary,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(time.isEmpty ? '—' : time,

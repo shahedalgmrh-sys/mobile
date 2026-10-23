@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 /// Create/edit form for a provider service, mirroring the server contract
 /// (`ProviderApiController@storeService/updateService`):
@@ -76,7 +76,7 @@ class _ProviderServiceFormScreenState
           ? null
           : FloatingActionButton.extended(
               backgroundColor: SahelColors.primary600,
-              foregroundColor: Colors.white,
+              foregroundColor: SahelColors.onPrimary,
               icon: const Icon(Icons.image_outlined),
               label: Text('صور (${_newImages.length})'),
               onPressed: _pickImages,
@@ -192,7 +192,7 @@ class _ProviderServiceFormScreenState
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2, color: SahelColors.onPrimary),
                           )
                         : Icon(widget.isEdit
                             ? Icons.save_outlined

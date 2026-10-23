@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class LanguageSettingsScreen extends ConsumerWidget {
   const LanguageSettingsScreen({super.key});
@@ -33,7 +33,7 @@ class LanguageSettingsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
               color: isSelected
@@ -62,7 +62,7 @@ class LanguageSettingsScreen extends ConsumerWidget {
               const CircleAvatar(
                   radius: 12,
                   backgroundColor: SahelColors.primary500,
-                  child: Icon(Icons.check, size: 16, color: Colors.white))
+                  child: Icon(Icons.check, size: 16, color: SahelColors.onPrimary))
             else
               Container(
                 width: 24,

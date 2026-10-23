@@ -1,3 +1,5 @@
+/// UI-layer provider view model (presentation) — see lib/models/service.dart
+/// for the boundary contract with `lib/data/models/*`.
 class ProviderModel {
   final String id;
   final String userId;

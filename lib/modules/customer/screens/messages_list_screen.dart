@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -107,7 +107,7 @@ class MessagesListScreen extends ConsumerWidget {
                             child: Text(
                               '$unread',
                               style: const TextStyle(
-                                  color: Colors.white,
+                                  color: SahelColors.onPrimary,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800),
                             ),

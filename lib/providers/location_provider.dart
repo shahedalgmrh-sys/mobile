@@ -127,7 +127,7 @@ class AppLocationNotifier extends AsyncNotifier<AppLocation?> {
             const Duration(minutes: 5);
     final candidates = <AppLocation>[
       if (lastKnownFresh)
-        await _toLocation(lastKnown!, source: 'آخر موقع معروف'),
+        await _toLocation(lastKnown, source: 'آخر موقع معروف'),
       if (cached != null) cached,
     ];
 

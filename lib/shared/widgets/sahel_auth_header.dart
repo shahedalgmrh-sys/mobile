@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -33,7 +33,7 @@ class SahelBrandMark extends StatelessWidget {
           child: Icon(
             Icons.water_drop,
             size: size * 0.55,
-            color: Colors.white,
+            color: SahelColors.onPrimary,
           ),
         ),
         if (showName) ...[

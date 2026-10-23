@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -7,7 +7,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class EarningsScreen extends ConsumerWidget {
   const EarningsScreen({super.key});
@@ -52,7 +52,7 @@ class EarningsScreen extends ConsumerWidget {
                     children: [
                       const Text('الرصيد المتاح للسحب',
                           style: TextStyle(
-                              color: Colors.white70, fontSize: 13)),
+                              color: SahelColors.onPrimary70, fontSize: 13)),
                       const SizedBox(height: 8),
                       Text(
                         str(w['formatted_available'] ??
@@ -61,14 +61,14 @@ class EarningsScreen extends ConsumerWidget {
                             w['available_balance'],
                             '0'),
                         style: const TextStyle(
-                            color: Colors.white,
+                            color: SahelColors.onPrimary,
                             fontWeight: FontWeight.w900,
                             fontSize: 32),
                       ),
                       const SizedBox(height: 20),
                       const Text('إجمالي الأرباح',
                           style: TextStyle(
-                              color: Colors.white70, fontSize: 11)),
+                              color: SahelColors.onPrimary70, fontSize: 11)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -78,12 +78,12 @@ class EarningsScreen extends ConsumerWidget {
                                   w['total_earnings'],
                                   '—'),
                               style: const TextStyle(
-                                  color: Colors.white,
+                                  color: SahelColors.onPrimary,
                                   fontWeight: FontWeight.w700),
                             ),
                           ),
                           const Icon(Icons.trending_up,
-                              color: Colors.white),
+                              color: SahelColors.onPrimary),
                         ],
                       ),
                     ],
@@ -145,7 +145,7 @@ class EarningsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: SahelColors.slate200),
       ),
@@ -176,7 +176,7 @@ class EarningsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: SahelColors.slate200),
       ),

@@ -103,7 +103,7 @@ class _HomeHeader extends StatelessWidget {
                     child: const Text(
                       'س',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: SahelColors.onPrimary,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
@@ -137,7 +137,7 @@ class _HomeHeader extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.person,
-                          size: 18, color: Colors.white),
+                          size: 18, color: SahelColors.onPrimary),
                     ),
                   ),
                 ],
@@ -227,7 +227,7 @@ class _LocationPill extends ConsumerWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 190),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: SahelColors.surfaceInset,
             borderRadius: SahelRadii.pillRadius,
           ),
@@ -559,7 +559,7 @@ class _PromoHero extends StatelessWidget {
     final discount = offer?.discountPercent;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: SahelColors.primaryGradient,
         borderRadius: SahelRadii.mdRadius,
         boxShadow: SahelElevations.sm,
@@ -574,7 +574,7 @@ class _PromoHero extends StatelessWidget {
               width: 128,
               height: 128,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.10),
+                color: SahelColors.onPrimary.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
             ),
@@ -602,21 +602,21 @@ class _PromoHero extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.20),
+                        color: SahelColors.onPrimary.withValues(alpha: 0.20),
                         borderRadius: SahelRadii.pillRadius,
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.auto_awesome,
-                              size: 14, color: Colors.white),
+                              size: 14, color: SahelColors.onPrimary),
                           SizedBox(width: 4),
                           Text(
                             'عرض الموسم المميّز',
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: SahelColors.onPrimary,
                             ),
                           ),
                         ],
@@ -626,7 +626,7 @@ class _PromoHero extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: SahelColors.tertiaryFixed,
                         borderRadius: SahelRadii.pillRadius,
                       ),
@@ -650,7 +650,7 @@ class _PromoHero extends StatelessWidget {
                     fontSize: 20,
                     height: 1.4,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: SahelColors.onPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -661,7 +661,7 @@ class _PromoHero extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: SahelColors.onPrimary.withValues(alpha: 0.85),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -684,7 +684,7 @@ class _PromoHero extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: SahelColors.onPrimary,
                         ),
                       ),
                     ),
@@ -799,7 +799,7 @@ class _ProviderCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 3),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: SahelColors.amber50,
                         borderRadius: SahelRadii.pillRadius,
                       ),
@@ -828,7 +828,7 @@ class _ProviderCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: SahelColors.surfaceSubtle,
                         borderRadius: SahelRadii.mdRadius,
                       ),
@@ -913,7 +913,7 @@ class _AssuranceStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: SahelColors.primarySurface,
         borderRadius: SahelRadii.mdRadius,
       ),

@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
-import '../../../models/booking_status.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ProviderBookingsScreen extends ConsumerWidget {
   const ProviderBookingsScreen({super.key});
@@ -108,7 +108,7 @@ class _ProviderBookingTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: SahelColors.slate200),
         ),

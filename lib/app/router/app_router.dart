@@ -1,13 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import '../../modules/auth/screens/splash_screen.dart';
 import '../../modules/auth/screens/onboarding_screen.dart';
 import '../../modules/auth/screens/language_select_screen.dart';
 import '../../modules/auth/screens/login_screen.dart';
+import '../../modules/auth/screens/forgot_password_screen.dart';
 import '../../modules/auth/screens/otp_screen.dart';
 import '../../modules/auth/screens/register_screen.dart';
 import '../../modules/customer/screens/profile_setup_screen.dart';
@@ -37,6 +38,8 @@ import '../../modules/customer/screens/support_screen.dart';
 import '../../modules/customer/screens/address_book_screen.dart';
 import '../../modules/customer/screens/my_reviews_screen.dart';
 import '../../modules/customer/screens/coupons_screen.dart';
+import '../../modules/customer/screens/payments_screen.dart';
+import '../../modules/customer/screens/payment_invoice_screen.dart';
 import '../../modules/provider/screens/provider_shell.dart';
 import '../../modules/provider/screens/provider_dashboard_screen.dart';
 import '../../modules/provider/screens/booking_requests_feed_screen.dart';
@@ -60,7 +63,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     authListenable.value = next;
   });
 
-  const public = ['/splash', '/onboarding', '/language', '/login', '/otp', '/register'];
+  const public = [
+    '/splash',
+    '/onboarding',
+    '/language',
+    '/login',
+    '/otp',
+    '/register',
+    '/forgot-password',
+    // Prefix match also covers the deep link /reset-password/:token.
+    '/reset-password',
+  ];
   const customerRoots = ['/home', '/search', '/bookings', '/inbox', '/profile'];
   String homeFor(UserRole? role) =>
       role == UserRole.provider ? '/p/dashboard' : '/home';
@@ -101,6 +114,27 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/language', builder: (_, __) => const LanguageSelectScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/otp', builder: (_, s) => const OtpScreen()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
+      // Deep link target: https://<host>/reset-password/{token}?email=…
+      // (the shape Laravel's Password broker emails). A bare /reset-password
+      // with query parameters is supported too.
+      GoRoute(
+        path: '/reset-password',
+        builder: (_, s) => ForgotPasswordScreen(
+          initialEmail: s.uri.queryParameters['email'] ?? '',
+          initialToken: s.uri.queryParameters['token'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/reset-password/:token',
+        builder: (_, s) => ForgotPasswordScreen(
+          initialEmail: s.uri.queryParameters['email'] ?? '',
+          initialToken: s.pathParameters['token'] ?? '',
+        ),
+      ),
       GoRoute(
         path: '/register',
         builder: (_, state) => RegisterScreen(
@@ -215,6 +249,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/profile/reviews', builder: (_, __) => const MyReviewsScreen()),
       GoRoute(path: '/profile/coupons', builder: (_, __) => const CouponsScreen()),
       GoRoute(path: '/payments', builder: (_, __) => const CustomerPaymentsScreen()),
+      // Simplified tax invoice — the Stitch `_5` reference as its own screen.
+      GoRoute(
+        path: '/payments/:paymentId/invoice',
+        builder: (_, s) => PaymentInvoiceScreen(
+          paymentId: s.pathParameters['paymentId'] ?? '',
+        ),
+      ),
       GoRoute(path: '/profile/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
       GoRoute(path: '/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
       GoRoute(path: '/complaints/new', builder: (_, __) => const SubmitComplaintScreen()),

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../models/app_config.dart';
 import '../providers/settings_provider.dart';
-import '../shared/theme/sahel_theme.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'router/app_router.dart';
 
 class SahelApp extends ConsumerWidget {

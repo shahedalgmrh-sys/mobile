@@ -1,4 +1,4 @@
-import 'booking_status.dart';
+﻿import '../core/constants/enums.dart';
 
 /// Unified app configuration — single source of truth.
 /// One AppConfig per flavor (customer / provider).
@@ -8,6 +8,12 @@ class AppConfig {
   final String environment;
   final String apiBaseUrl;
   final String appVersion;
+
+  /// Google Maps SDK key. Supplied at build time via
+  /// `--dart-define=GOOGLE_MAPS_API_KEY=…` (also forwarded to the Android
+  /// manifest meta-data through the Gradle placeholder). When empty the
+  /// tracking screen falls back to the informative placeholder map.
+  final String googleMapsApiKey;
 
   const AppConfig({
     required this.appName,
@@ -19,6 +25,10 @@ class AppConfig {
       defaultValue: 'http://10.0.2.2:8000/api',
     ),
     this.appVersion = '1.0.0+421',
+    this.googleMapsApiKey = const String.fromEnvironment(
+      'GOOGLE_MAPS_API_KEY',
+      defaultValue: '',
+    ),
   });
 
   bool get isCustomer => initialRole == UserRole.customer;

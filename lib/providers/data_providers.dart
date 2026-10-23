@@ -86,6 +86,12 @@ final customerPaymentsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(customerRepositoryProvider).payments(),
 );
 
+final paymentInvoiceProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>(
+      (ref, paymentId) =>
+          ref.watch(customerRepositoryProvider).invoice(paymentId),
+    );
+
 final customerWalletProvider = FutureProvider<Map<String, dynamic>>(
   (ref) => ref.watch(customerRepositoryProvider).wallet(),
 );

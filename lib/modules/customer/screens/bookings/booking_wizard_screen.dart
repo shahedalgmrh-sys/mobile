@@ -1,4 +1,4 @@
-import 'dart:math' show atan2, cos, sin, pi, sqrt;
+﻿import 'dart:math' show atan2, cos, sin, pi, sqrt;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,8 +11,8 @@ import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/core/constants/payment_methods.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 class _DayAvailability {
@@ -521,14 +521,14 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           child: isDone
                               ? const Icon(
                                   Icons.check,
-                                  color: Colors.white,
+                                  color: SahelColors.onPrimary,
                                   size: 18,
                                 )
                               : Text(
                                   '${i + 1}',
                                   style: TextStyle(
                                     color: isCurrent
-                                        ? Colors.white
+                                        ? SahelColors.onPrimary
                                         : SahelColors.textMuted,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 14,
@@ -601,9 +601,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       children: [
         Card(
           elevation: 0,
-          shape: RoundedRectangleBorder(
+          shape: const RoundedRectangleBorder(
             borderRadius: SahelRadii.lgRadius,
-            side: const BorderSide(color: SahelColors.border),
+            side: BorderSide(color: SahelColors.border),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -612,13 +612,13 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: SahelColors.primaryGradient,
                     borderRadius: SahelRadii.mdRadius,
                   ),
                   child: const Icon(
                     Icons.cleaning_services,
-                    color: Colors.white,
+                    color: SahelColors.onPrimary,
                     size: 32,
                   ),
                 ),
@@ -678,7 +678,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: selectedTierId == tier.id
-                          ? Colors.white
+                          ? SahelColors.onPrimary
                           : SahelColors.text,
                     ),
                   ),
@@ -714,7 +714,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                   _frequencies[i],
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: selected ? Colors.white : SahelColors.text,
+                    color: selected ? SahelColors.onPrimary : SahelColors.text,
                   ),
                 ),
                 selected: selected,
@@ -773,7 +773,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: SahelColors.successSoft,
               borderRadius: SahelRadii.mdRadius,
             ),
@@ -868,7 +868,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               color: SahelColors.primary600,
               style: BorderStyle.solid,
             ),
-            shape: RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
+            shape: const RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
           ),
           icon: const Icon(
             Icons.add_location_alt_outlined,
@@ -920,7 +920,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
                 child: Icon(
                   Icons.location_on,
-                  color: selected ? Colors.white : SahelColors.primary600,
+                  color: selected ? SahelColors.onPrimary : SahelColors.primary600,
                   size: 22,
                 ),
               ),
@@ -945,7 +945,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                               horizontal: 6,
                               vertical: 2,
                             ),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: SahelColors.primary100,
                               borderRadius: SahelRadii.pillRadius,
                             ),
@@ -1082,7 +1082,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: SahelColors.primarySurface,
               borderRadius: SahelRadii.mdRadius,
             ),
@@ -1156,7 +1156,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.access_time,
-                        color: Colors.white, size: 30),
+                        color: SahelColors.onPrimary, size: 30),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -1199,7 +1199,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                   selectedColor: SahelColors.primary600,
                   labelStyle: TextStyle(
                       color: _selectedSlotTime == str(slot['time'])
-                          ? Colors.white
+                          ? SahelColors.onPrimary
                           : SahelColors.text),
                   onSelected: (_) =>
                       setState(() => _selectedSlotTime = str(slot['time'])),
@@ -1217,7 +1217,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: SahelColors.onPrimary,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
@@ -1289,7 +1289,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         if (_selectedPaymentCode == 'cash') ...[
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: SahelColors.warningSoft,
               borderRadius: SahelRadii.mdRadius,
             ),
@@ -1326,11 +1326,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
+                            color: SahelColors.onPrimary.withValues(alpha: 0.18),
                             borderRadius: SahelRadii.smRadius,
                           ),
                           child: const Icon(Icons.account_balance_wallet,
-                              color: Colors.white),
+                              color: SahelColors.onPrimary),
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -1338,11 +1338,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           children: [
                             Text('محفظة المنصة',
                                 style: payMethod.copyWith(
-                                    color: Colors.white)),
+                                    color: SahelColors.onPrimary)),
                             const SizedBox(height: 2),
                             Text('تُخصم فوراً بعد الدفع',
                                 style: muted.copyWith(
-                                    color: Colors.white70, fontSize: 11)),
+                                    color: SahelColors.onPrimary70, fontSize: 11)),
                           ],
                         ),
                         const Spacer(),
@@ -1353,7 +1353,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                                 style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.white)),
+                                    color: SahelColors.onPrimary)),
                             Text(
                                 str(wallet?['currency'] ??
                                         wallet?['display_currency'], '')
@@ -1434,7 +1434,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: SahelColors.primarySurface,
             borderRadius: SahelRadii.mdRadius,
           ),
@@ -1568,10 +1568,10 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
                         style: TextStyle(
                             fontWeight: FontWeight.w800,
                             color: _minute == m
-                                ? Colors.white
+                                ? SahelColors.onPrimary
                                 : SahelColors.text)),
                     selectedColor: SahelColors.primary600,
-                    checkmarkColor: Colors.white,
+                    checkmarkColor: SahelColors.onPrimary,
                     onSelected: (_) => setState(() => _minute = m),
                   ),
               ],
@@ -1665,7 +1665,7 @@ class _ClockDialPainter extends CustomPainter {
         center,
         radius,
         Paint()
-          ..color = Colors.white
+          ..color = SahelColors.onPrimary
           ..style = PaintingStyle.fill);
     canvas.drawCircle(
         center,
@@ -1776,7 +1776,7 @@ class _MonthCalendarGrid extends StatelessWidget {
                           ? SahelColors.primary50
                           : SahelColors.surface3);
           final fg = selected
-              ? Colors.white
+              ? SahelColors.onPrimary
               : isPast
                   ? SahelColors.textSoft
                   : (!known)
@@ -1785,7 +1785,7 @@ class _MonthCalendarGrid extends StatelessWidget {
                           ? SahelColors.primary700
                           : SahelColors.danger.withValues(alpha: 0.7));
           final bar = selected
-              ? Colors.white
+              ? SahelColors.onPrimary
               : (!known)
                   ? SahelColors.border
                   : (isAvailable ? SahelColors.success : SahelColors.danger);
@@ -1823,7 +1823,7 @@ class _MonthCalendarGrid extends StatelessWidget {
                           height: 4,
                           decoration: BoxDecoration(
                             color: bar,
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: SahelRadii.pillRadius,
                           ),
                         ),
                       ],
@@ -1867,7 +1867,7 @@ class _AvailabilityLegend extends StatelessWidget {
           height: 4,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: SahelRadii.pillRadius,
           ),
         ),
         const SizedBox(width: 6),

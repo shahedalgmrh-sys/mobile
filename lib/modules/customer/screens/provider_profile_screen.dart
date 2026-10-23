@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/catalog_repository.dart';
@@ -10,7 +10,7 @@ import '../../../shared/widgets/review_card.dart';
 import 'package:saber_flutter/shared/widgets/favorite_toggle_button.dart';
 import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ProviderProfileScreen extends ConsumerWidget {
   final String id;

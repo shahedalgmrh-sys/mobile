@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 
 /// Single booking-progress stepper shared by the customer and provider
 /// booking-details surfaces. Stage labels follow the reference design (`_1`):
@@ -92,7 +92,7 @@ class BookingStatusStepper extends StatelessWidget {
                       child: Icon(
                         isDone ? Icons.check : steps[i].icon,
                         size: 18,
-                        color: active ? Colors.white : SahelColors.textMuted,
+                        color: active ? SahelColors.onPrimary : SahelColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 6),

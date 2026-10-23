@@ -9,10 +9,15 @@ class SahelRadii {
   static const double md = 16;
   static const double lg = 24;
   static const double pill = 999;
-  static BorderRadius get smRadius => BorderRadius.circular(sm);
-  static BorderRadius get mdRadius => BorderRadius.circular(md);
-  static BorderRadius get lgRadius => BorderRadius.circular(lg);
-  static BorderRadius get pillRadius => BorderRadius.circular(pill);
+
+  /// Const-constructible radius tokens so they slot into `const` BoxDecoration
+  /// / RoundedRectangleBorder literals just like the inline
+  /// `BorderRadius.circular(N)` they replace.
+  static const BorderRadius smRadius = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius mdRadius = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius lgRadius = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius pillRadius =
+      BorderRadius.all(Radius.circular(pill));
 }
 
 /// 8px base grid with a 4px sub-unit, mirroring the design system spacing
@@ -208,7 +213,7 @@ class SahelTheme {
         backgroundColor: SahelColors.primary,
         foregroundColor: const Color(0xFFFFFFFF),
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
       );
 
@@ -216,14 +221,14 @@ class SahelTheme {
         backgroundColor: Colors.transparent,
         shadowColor: Colors.transparent,
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
       );
 
   static ButtonStyle get soft => ElevatedButton.styleFrom(
         backgroundColor: SahelColors.primary100,
         foregroundColor: SahelColors.primary700,
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
       );
 
@@ -231,20 +236,20 @@ class SahelTheme {
         foregroundColor: SahelColors.primary,
         side: const BorderSide(color: SahelColors.primary, width: 1.5),
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
       );
 
   static ButtonStyle get ghost => TextButton.styleFrom(
         foregroundColor: SahelColors.primary,
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
       );
 
   static ButtonStyle get danger => ElevatedButton.styleFrom(
         backgroundColor: SahelColors.danger,
         foregroundColor: const Color(0xFFFFFFFF),
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
       );
 
@@ -252,7 +257,7 @@ class SahelTheme {
         backgroundColor: SahelColors.amber,
         foregroundColor: SahelColors.text,
         minimumSize: const Size(0, 52),
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
         elevation: 0,
       );
 
@@ -268,38 +273,38 @@ class SahelTheme {
         ),
       );
 
-  static InputDecorationTheme get inputDecorationTheme => InputDecorationTheme(
+  static InputDecorationTheme get inputDecorationTheme => const InputDecorationTheme(
         filled: true,
         fillColor: SahelColors.surface2,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: SahelRadii.smRadius,
-          borderSide: const BorderSide(color: SahelColors.border),
+          borderSide: BorderSide(color: SahelColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: SahelRadii.smRadius,
-          borderSide: const BorderSide(color: SahelColors.border),
+          borderSide: BorderSide(color: SahelColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: SahelRadii.smRadius,
           borderSide:
-              const BorderSide(color: SahelColors.primary400, width: 1.5),
+              BorderSide(color: SahelColors.primary400, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: SahelRadii.smRadius,
-          borderSide: const BorderSide(color: SahelColors.danger),
+          borderSide: BorderSide(color: SahelColors.danger),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: SahelRadii.smRadius,
           borderSide:
-              const BorderSide(color: SahelColors.danger, width: 1.5),
+              BorderSide(color: SahelColors.danger, width: 1.5),
         ),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           fontWeight: FontWeight.w700,
           color: SahelColors.textMuted,
         ),
-        hintStyle: const TextStyle(color: SahelColors.textMuted),
+        hintStyle: TextStyle(color: SahelColors.textMuted),
       );
 
   static ThemeData get light => ThemeData(
@@ -325,12 +330,12 @@ class SahelTheme {
             color: SahelColors.text,
           ),
         ),
-        cardTheme: CardThemeData(
+        cardTheme: const CardThemeData(
           color: SahelColors.surface,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: SahelRadii.mdRadius,
-            side: const BorderSide(color: SahelColors.border),
+            side: BorderSide(color: SahelColors.border),
           ),
           clipBehavior: Clip.antiAlias,
         ),
@@ -362,7 +367,7 @@ class SahelTheme {
             backgroundColor: SahelColors.primary300,
             foregroundColor: const Color(0xFF0F172A),
             minimumSize: const Size(0, 52),
-            shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+            shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
             elevation: 0,
           ),
         ),
@@ -372,39 +377,39 @@ class SahelTheme {
             side: const BorderSide(
                 color: SahelColors.primary300, width: 1.5),
             minimumSize: const Size(0, 52),
-            shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+            shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: SahelColors.primary300,
             minimumSize: const Size(0, 52),
-            shape: RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
+            shape: const RoundedRectangleBorder(borderRadius: SahelRadii.smRadius),
           ),
         ),
-        inputDecorationTheme: InputDecorationTheme(
+        inputDecorationTheme: const InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1E293B),
+          fillColor: Color(0xFF1E293B),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
             borderRadius: SahelRadii.smRadius,
-            borderSide: const BorderSide(color: Color(0xFF334155)),
+            borderSide: BorderSide(color: Color(0xFF334155)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: SahelRadii.smRadius,
-            borderSide: const BorderSide(color: Color(0xFF334155)),
+            borderSide: BorderSide(color: Color(0xFF334155)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: SahelRadii.smRadius,
-            borderSide: const BorderSide(
+            borderSide: BorderSide(
                 color: SahelColors.primary300, width: 1.5),
           ),
-          labelStyle: const TextStyle(
+          labelStyle: TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF94A3B8),
           ),
-          hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+          hintStyle: TextStyle(color: Color(0xFF94A3B8)),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: const Color(0xFF1E293B),
@@ -416,12 +421,12 @@ class SahelTheme {
             color: const Color(0xFFF1F5F9),
           ),
         ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF1E293B),
+        cardTheme: const CardThemeData(
+          color: Color(0xFF1E293B),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: SahelRadii.mdRadius,
-            side: const BorderSide(color: Color(0xFF334155)),
+            side: BorderSide(color: Color(0xFF334155)),
           ),
           clipBehavior: Clip.antiAlias,
         ),

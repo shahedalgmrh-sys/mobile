@@ -80,6 +80,14 @@ class SahelColors {
   static const Color warning = Color(0xFFD97706);
   static const Color info = Color(0xFF0369A1);
 
+  // Content colors above filled & gradient brand surfaces. These mirror the
+  // raw Material `Colors.white` family so const contexts stay legal.
+  static const Color onPrimary = Color(0xFFFFFFFF);
+  /// `Colors.white70` equivalent (70% white).
+  static const Color onPrimary70 = Color(0xB3FFFFFF);
+  /// `Colors.black26` equivalent for soft scrims/shadows.
+  static const Color scrim26 = Color(0x26000000);
+
   // Soft variants
   static const Color dangerSoft = Color(0xFFFEF2F2);
   static const Color successSoft = Color(0xFFECFDF5);

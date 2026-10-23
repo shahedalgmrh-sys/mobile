@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,8 +6,8 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
-import '../../../shared/theme/sahel_theme.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 class ProviderDashboardScreen extends ConsumerWidget {
   const ProviderDashboardScreen({super.key});
@@ -102,21 +102,21 @@ class ProviderDashboardScreen extends ConsumerWidget {
                           Expanded(
                             child: Text('الأرباح الشهرية'.t(lang),
                                 style: const TextStyle(
-                                    color: Colors.white70, fontSize: 13)),
+                                    color: SahelColors.onPrimary70, fontSize: 13)),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: isOnline
-                                  ? Colors.white.withValues(alpha: 0.2)
-                                  : Colors.black26,
+                                  ? SahelColors.onPrimary.withValues(alpha: 0.2)
+                                  : SahelColors.scrim26,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
                               isOnline ? 'متاح'.t(lang) : 'غير متاح'.t(lang),
                               style: const TextStyle(
-                                  color: Colors.white,
+                                  color: SahelColors.onPrimary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700),
                             ),
@@ -126,7 +126,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(earnings,
                           style: const TextStyle(
-                              color: Colors.white,
+                              color: SahelColors.onPrimary,
                               fontWeight: FontWeight.w900,
                               fontSize: 30)),
                       const SizedBox(height: 14),
@@ -223,19 +223,19 @@ class ProviderDashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: SahelColors.onPrimary.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(10)),
         child: Column(
           children: [
-            Icon(i, size: 16, color: Colors.white),
+            Icon(i, size: 16, color: SahelColors.onPrimary),
             const SizedBox(height: 4),
             Text(v,
                 style: const TextStyle(
-                    color: Colors.white,
+                    color: SahelColors.onPrimary,
                     fontWeight: FontWeight.w800,
                     fontSize: 16)),
             Text(l,
-                style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                style: const TextStyle(color: SahelColors.onPrimary70, fontSize: 10)),
           ],
         ),
       ),
@@ -248,7 +248,7 @@ class ProviderDashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: SahelColors.slate200),
         ),
@@ -282,7 +282,7 @@ class _BookingPreview extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: SahelColors.onPrimary,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: SahelColors.slate200),
           ),

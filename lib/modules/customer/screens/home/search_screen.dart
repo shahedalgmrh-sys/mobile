@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
@@ -9,8 +9,8 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/providers/location_provider.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
@@ -208,7 +208,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     const BorderSide(color: SahelColors.border),
                   ),
                   shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
+                    const RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
                   ),
                   padding: WidgetStateProperty.all(
                     const EdgeInsets.symmetric(horizontal: 16),
@@ -323,7 +323,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               ),
                               selectedColor: SahelColors.primarySurface,
                               backgroundColor: SahelColors.surface,
-                              shape: RoundedRectangleBorder(
+                              shape: const RoundedRectangleBorder(
                                 borderRadius: SahelRadii.pillRadius,
                               ),
                             ),
@@ -367,7 +367,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               labelStyle: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: _radiusKm == radius
-                                    ? Colors.white
+                                    ? SahelColors.onPrimary
                                     : SahelColors.text,
                               ),
                               backgroundColor: SahelColors.surface,
@@ -376,7 +376,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     ? SahelColors.primary600
                                     : SahelColors.border,
                               ),
-                              shape: RoundedRectangleBorder(
+                              shape: const RoundedRectangleBorder(
                                 borderRadius: SahelRadii.pillRadius,
                               ),
                             ),
@@ -390,7 +390,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 if (_nearbyEnabled)
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: SahelColors.primarySurface,
                       borderRadius: SahelRadii.mdRadius,
                     ),
@@ -437,7 +437,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ? SahelColors.amber800
                           : SahelColors.text,
                     ),
-                    shape: RoundedRectangleBorder(
+                    shape: const RoundedRectangleBorder(
                       borderRadius: SahelRadii.pillRadius,
                     ),
                   ),
@@ -592,14 +592,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       selected: selected,
       labelStyle: TextStyle(
         fontWeight: FontWeight.w700,
-        color: selected ? Colors.white : SahelColors.text,
+        color: selected ? SahelColors.onPrimary : SahelColors.text,
       ),
       selectedColor: SahelColors.primary600,
       backgroundColor: SahelColors.surface2,
       side: BorderSide(
         color: selected ? SahelColors.primary600 : SahelColors.border,
       ),
-      shape: RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
+      shape: const RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
       onSelected: (_) => onTap(),
     );
   }
@@ -611,14 +611,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       selected: selected,
       labelStyle: TextStyle(
         fontWeight: FontWeight.w700,
-        color: selected ? Colors.white : SahelColors.text,
+        color: selected ? SahelColors.onPrimary : SahelColors.text,
       ),
       selectedColor: SahelColors.primary600,
       backgroundColor: SahelColors.surface2,
       side: BorderSide(
         color: selected ? SahelColors.primary600 : SahelColors.border,
       ),
-      shape: RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
+      shape: const RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
       onSelected: (_) => setState(() => _sort = value),
     );
   }

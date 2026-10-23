@@ -1,3 +1,5 @@
+/// UI-layer review view model (presentation) — see lib/models/service.dart
+/// for the boundary contract with `lib/data/models/*`.
 class Review {
   final String id;
   final String bookingId;

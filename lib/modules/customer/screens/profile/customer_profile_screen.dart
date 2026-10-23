@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,8 +8,8 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
 
 class CustomerProfileScreen extends ConsumerWidget {
@@ -38,90 +38,72 @@ class CustomerProfileScreen extends ConsumerWidget {
 
     String fmtCount(int? v) => v == null ? '—' : '$v';
 
-    final tiles = <({
-      IconData icon,
-      String title,
-      String? subtitle,
-      void Function(BuildContext) onTap,
-    })>[
-      (
-        icon: Icons.schedule,
-        title: 'حجوزاتي',
-        subtitle: '${fmtCount(bookingsCount)} حجز',
-        onTap: (ctx) => ctx.go('/bookings'),
-      ),
-      (
-        icon: Icons.reviews,
-        title: 'تقييماتي',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/profile/reviews'),
-      ),
-      (
-        icon: Icons.favorite,
-        title: 'المفضلة',
-        subtitle: '${fmtCount(favCount)} عنصر',
-        onTap: (ctx) => ctx.push('/home/favorites'),
-      ),
-      (
-        icon: Icons.account_balance_wallet,
-        title: 'المحفظة',
-        subtitle: walletBalance,
-        onTap: (ctx) => ctx.push('/wallet'),
-      ),
-      (
-        icon: Icons.local_offer,
-        title: 'الكوبونات والعروض',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/profile/coupons'),
-      ),
-      (
-        icon: Icons.location_on,
-        title: 'عناويني',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/addresses'),
-      ),
-      (
-        icon: Icons.notifications,
-        title: 'الإشعارات',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/notifications'),
-      ),
-      (
-        icon: Icons.language,
-        title: 'اللغة',
-        subtitle: 'العربية',
-        onTap: (ctx) => ctx.push('/settings/language'),
-      ),
-      (
-        icon: Icons.monetization_on,
-        title: 'إعدادات العملة',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/settings/currency'),
-      ),
-      (
-        icon: Icons.security,
-        title: 'الأمان وتغيير كلمة المرور',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/settings'),
-      ),
-      (
-        icon: Icons.support_agent,
-        title: 'مركز الدعم والمساعدة',
-        subtitle: null,
-        onTap: (ctx) => ctx.push('/support'),
-      ),
-      (
-        icon: Icons.gavel,
-        title: 'شكاواي',
-        subtitle: 'سجل الشكاوى وردود الدعم',
-        onTap: (ctx) => ctx.push('/profile/complaints'),
-      ),
-      (
-        icon: Icons.logout,
-        title: 'تسجيل الخروج',
-        subtitle: null,
-        onTap: (ctx) => _showLogoutConfirm(ctx, ref),
-      ),
+    // Grouped settings sections matching Stitch reference _6.
+    final activityTiles = <_ProfileTile>[
+      _ProfileTile(
+          icon: Icons.schedule,
+          title: 'حجوزاتي',
+          subtitle: '${fmtCount(bookingsCount)} حجز',
+          onTap: (ctx) => ctx.go('/bookings')),
+      _ProfileTile(
+          icon: Icons.reviews,
+          title: 'تقييماتي',
+          onTap: (ctx) => ctx.push('/profile/reviews')),
+      _ProfileTile(
+          icon: Icons.favorite,
+          title: 'المفضلة',
+          subtitle: '${fmtCount(favCount)} عنصر',
+          onTap: (ctx) => ctx.push('/home/favorites')),
+      _ProfileTile(
+          icon: Icons.location_on,
+          title: 'عناويني',
+          onTap: (ctx) => ctx.push('/addresses')),
+    ];
+    final paymentTiles = <_ProfileTile>[
+      _ProfileTile(
+          icon: Icons.account_balance_wallet,
+          title: 'المحفظة',
+          subtitle: walletBalance,
+          onTap: (ctx) => ctx.push('/wallet')),
+      _ProfileTile(
+          icon: Icons.receipt_long,
+          title: 'المدفوعات والفوترة',
+          subtitle: 'سجل المدفوعات والفواتير',
+          onTap: (ctx) => ctx.push('/payments')),
+      _ProfileTile(
+          icon: Icons.local_offer,
+          title: 'الكوبونات والعروض',
+          onTap: (ctx) => ctx.push('/profile/coupons')),
+    ];
+    final settingsTiles = <_ProfileTile>[
+      _ProfileTile(
+          icon: Icons.notifications,
+          title: 'الإشعارات',
+          onTap: (ctx) => ctx.push('/notifications')),
+      _ProfileTile(
+          icon: Icons.language,
+          title: 'اللغة',
+          subtitle: 'العربية',
+          onTap: (ctx) => ctx.push('/settings/language')),
+      _ProfileTile(
+          icon: Icons.monetization_on,
+          title: 'إعدادات العملة',
+          onTap: (ctx) => ctx.push('/settings/currency')),
+      _ProfileTile(
+          icon: Icons.security,
+          title: 'الأمان وتغيير كلمة المرور',
+          onTap: (ctx) => ctx.push('/settings')),
+    ];
+    final helpTiles = <_ProfileTile>[
+      _ProfileTile(
+          icon: Icons.support_agent,
+          title: 'مركز الدعم والمساعدة',
+          onTap: (ctx) => ctx.push('/support')),
+      _ProfileTile(
+          icon: Icons.gavel,
+          title: 'شكاواي',
+          subtitle: 'سجل الشكاوى وردود الدعم',
+          onTap: (ctx) => ctx.push('/profile/complaints')),
     ];
 
     return Scaffold(
@@ -134,7 +116,7 @@ class CustomerProfileScreen extends ConsumerWidget {
               Container(
                 height: 200,
                 decoration: const BoxDecoration(
-                  gradient: SahelColors.nightGradient,
+                  gradient: SahelColors.primaryGradient,
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
@@ -153,13 +135,13 @@ class CustomerProfileScreen extends ConsumerWidget {
                               style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.white),
+                                  color: SahelColors.onPrimary),
                             ),
                             const Spacer(),
                             IconButton(
                               onPressed: () => context.push('/settings'),
                               icon: const Icon(Icons.settings,
-                                  color: Colors.white),
+                                  color: SahelColors.onPrimary),
                             ),
                           ],
                         ),
@@ -176,7 +158,7 @@ class CustomerProfileScreen extends ConsumerWidget {
                   elevation: 6,
                   shadowColor: SahelColors.text.withValues(alpha: 0.12),
                   margin: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
+                  shape: const RoundedRectangleBorder(
                       borderRadius: SahelRadii.lgRadius),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -209,10 +191,10 @@ class CustomerProfileScreen extends ConsumerWidget {
                                     color: SahelColors.primary600,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.white, width: 2),
+                                        color: SahelColors.onPrimary, width: 2),
                                   ),
                                   child: const Icon(Icons.photo_camera,
-                                      color: Colors.white, size: 12),
+                                      color: SahelColors.onPrimary, size: 12),
                                 ),
                               ),
                             ],
@@ -268,68 +250,48 @@ class CustomerProfileScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 32),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('إعدادت الحساب',
-                style:
-                    TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
+          _ProfileSection(
+              title: 'الخدمات والنشاط', tiles: activityTiles),
+          _ProfileSection(
+              title: 'الدفع والمحفظة', tiles: paymentTiles),
+          _ProfileSection(
+              title: 'الإعدادات', tiles: settingsTiles),
+          _ProfileSection(
+              title: 'المساعدة', tiles: helpTiles),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: List.generate(tiles.length, (i) {
-                final t = tiles[i];
-                return Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: t.title == 'تسجيل الخروج'
-                            ? SahelColors.dangerSoft
-                            : SahelColors.primary50,
-                        borderRadius: SahelRadii.smRadius,
-                      ),
-                      child: Icon(
-                        t.icon,
-                        color: t.title == 'تسجيل الخروج'
-                            ? SahelColors.danger
-                            : SahelColors.primary600,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      t.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: t.title == 'تسجيل الخروج'
-                            ? SahelColors.danger
-                            : SahelColors.text,
-                        fontSize: 14,
-                      ),
-                    ),
-                    subtitle: t.subtitle != null
-                        ? Text(t.subtitle!,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                color: SahelColors.textMuted))
-                        : null,
-                    trailing: const Icon(Icons.chevron_right,
-                        color: SahelColors.textMuted, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 2),
-                    onTap: () => t.onTap(context),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: SahelRadii.mdRadius),
-                  ),
-                );
-              }),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () => _showLogoutConfirm(context, ref),
+                icon: const Icon(Icons.logout, color: SahelColors.danger),
+                label: const Text('تسجيل الخروج',
+                    style: TextStyle(
+                        color: SahelColors.danger,
+                        fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: SahelColors.dangerSoft,
+                  side: BorderSide(color: SahelColors.danger.withValues(alpha: 0.3)),
+                  shape: const RoundedRectangleBorder(
+                      borderRadius: SahelRadii.mdRadius),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Text(
+                'ساحل • نسخة 1.0.0',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: SahelColors.textSoft,
+                    fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -341,9 +303,9 @@ class CustomerProfileScreen extends ConsumerWidget {
       child: Card(
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
             borderRadius: SahelRadii.mdRadius,
-            side: const BorderSide(color: SahelColors.border)),
+            side: BorderSide(color: SahelColors.border)),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -495,7 +457,7 @@ class CustomerProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),
+        shape: const RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),
         title: const Row(
           children: [
             Icon(Icons.logout, color: SahelColors.danger),
@@ -521,14 +483,130 @@ class CustomerProfileScreen extends ConsumerWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: SahelColors.danger,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
+              foregroundColor: SahelColors.onPrimary,
+              shape: const RoundedRectangleBorder(
                   borderRadius: SahelRadii.pillRadius),
             ),
             child: const Text('خروج',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Data model for a single profile settings row.
+class _ProfileTile {
+  const _ProfileTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final void Function(BuildContext) onTap;
+}
+
+/// A grouped settings section with a muted header and a bordered card
+/// containing the tiles, matching the Stitch reference _6 layout.
+class _ProfileSection extends StatelessWidget {
+  const _ProfileSection({required this.title, required this.tiles});
+
+  final String title;
+  final List<_ProfileTile> tiles;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: SahelColors.textMuted,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: SahelColors.surface,
+              borderRadius: SahelRadii.mdRadius,
+              border: Border.all(color: SahelColors.border),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < tiles.length; i++) ...[
+                  _ProfileTileRow(tile: tiles[i]),
+                  if (i < tiles.length - 1)
+                    const Divider(height: 1, indent: 56),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileTileRow extends StatelessWidget {
+  const _ProfileTileRow({required this.tile});
+  final _ProfileTile tile;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: SahelRadii.mdRadius,
+        onTap: () => tile.onTap(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  color: SahelColors.primary50,
+                  borderRadius: SahelRadii.smRadius,
+                ),
+                child: Icon(tile.icon,
+                    color: SahelColors.primary600, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(tile.title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: SahelColors.text,
+                            fontSize: 14)),
+                    if (tile.subtitle != null)
+                      Text(tile.subtitle!,
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: SahelColors.textMuted)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  color: SahelColors.textMuted, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

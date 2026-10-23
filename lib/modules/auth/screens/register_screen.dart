@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/shared/widgets/sahel_auth_header.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
@@ -289,7 +289,7 @@ class _RoleOption extends StatelessWidget {
               child: Icon(
                 icon,
                 size: 22,
-                color: selected ? Colors.white : SahelColors.primary700,
+                color: selected ? SahelColors.onPrimary : SahelColors.primary700,
               ),
             ),
             const SizedBox(width: 12),

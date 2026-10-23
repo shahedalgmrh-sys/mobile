@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
@@ -140,13 +140,13 @@ class _BookingCard extends StatelessWidget {
                 Container(
                   width: 56,
                   height: 56,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: SahelColors.primaryGradient,
                     borderRadius: SahelRadii.smRadius,
                   ),
                   child: const Icon(
                     Icons.home_repair_service,
-                    color: Colors.white,
+                    color: SahelColors.onPrimary,
                     size: 24,
                   ),
                 ),

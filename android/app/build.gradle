@@ -23,6 +23,18 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
+// --dart-define values arrive here base64-encoded as `dart-defines`.
+// Expose GOOGLE_MAPS_API_KEY to the AndroidManifest placeholder so the
+// Google Maps SDK receives the same key that the Dart side reads.
+def dartDefines = [:]
+if (project.hasProperty("dart-defines")) {
+    project.property("dart-defines").split(",").each { entry ->
+        def kv = new String(entry.decodeBase64(), "UTF-8").split("=", 2)
+        dartDefines[kv[0]] = kv.size() > 1 ? kv[1] : ""
+    }
+}
+def googleMapsApiKey = dartDefines.get("GOOGLE_MAPS_API_KEY", "")
+
 android {
     namespace = "com.sahel.app.saber_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -48,6 +60,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
+        // += so the Flutter-injected applicationName placeholder survives.
+        manifestPlaceholders += [GOOGLE_MAPS_API_KEY: googleMapsApiKey]
     }
 
     buildTypes {

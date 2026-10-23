@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,8 +8,8 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
@@ -26,14 +26,14 @@ class WalletScreen extends ConsumerWidget {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(180),
         child: Container(
-          decoration: const BoxDecoration(gradient: SahelColors.nightGradient),
+          decoration: const BoxDecoration(gradient: SahelColors.primaryGradient),
           child: SafeArea(
             child: Center(
               child: wallet.when(
                 loading: () => const CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2),
+                    color: SahelColors.onPrimary, strokeWidth: 2),
                 error: (_, __) => const Text('—',
-                    style: TextStyle(color: Colors.white, fontSize: 32)),
+                    style: TextStyle(color: SahelColors.onPrimary, fontSize: 32)),
                 data: (w) => Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -41,7 +41,7 @@ class WalletScreen extends ConsumerWidget {
                       'رصيد المحفظة'.t(lang),
                       style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: SahelColors.onPrimary.withValues(alpha: 0.8),
                           fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
@@ -50,7 +50,7 @@ class WalletScreen extends ConsumerWidget {
                       style: const TextStyle(
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: SahelColors.onPrimary,
                           letterSpacing: -1),
                     ),
                     Text(
@@ -189,6 +189,24 @@ class WalletScreen extends ConsumerWidget {
                   prefixIcon: Icon(Icons.payments_outlined),
                 ),
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  for (final amt in [50, 100, 200, 500])
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            right: amt == 500 ? 0 : 8),
+                        child: _QuickAmountChip(
+                          amount: amt,
+                          onTap: () => setSheet(() {
+                            controller.text = amt.toString();
+                          }),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 16),
               const Text('وسيلة الدفع',
                   style: TextStyle(
@@ -205,12 +223,12 @@ class WalletScreen extends ConsumerWidget {
                       avatar: Icon(icon,
                           size: 16,
                           color: method == id
-                              ? Colors.white
+                              ? SahelColors.onPrimary
                               : SahelColors.primary600),
                       label: Text(label,
                           style: const TextStyle(fontSize: 12)),
                       selectedColor: SahelColors.primary600,
-                      checkmarkColor: Colors.white,
+                      checkmarkColor: SahelColors.onPrimary,
                     ),
                 ],
               ),
@@ -370,9 +388,10 @@ class _TxTile extends StatelessWidget {
         type.contains('earning') ||
         type.contains('add');
     final isDebit = !isCredit;
-    final iconColor = isCredit ? SahelColors.success : SahelColors.danger;
-    final iconBg = isCredit ? SahelColors.successSoft : SahelColors.dangerSoft;
-    final icon = isCredit ? Icons.add : Icons.remove;
+
+    // Type-specific icon + color per Stitch reference _5.
+    final (icon, iconColor, iconBg) = _typeStyle(type, isCredit);
+
     final amount = str(tx['formatted_amount'] ?? tx['amount']);
     final title = str(tx['description'] ?? tx['title'] ?? type, 'عملية');
     final subtitle = str(tx['created_at'] ?? tx['date']);
@@ -400,7 +419,63 @@ class _TxTile extends StatelessWidget {
         trailing: Text(
           '${isDebit ? '−' : '+'}$amount',
           style: TextStyle(
-              fontWeight: FontWeight.w800, fontSize: 14, color: iconColor),
+              fontWeight: FontWeight.w800, fontSize: 14,
+              color: isCredit ? SahelColors.success : SahelColors.text),
+        ),
+      ),
+    );
+  }
+
+  /// Returns (icon, iconColor, iconBg) tuned to the transaction type,
+  /// matching the Stitch reference _5 color-coded transaction feed.
+  static (IconData, Color, Color) _typeStyle(String type, bool isCredit) {
+    if (type.contains('topup') || type.contains('add')) {
+      return (Icons.add_circle, SahelColors.success, SahelColors.successSoft);
+    }
+    if (type.contains('refund')) {
+      return (Icons.undo, SahelColors.info, SahelColors.infoSoft);
+    }
+    if (type.contains('booking') || type.contains('payment')) {
+      return (Icons.cleaning_services, SahelColors.primary,
+          SahelColors.primarySurface);
+    }
+    if (isCredit) {
+      return (Icons.south_west, SahelColors.success, SahelColors.successSoft);
+    }
+    return (Icons.north_east, SahelColors.amber700, SahelColors.amberSoft);
+  }
+}
+
+/// Quick top-up amount chip matching Stitch reference _7 grid.
+class _QuickAmountChip extends StatelessWidget {
+  const _QuickAmountChip({required this.amount, required this.onTap});
+
+  final int amount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: SahelColors.surface2,
+      borderRadius: SahelRadii.smRadius,
+      child: InkWell(
+        borderRadius: SahelRadii.smRadius,
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: SahelRadii.smRadius,
+            border: Border.all(color: SahelColors.border),
+          ),
+          child: Text(
+            '$amount',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: SahelColors.primary700,
+            ),
+          ),
         ),
       ),
     );

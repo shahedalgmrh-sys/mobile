@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 
 /// Heart that toggles a service or provider favorite via the real

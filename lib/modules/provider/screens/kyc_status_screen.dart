@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:saber_flutter/core/providers.dart';
@@ -7,7 +7,7 @@ import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import 'package:saber_flutter/shared/widgets/status_pill.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class KycStatusScreen extends ConsumerStatefulWidget {
   const KycStatusScreen({super.key});
@@ -163,7 +163,7 @@ class _KycStatusScreenState extends ConsumerState<KycStatusScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: SahelColors.slate200),
       ),

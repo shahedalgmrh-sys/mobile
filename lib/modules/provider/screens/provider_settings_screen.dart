@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,7 +7,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 final providerCityAreasProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>(
@@ -47,7 +47,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
               accountEmail: Text(
                   '$contact${isVerified ? ' · موثق' : ''}'),
               currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
+                backgroundColor: SahelColors.onPrimary,
                 child: Text(
                     businessName.isNotEmpty ? businessName[0] : 'س',
                     style: const TextStyle(
@@ -279,7 +279,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: SahelColors.onPrimary,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: SahelColors.slate200),
           ),
@@ -885,7 +885,7 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: SahelColors.slate200),
       ),

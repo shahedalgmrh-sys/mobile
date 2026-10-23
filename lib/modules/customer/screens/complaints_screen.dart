@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 /// Customer complaint history — mirrors the website `/complaints` list.
@@ -119,9 +119,9 @@ class _ComplaintCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.surface,
         borderRadius: SahelRadii.mdRadius,
-        border: Border.all(color: SahelColors.slate200),
+        border: Border.all(color: SahelColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +163,7 @@ class _ComplaintCard extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: SahelColors.infoSoft,
                 borderRadius: SahelRadii.smRadius,
               ),

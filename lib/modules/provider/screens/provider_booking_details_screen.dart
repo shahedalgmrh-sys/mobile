@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -11,8 +11,8 @@ import 'package:saber_flutter/shared/widgets/booking_status_stepper.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
-import '../../../models/booking_status.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ProviderBookingDetailsScreen extends ConsumerWidget {
   final String id;
@@ -369,7 +369,7 @@ class _BodyState extends ConsumerState<_Body> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: SahelColors.slate200),
       ),

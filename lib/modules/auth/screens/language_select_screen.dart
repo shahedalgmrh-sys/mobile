@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -154,7 +154,7 @@ class _LanguageCard extends StatelessWidget {
                 ),
               ),
               child: selected
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  ? const Icon(Icons.check, size: 16, color: SahelColors.onPrimary)
                   : null,
             ),
           ],

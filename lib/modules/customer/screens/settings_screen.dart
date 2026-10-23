@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -199,7 +199,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: SahelColors.onPrimary,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: SahelColors.slate200),
           ),

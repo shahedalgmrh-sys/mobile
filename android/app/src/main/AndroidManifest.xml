@@ -30,6 +30,28 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Password-reset deep link: the reset email points at
+                 https://host/reset-password/token?email=... (angle brackets and
+                 braces removed for XML comment safety). Replace the
+                 placeholder host with the production domain and publish the
+                 matching /.well-known/assetlinks.json to enable autoVerify. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="saber.example.com"/>
+                <data android:pathPrefix="/reset-password"/>
+            </intent-filter>
+            <!-- Google Maps SDK key - resolved from a dart-define:
+                 GOOGLE_MAPS_API_KEY (empty by default; the tracking map
+                 falls back to a placeholder). -->
+            <meta-data
+                android:name="com.google.android.geo.API_KEY"
+                android:value="${GOOGLE_MAPS_API_KEY}"/>
+            <meta-data
+              android:name="flutter_deep_linking_enabled"
+              android:value="true"/>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

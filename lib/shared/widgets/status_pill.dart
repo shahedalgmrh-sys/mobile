@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 
 enum StatusTone { teal, amber, red, violet, green, slate, sky }
 
@@ -16,7 +17,7 @@ class BookingStatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: config.$1,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SahelRadii.pillRadius,
       ),
       child: Text(
         config.$3,
@@ -79,7 +80,7 @@ class StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: config.$1,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SahelRadii.pillRadius,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

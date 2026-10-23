@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,7 +7,7 @@ import 'package:saber_flutter/shared/widgets/favorite_toggle_button.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 import '../../../models/service.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ServiceDetailsScreen extends ConsumerWidget {
   final String slug;
@@ -81,7 +81,7 @@ class ServiceDetailsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 100),
                 child: FavoriteToggleButton(
                   id: svc.id,
-                  backgroundColor: Colors.white,
+                  backgroundColor: SahelColors.surface,
                 ),
               ),
             ],
@@ -155,13 +155,13 @@ class ServiceDetailsScreen extends ConsumerWidget {
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
+        decoration: const BoxDecoration(
+          color: SahelColors.surface,
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: SahelColors.shadowSm,
                 blurRadius: 8,
-                offset: const Offset(0, -2))
+                offset: Offset(0, -2))
           ],
         ),
         child: SafeArea(

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
@@ -6,8 +6,8 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import '../../../shared/theme/sahel_colors.dart';
-import '../../../shared/theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -112,12 +112,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                         fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 InputDecorator(
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.location_city,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.location_city,
                         color: SahelColors.primary600),
                     border:
                         OutlineInputBorder(borderRadius: SahelRadii.mdRadius),
-                    contentPadding: const EdgeInsets.symmetric(
+                    contentPadding: EdgeInsets.symmetric(
                         horizontal: 12, vertical: 2),
                   ),
                   child: DropdownButtonHideUnderline(
@@ -201,11 +201,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                 const TextStyle(color: SahelColors.muted, fontSize: 13),
             prefixIcon: Icon(icon, color: SahelColors.primary600),
             border:
-                OutlineInputBorder(borderRadius: SahelRadii.mdRadius),
-            enabledBorder: OutlineInputBorder(
+                const OutlineInputBorder(borderRadius: SahelRadii.mdRadius),
+            enabledBorder: const OutlineInputBorder(
                 borderRadius: SahelRadii.mdRadius,
                 borderSide:
-                    const BorderSide(color: SahelColors.slate200)),
+                    BorderSide(color: SahelColors.slate200)),
             contentPadding: const EdgeInsets.symmetric(
                 horizontal: 12, vertical: 14),
           ),

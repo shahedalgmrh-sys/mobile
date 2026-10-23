@@ -1,10 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/provider_mini_card.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
@@ -61,42 +64,52 @@ class _TrackingBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = asMap(track['provider']);
+    // Newer API shape (rahma's backend): booking + provider_location +
+    // destination. Legacy keys (provider/provider_lat/steps) still honored
+    // so the screen works against either shape.
+    final booking = asMap(track['booking']);
+    final legacyProvider = asMap(track['provider']);
+    final provider =
+        legacyProvider.isNotEmpty ? legacyProvider : asMap(booking['provider']);
     final providerUser = asMap(provider['user']);
-    final providerLat = toDoubleOrNull(track['provider_lat']);
-    final providerLng = toDoubleOrNull(track['provider_lng']);
+    final providerLoc = asMap(track['provider_location']);
+    final providerLat =
+        toDoubleOrNull(track['provider_lat'] ?? providerLoc['latitude']);
+    final providerLng =
+        toDoubleOrNull(track['provider_lng'] ?? providerLoc['longitude']);
+    final dest = asMap(track['destination']);
+    final destLat = toDoubleOrNull(dest['latitude']);
+    final destLng = toDoubleOrNull(dest['longitude']);
     final eta = toIntOrNull(track['eta_minutes']);
-    final status = str(track['status']);
+    final status = str(track['status'] ??
+        track['current_status'] ??
+        booking['status']);
     final phone = str(providerUser['phone'] ?? provider['phone']);
-    final steps = asMapList(track['steps']);
+    final legacySteps = asMapList(track['steps']);
+    // The current backend sends the booking timeline instead of prepared
+    // steps; project it onto the stepper so every past event renders with
+    // a check.
+    final steps = legacySteps.isNotEmpty
+        ? legacySteps
+        : asMapList(booking['timeline'])
+            .map((h) => <String, dynamic>{
+                  'label': str(h['new_status']),
+                  'time': str(h['created_at']),
+                  'done': true,
+                })
+            .toList();
+    final config = ref.watch(appConfigProvider);
 
     return Stack(
       children: [
-        Container(
-          color: SahelColors.primary50,
-          child: SizedBox.expand(
-            child: Placeholder(
-              color: SahelColors.primary200,
-              fallbackWidth: 300,
-              fallbackHeight: 300,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(
-                    providerLat != null
-                        ? 'موقع الفني: ${providerLat.toStringAsFixed(4)}, ${providerLng?.toStringAsFixed(4)}'
-                        : 'بانتظار تحديث موقع الفني…',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: SahelColors.primary700,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        // ---------------------------------------------------------- map
+        _TrackingMap(
+          apiKey: config.googleMapsApiKey,
+          providerLat: providerLat,
+          providerLng: providerLng,
+          destLat: destLat,
+          destLng: destLng,
+          destAddress: str(dest['address']),
         ),
         Positioned(
           top: 16,
@@ -104,12 +117,12 @@ class _TrackingBody extends ConsumerWidget {
           child: SafeArea(
             child: InkWell(
               onTap: () => Navigator.of(context).pop(),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: SahelRadii.pillRadius,
               child: Container(
                 width: 44,
                 height: 44,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: SahelColors.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -129,12 +142,12 @@ class _TrackingBody extends ConsumerWidget {
           child: SafeArea(
             child: InkWell(
               onTap: () => ref.invalidate(bookingTrackProvider(bookingId)),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: SahelRadii.pillRadius,
               child: Container(
                 width: 44,
                 height: 44,
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: SahelColors.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
@@ -158,8 +171,8 @@ class _TrackingBody extends ConsumerWidget {
             shadowColor: SahelColors.text.withValues(alpha: 0.2),
             margin: EdgeInsets.zero,
             shape:
-                RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),
-            color: Colors.white,
+                const RoundedRectangleBorder(borderRadius: SahelRadii.lgRadius),
+            color: SahelColors.surface,
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -266,7 +279,7 @@ class _TrackingBody extends ConsumerWidget {
                         child: SahelButton.soft(
                           icon: Icons.chat,
                           label: 'مراسلة',
-                          onPressed: () {},
+                          onPressed: () => context.go('/inbox'),
                         ),
                       ),
                       if (providerLat != null &&
@@ -295,6 +308,96 @@ class _TrackingBody extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Real Google map of the tracking session. When the API key (or the
+/// provider coordinates) are missing it degrades to the informative
+/// placeholder instead of rendering blank tiles.
+class _TrackingMap extends StatelessWidget {
+  final String apiKey;
+  final double? providerLat;
+  final double? providerLng;
+  final double? destLat;
+  final double? destLng;
+  final String destAddress;
+
+  const _TrackingMap({
+    required this.apiKey,
+    required this.providerLat,
+    required this.providerLng,
+    required this.destLat,
+    required this.destLng,
+    required this.destAddress,
+  });
+
+  bool get _canRender =>
+      apiKey.isNotEmpty && providerLat != null && providerLng != null;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: SahelColors.primary50,
+      child: _canRender
+          ? _buildGoogleMap()
+          : SizedBox.expand(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.map_outlined,
+                          color: SahelColors.primary200, size: 56),
+                      const SizedBox(height: 12),
+                      Text(
+                        providerLat != null
+                            ? 'موقع الفني: ${providerLat!.toStringAsFixed(4)}, ${providerLng?.toStringAsFixed(4)}'
+                            : 'بانتظار تحديث موقع الفني…',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: SahelColors.primary700,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildGoogleMap() {
+    final providerPos = LatLng(providerLat!, providerLng!);
+    final hasDest = destLat != null && destLng != null;
+
+    // Center between both points when the destination is known, otherwise
+    // sit on the provider location at a comfortable zoom.
+    final mid = hasDest
+        ? LatLng((providerLat! + destLat!) / 2, (providerLng! + destLng!) / 2)
+        : providerPos;
+
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(target: mid, zoom: 14),
+      markers: {
+        Marker(
+          markerId: const MarkerId('provider'),
+          position: providerPos,
+          infoWindow: const InfoWindow(title: 'موقع الفني'),
+        ),
+        if (hasDest)
+          Marker(
+            markerId: const MarkerId('destination'),
+            position: LatLng(destLat!, destLng!),
+            infoWindow: InfoWindow(title: 'عنوان الحجز', snippet: destAddress),
+          ),
+      },
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
     );
   }
 }

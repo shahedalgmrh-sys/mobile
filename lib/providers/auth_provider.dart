@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/errors/failures.dart';
 import '../core/providers.dart';
@@ -6,7 +6,7 @@ import '../core/storage/secure_storage.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/repositories/parsers.dart';
 import '../data/sources/remote_sources.dart';
-import '../models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -205,6 +205,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       await _repo.forgotPassword(email);
+      state = state.copyWith(isLoading: false);
+      return null;
+    } catch (e) {
+      final msg = _failureMessage(e);
+      state = state.copyWith(isLoading: false, errorMessage: msg);
+      return msg;
+    }
+  }
+
+  /// Consumes the token from the reset email together with the new password.
+  /// Returns `null` on success or a localized failure message.
+  Future<String?> resetPassword({
+    required String email,
+    required String token,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repo.resetPassword(email: email, token: token, password: password);
       state = state.copyWith(isLoading: false);
       return null;
     } catch (e) {

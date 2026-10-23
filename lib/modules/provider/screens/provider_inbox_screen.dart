@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/empty_state.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
 class ProviderInboxScreen extends ConsumerWidget {
   const ProviderInboxScreen({super.key});
@@ -89,7 +89,7 @@ class ProviderInboxScreen extends ConsumerWidget {
                             ),
                             child: Text('$unread',
                                 style: const TextStyle(
-                                    color: Colors.white,
+                                    color: SahelColors.onPrimary,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800)),
                           )

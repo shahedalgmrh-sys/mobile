@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/review.dart';
-import '../theme/sahel_colors.dart';
-import '../theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 class ReviewCard extends StatelessWidget {
   final Review r;
@@ -19,7 +19,7 @@ class ReviewCard extends StatelessWidget {
     );
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(SahelRadii.md),
         boxShadow: const [xs],
         border: Border.all(color: SahelColors.slate200, width: 1),

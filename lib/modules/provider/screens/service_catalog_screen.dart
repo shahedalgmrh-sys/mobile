@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 class ServiceCatalogScreen extends ConsumerWidget {
@@ -18,7 +18,7 @@ class ServiceCatalogScreen extends ConsumerWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         backgroundColor: SahelColors.primary600,
-        foregroundColor: Colors.white,
+        foregroundColor: SahelColors.onPrimary,
         onPressed: () => context.push('/p/services/new'),
         child: const Icon(Icons.add),
       ),
@@ -115,7 +115,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: SahelColors.slate200),
       ),

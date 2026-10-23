@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/provider.dart';
-import '../theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'status_pill.dart';
 
 class ProviderMiniCard extends StatelessWidget {

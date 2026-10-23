@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
-import 'package:saber_flutter/models/booking_status.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final String threadId;
@@ -165,7 +166,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
-              color: Colors.white,
+              color: SahelColors.onPrimary,
               border:
                   Border(top: BorderSide(color: SahelColors.slate200)),
             ),
@@ -175,14 +176,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'اكتب رسالتك...',
-                        contentPadding: const EdgeInsets.symmetric(
+                        contentPadding: EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
                         filled: true,
                         fillColor: SahelColors.slate50,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: SahelRadii.pillRadius,
                           borderSide: BorderSide.none,
                         ),
                       ),
@@ -197,12 +198,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2, color: SahelColors.onPrimary),
                           )
                         : IconButton(
                             onPressed: _send,
                             icon: const Icon(Icons.send,
-                                color: Colors.white, size: 20),
+                                color: SahelColors.onPrimary, size: 20),
                           ),
                   ),
                 ],
@@ -242,7 +243,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             child: Text(text,
                 style: TextStyle(
-                    color: me ? Colors.white : SahelColors.text,
+                    color: me ? SahelColors.onPrimary : SahelColors.text,
                     height: 1.4)),
           ),
           const SizedBox(height: 4),

@@ -90,9 +90,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: SahelColors.primary100,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: SahelRadii.pillRadius,
             ),
             child: Text(
               'الخطوة ${_step + 1} من $_steps',
@@ -131,7 +131,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           height: 8,
           decoration: BoxDecoration(
             color: active ? SahelColors.primary600 : SahelColors.slate200,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: SahelRadii.pillRadius,
           ),
         );
       }),
@@ -174,7 +174,7 @@ class _WelcomeStep extends StatelessWidget {
                 width: 110,
                 height: 110,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: SahelColors.onPrimary,
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: SahelElevations.glow,
                 ),
@@ -187,7 +187,7 @@ class _WelcomeStep extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Icon(Icons.home_outlined,
-                        color: Colors.white, size: 40),
+                        color: SahelColors.onPrimary, size: 40),
                   ),
                 ),
               ),
@@ -200,8 +200,8 @@ class _WelcomeStep extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(999),
+                      color: SahelColors.onPrimary,
+                      borderRadius: SahelRadii.pillRadius,
                       border: Border.all(color: SahelColors.slate200),
                     ),
                     child: const Row(
@@ -566,7 +566,7 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         color: SahelColors.primary50,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: SahelRadii.pillRadius,
         border: Border.all(color: SahelColors.primary100),
       ),
       child: Row(
@@ -599,8 +599,8 @@ class _TrustChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
+        color: SahelColors.onPrimary,
+        borderRadius: SahelRadii.pillRadius,
         border: Border.all(color: SahelColors.border),
         boxShadow: SahelElevations.xs,
       ),
@@ -630,7 +630,7 @@ class _StepIcon extends StatelessWidget {
       width: 76,
       height: 76,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: SahelColors.border),
         boxShadow: SahelElevations.md,
@@ -702,7 +702,7 @@ class _MockCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.onPrimary,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: SahelColors.border),
         boxShadow: SahelElevations.sm,
@@ -765,7 +765,7 @@ class _TrackDot extends StatelessWidget {
           child: Icon(
             done ? Icons.check : Icons.circle,
             size: 13,
-            color: Colors.white,
+            color: SahelColors.onPrimary,
           ),
         ),
         const SizedBox(height: 5),
@@ -807,7 +807,7 @@ class _RoleCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? SahelColors.primary600 : SahelColors.slate200,
@@ -832,11 +832,11 @@ class _RoleCard extends StatelessWidget {
                 color: selected
                     ? SahelColors.primary600
                     : SahelColors.primary50,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: SahelRadii.mdRadius,
               ),
               child: Icon(
                 icon,
-                color: selected ? Colors.white : SahelColors.primary700,
+                color: selected ? SahelColors.onPrimary : SahelColors.primary700,
                 size: 26,
               ),
             ),
@@ -861,9 +861,9 @@ class _RoleCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: SahelColors.primary50,
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: SahelRadii.pillRadius,
                           ),
                           child: Text(
                             p,

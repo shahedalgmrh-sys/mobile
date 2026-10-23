@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import '../../../shared/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import '../../../shared/widgets/sahel_button.dart';
 
 class SupportScreen extends ConsumerStatefulWidget {
@@ -80,7 +81,7 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
               child: const Row(
                 children: [
                   Icon(Icons.support_agent,
-                      size: 44, color: Colors.white),
+                      size: 44, color: SahelColors.onPrimary),
                   SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -88,13 +89,13 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
                       children: [
                         Text('فريق الدعم متاح 24/7',
                             style: TextStyle(
-                                color: Colors.white,
+                                color: SahelColors.onPrimary,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16)),
                         SizedBox(height: 4),
                         Text('متوسط وقت الرد: أقل من 5 دقائق',
                             style: TextStyle(
-                                color: Colors.white70, fontSize: 12)),
+                                color: SahelColors.onPrimary70, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -191,9 +192,9 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: SahelColors.slate200),
+        color: SahelColors.surface,
+        borderRadius: SahelRadii.mdRadius,
+        border: Border.all(color: SahelColors.border),
       ),
       child: ListTile(
         onTap: onTap,

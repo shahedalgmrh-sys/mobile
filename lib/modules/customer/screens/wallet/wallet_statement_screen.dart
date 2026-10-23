@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 
 final walletStatementProvider = FutureProvider
     .autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -103,7 +103,7 @@ class _StatementRow extends StatelessWidget {
         '${isCredit ? '+' : '−'}$amount',
         style: TextStyle(fontWeight: FontWeight.w800, color: color),
       ),
-      shape: RoundedRectangleBorder(borderRadius: SahelRadii.mdRadius),
+      shape: const RoundedRectangleBorder(borderRadius: SahelRadii.mdRadius),
     );
   }
 }

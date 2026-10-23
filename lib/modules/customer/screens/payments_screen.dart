@@ -1,13 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
-import 'package:saber_flutter/sahel_theme/sahel_colors.dart';
-import 'package:saber_flutter/sahel_theme/sahel_radii.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Customer payments & invoices — mirrors the website `/payments` page
 /// against `/api/customer/payments` (+ `/{id}` and `/{id}/invoice`).
@@ -87,9 +85,9 @@ class _PaymentTile extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: SahelColors.surface,
         borderRadius: SahelRadii.mdRadius,
-        border: Border.all(color: SahelColors.slate200),
+        border: Border.all(color: SahelColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +154,8 @@ class _PaymentTile extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _openInvoice(context, ref, str(p['id'])),
+                  onPressed: () =>
+                      context.push('/payments/${str(p['id'])}/invoice'),
                   icon: const Icon(Icons.receipt_long, size: 16),
                   label: const Text('عرض الفاتورة'),
                 ),
@@ -166,38 +165,5 @@ class _PaymentTile extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _openInvoice(
-      BuildContext context, WidgetRef ref, String paymentId) async {
-    try {
-      final data = await ref
-          .read(customerRepositoryProvider)
-          .invoice(paymentId);
-      final invoiceUrl = strOrNull(data['invoice_url'] ??
-          data['url'] ??
-          data['pdf_url'] ??
-          data['download_url']);
-      if (invoiceUrl != null) {
-        final uri = Uri.tryParse(invoiceUrl);
-        if (uri != null) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          return;
-        }
-      }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم جلب الفاتورة — لا يوجد رابط تحميل')),
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('تعذر جلب الفاتورة'),
-              backgroundColor: SahelColors.danger),
-        );
-      }
-    }
   }
 }

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../models/service.dart';
-import '../theme/sahel_colors.dart';
-import '../theme/sahel_theme.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'sahel_button.dart';
 
 /// Base white card plane: hairline border + ultra-subtle shadow, per the
@@ -348,14 +348,14 @@ class _Media extends StatelessWidget {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: SahelColors.red600,
                     borderRadius: SahelRadii.pillRadius,
                   ),
                   child: Text(
                     '-${discountPercent!.toStringAsFixed(0)}%',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: SahelColors.onPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
@@ -404,7 +404,7 @@ class _HeartButton extends StatelessWidget {
           child: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_border,
             size: 20,
-            color: isFavorite ? SahelColors.danger : Colors.white,
+            color: isFavorite ? SahelColors.danger : SahelColors.onPrimary,
           ),
         ),
       ),
@@ -422,7 +422,7 @@ class _RatingPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: SahelColors.amber50,
         borderRadius: SahelRadii.pillRadius,
       ),
