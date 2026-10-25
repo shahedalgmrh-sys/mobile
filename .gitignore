@@ -46,11 +46,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Generated build_runner files
-*.g.dart
-*.freezed.dart
-**/*.g.dart
-**/*.freezed.dart
+# build_runner generated files: assumes are tracked in git so CI can
+# run `flutter analyze`/`flutter test` without a build_runner step.
+# Regenerate locally via: dart run build_runner build --delete-conflicting-outputs
 
 # Build outputs in subprojects (android/build/, etc.)
 **/build/
