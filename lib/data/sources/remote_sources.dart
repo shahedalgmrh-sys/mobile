@@ -105,6 +105,20 @@ class CatalogRemoteSource {
   final ApiClient client;
   const CatalogRemoteSource(this.client);
 
+  /// `/home` is the largest aggregate payload the app requests. In the Android
+  /// emulator, large responses from the local Laravel development server are
+  /// occasionally truncated in transit (the dev server sends no
+  /// `Content-Length`, so the damage only surfaces as a JSON [FormatException]
+  /// inside Dio). Retry the request instead of failing the whole feed; real
+  /// HTTP errors (non-2xx) are never retried.
+  static const int _homeMaxAttempts = 10;
+  static const Duration _homeRetryDelay = Duration(milliseconds: 250);
+
+  static bool _isMalformedHomeBody(DioException e) =>
+      e.response == null &&
+      e.type == DioExceptionType.unknown &&
+      e.error is FormatException;
+
   Future<Response> _run(Future<Response> Function() call) async {
     try {
       return await call();
@@ -113,7 +127,24 @@ class CatalogRemoteSource {
     }
   }
 
-  Future<Response> home() => _run(() => client.get(ApiEndpoints.home));
+  Future<Response> home() => _run(() async {
+        for (var attempt = 1; ; attempt++) {
+          try {
+            return await client.get(
+              ApiEndpoints.home,
+              // `Connection: close` keeps the large payload off a pooled
+              // keep-alive socket, whose reuse is the suspected source of the
+              // corrupted body observed in release builds.
+              options: Options(headers: const {'Connection': 'close'}),
+            );
+          } on DioException catch (e) {
+            if (!_isMalformedHomeBody(e) || attempt >= _homeMaxAttempts) {
+              rethrow;
+            }
+            await Future<void>.delayed(_homeRetryDelay);
+          }
+        }
+      });
   Future<Response> categories() =>
       _run(() => client.get(ApiEndpoints.categories));
   Future<Response> services({
