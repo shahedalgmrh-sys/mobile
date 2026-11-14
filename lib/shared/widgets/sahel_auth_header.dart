@@ -25,21 +25,21 @@ class SahelBrandMark extends StatelessWidget {
         Container(
           width: size,
           height: size,
+          padding: EdgeInsets.all(size * 0.08),
           decoration: BoxDecoration(
-            gradient: SahelColors.primaryGradient,
+            color: SahelColors.surface,
             borderRadius: BorderRadius.circular(size * 0.3),
             boxShadow: SahelElevations.xs,
           ),
-          child: Icon(
-            Icons.water_drop,
-            size: size * 0.55,
-            color: SahelColors.onPrimary,
+          child: Image.asset(
+            'assets/images/saber-mark.png',
+            fit: BoxFit.contain,
           ),
         ),
         if (showName) ...[
           const SizedBox(width: 8),
           Text(
-            'ساحل',
+            'سابر',
             style: TextStyle(
               fontSize: size * 0.56,
               fontWeight: FontWeight.w800,

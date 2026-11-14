@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../sources/remote_sources.dart';
 import 'parsers.dart';
 
@@ -46,7 +48,7 @@ class AuthRepository {
     required String password,
     required String role,
     String deviceName = 'flutter_app',
-    List<dynamic>? documentPaths,
+    List<String>? documentPaths,
   }) async {
     final fields = <String, dynamic>{
       'name': name,
@@ -57,7 +59,19 @@ class AuthRepository {
       'device_name': deviceName,
       if (phone != null && phone.isNotEmpty) 'phone': phone,
     };
-    final res = await source.register(fields);
+    // Provider accreditation documents are sent as multipart `documents[]`
+    // (pdf/jpeg/png, max 10MB each) exactly as the API expects them.
+    final documents = <MultipartFile>[
+      for (final path in documentPaths ?? const <String>[])
+        await MultipartFile.fromFile(
+          path,
+          filename: path.split(RegExp(r'[\\/]')).last,
+        ),
+    ];
+    final res = await source.register(
+      fields,
+      documents: documents.isEmpty ? null : documents,
+    );
     return _parseAuth(apiData(res));
   }
 

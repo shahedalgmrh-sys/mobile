@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -29,6 +30,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirm = true;
   bool _isLoading = false;
 
+  // Provider accreditation documents. The API accepts `documents[]` as
+  // multipart files (pdf/jpeg/png, max 10MB each).
+  static const int _maxDocumentBytes = 10 * 1024 * 1024;
+  static const List<String> _allowedDocumentExtensions = [
+    'pdf',
+    'jpg',
+    'jpeg',
+    'png',
+  ];
+  final List<PlatformFile> _documents = [];
+  bool _isPickingDocuments = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -42,6 +55,55 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isEmail(String v) =>
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim());
 
+  Future<void> _pickDocuments() async {
+    setState(() => _isPickingDocuments = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: _allowedDocumentExtensions,
+      );
+      if (result == null) return;
+      final rejected = <String>[];
+      final accepted = <PlatformFile>[];
+      for (final file in result.files) {
+        final path = file.path;
+        final extension = (file.extension ?? '').toLowerCase();
+        if (path == null || path.isEmpty) continue;
+        if (!_allowedDocumentExtensions.contains(extension)) {
+          rejected.add('${file.name}: صيغة غير مدعومة');
+          continue;
+        }
+        if (file.size > _maxDocumentBytes) {
+          rejected.add('${file.name}: يتجاوز 10 ميجابايت');
+          continue;
+        }
+        if (_documents.any((d) => d.path == path)) continue;
+        accepted.add(file);
+      }
+      if (!mounted) return;
+      setState(() => _documents.addAll(accepted));
+      if (rejected.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(rejected.join('\n'))),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر فتح منتقي الملفات. حاول مرة أخرى.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isPickingDocuments = false);
+    }
+  }
+
+  String _documentSize(int bytes) {
+    final mb = bytes / (1024 * 1024);
+    if (mb >= 1) return '${mb.toStringAsFixed(1)} ميجابايت';
+    return '${(bytes / 1024).ceil()} كيلوبايت';
+  }
+
   Future<void> _register() async {
     setState(() => _isLoading = true);
     final ok = await ref.read(authNotifierProvider.notifier).register(
@@ -52,10 +114,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               : _phoneController.text.trim(),
           password: _passwordController.text,
           role: _selectedRole,
+          documentPaths: _selectedRole == UserRole.provider
+              ? [
+                  for (final document in _documents)
+                    if (document.path != null) document.path!,
+                ]
+              : null,
         );
     if (!mounted) return;
     setState(() => _isLoading = false);
     if (ok) {
+      // Keep the OTP step for providers; the router then lands them on
+      // /p/kyc or /p/dashboard from the API accreditation status.
       context.go('/otp');
     } else {
       final msg = ref.read(authNotifierProvider).errorMessage;
@@ -102,7 +172,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'انضم إلى ساحل واحصل على أفضل الخدمات المنزلية',
+                      'انضم إلى سابر واحصل على أفضل الخدمات المنزلية',
                       style: SahelTextStyles.caption,
                     ),
                     const SizedBox(height: 24),
@@ -200,6 +270,144 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
+                    if (_selectedRole == UserRole.provider) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: SahelColors.primarySurface,
+                          borderRadius: SahelRadii.mdRadius,
+                          border: Border.all(color: SahelColors.primary100),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.verified_user_outlined,
+                                  size: 20,
+                                  color: SahelColors.primary700,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'ملف مزود الخدمة',
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: SahelColors.text,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'سيُستخدم اسمك الكامل اسماً تجارياً مبدئياً، ويمكنك تعديل اسم النشاط والنبذة من إعدادات الملف بعد إنشاء الحساب.',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                height: 1.6,
+                                color: SahelColors.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'وثائق الاعتماد (اختياري)',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: SahelColors.text,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'PDF أو JPG أو PNG — بحد أقصى 10 ميجابايت للملف.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.5,
+                                color: SahelColors.textMuted,
+                              ),
+                            ),
+                            if (_documents.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              for (final document in _documents)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: SahelColors.surface,
+                                    borderRadius: SahelRadii.smRadius,
+                                    border: Border.all(color: SahelColors.border),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        (document.extension ?? '').toLowerCase() ==
+                                                'pdf'
+                                            ? Icons.picture_as_pdf_outlined
+                                            : Icons.image_outlined,
+                                        size: 20,
+                                        color: SahelColors.primary700,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              document.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: SahelColors.text,
+                                              ),
+                                            ),
+                                            Text(
+                                              _documentSize(document.size),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: SahelColors.textMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'إزالة',
+                                        visualDensity: VisualDensity.compact,
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () => setState(
+                                                  () => _documents
+                                                      .remove(document),
+                                                ),
+                                        icon: const Icon(Icons.close, size: 18),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                            const SizedBox(height: 10),
+                            SahelButton.outline(
+                              label: 'اختيار الوثائق',
+                              icon: Icons.upload_file_outlined,
+                              loading: _isPickingDocuments,
+                              height: 44,
+                              onPressed: _isLoading || _isPickingDocuments
+                                  ? null
+                                  : _pickDocuments,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 28),
                     SahelButton.gradient(
                       label: 'إنشاء حساب',

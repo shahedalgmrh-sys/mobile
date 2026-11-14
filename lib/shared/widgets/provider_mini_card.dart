@@ -22,11 +22,12 @@ class ProviderMiniCard extends StatelessWidget {
     this.totalReviews,
   });
 
-  String get _businessName => (p?.businessName ?? businessName) ?? 'فني غير مسمى';
+  String get _businessName => (p?.businessName ?? businessName) ?? 'مزود خدمة';
   String? get _avatarUrl => p?.avatarUrl ?? avatarUrl;
   bool get _isVerified => (p?.isVerified ?? isVerified) ?? false;
-  double get _ratingAvg => (p?.ratingAvg ?? ratingAvg) ?? 4.8;
-  int get _totalReviews => (p?.totalReviews ?? totalReviews) ?? 127;
+  double get _ratingAvg => (p?.ratingAvg ?? ratingAvg) ?? 0;
+  int get _totalReviews => (p?.totalReviews ?? totalReviews) ?? 0;
+  bool get _hasRating => _totalReviews > 0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,15 +70,18 @@ class ProviderMiniCard extends StatelessWidget {
                       ? StatusPill.verifiedTeal(text: 'موثق')
                       : StatusPill.slate(text: 'قيد المراجعة'),
                   const SizedBox(width: 8),
-                  const Icon(Icons.star, size: 14, color: SahelColors.amber500),
-                  const SizedBox(width: 2),
-                  Text(
-                    '${_ratingAvg.toStringAsFixed(1)}  ($_totalReviews)',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: SahelColors.muted,
+                  if (_hasRating) ...[
+                    const Icon(Icons.star,
+                        size: 14, color: SahelColors.amber500),
+                    const SizedBox(width: 2),
+                    Text(
+                      '${_ratingAvg.toStringAsFixed(1)}  ($_totalReviews)',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: SahelColors.muted,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ],

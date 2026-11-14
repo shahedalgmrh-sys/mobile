@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -29,27 +29,34 @@ class ProviderReviewsScreen extends ConsumerWidget {
               ShimmerCard(height: 110),
             ],
           ),
-          error: (e, _) => ListView(children: [
-            const SizedBox(height: 80),
-            Center(
-              child: TextButton.icon(
-                onPressed: () => ref.invalidate(providerReviewsProvider),
-                icon: const Icon(Icons.refresh),
-                label: const Text('إعادة المحاولة'),
+          error: (e, _) => ListView(
+            children: [
+              const SizedBox(height: 80),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => ref.invalidate(providerReviewsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة المحاولة'),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
           data: (items) {
             if (items.isEmpty) {
-              return ListView(children: const [
-                SizedBox(height: 120),
-                Center(
-                  child: Text('لا توجد مراجعات بعد',
+              return ListView(
+                children: const [
+                  SizedBox(height: 120),
+                  Center(
+                    child: Text(
+                      'لا توجد مراجعات بعد',
                       style: TextStyle(
-                          color: SahelColors.muted,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ]);
+                        color: SahelColors.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              );
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -71,15 +78,27 @@ class _ReviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rating = toDouble(review['rating']);
-    final comment =
-        str(review['comment'] ?? review['content'] ?? review['text']);
-    final reply = str(review['reply'] ?? review['provider_reply']);
-    final reviewer =
-        str(review['customer_name'] ?? review['reviewer_name'], 'عميل');
+    final comment = str(
+      review['review'] ??
+          review['comment'] ??
+          review['content'] ??
+          review['text'],
+    );
+    // `provider_reply` is stored server-side but not exposed by
+    // ReviewResource, so existing replies cannot be rendered here.
+    final reply = str(review['provider_reply'] ?? review['reply']);
+    final reviewer = str(
+      review['customer_name'] ??
+          asMap(review['customer'])['name'] ??
+          review['reviewer_name'],
+      'عميل',
+    );
     final service = str(asMap(review['service'])['name']);
     final date = str(
-        review['date_ar'] ?? review['formatted_created_at'] ??
-            review['created_at']);
+      review['date_ar'] ??
+          review['formatted_created_at'] ??
+          review['created_at'],
+    );
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -93,15 +112,20 @@ class _ReviewCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Text(reviewer,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 13)),
+              Text(
+                reviewer,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
               const Spacer(),
               for (var i = 0; i < 5; i++)
                 Icon(
                   Icons.star,
                   size: 15,
-                  color: i < rating ? SahelColors.amber500
+                  color: i < rating
+                      ? SahelColors.amber500
                       : SahelColors.slate200,
                 ),
             ],
@@ -109,15 +133,24 @@ class _ReviewCard extends ConsumerWidget {
           if (service.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text(service,
-                  style: const TextStyle(
-                      fontSize: 11, color: SahelColors.primary600)),
+              child: Text(
+                service,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: SahelColors.primary600,
+                ),
+              ),
             ),
           if (comment.isNotEmpty) ...[
             const SizedBox(height: 8),
-            Text(comment,
-                style: const TextStyle(
-                    fontSize: 13, color: SahelColors.text, height: 1.5)),
+            Text(
+              comment,
+              style: const TextStyle(
+                fontSize: 13,
+                color: SahelColors.text,
+                height: 1.5,
+              ),
+            ),
           ],
           if (reply.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -128,24 +161,27 @@ class _ReviewCard extends ConsumerWidget {
                 color: SahelColors.primarySurface,
                 borderRadius: SahelRadii.smRadius,
               ),
-              child: Text('ردك: $reply',
-                  style: const TextStyle(fontSize: 12)),
+              child: Text('ردك: $reply', style: const TextStyle(fontSize: 12)),
             ),
           ],
           const SizedBox(height: 10),
           Row(
             children: [
               if (date.isNotEmpty)
-                Text(date,
-                    style: const TextStyle(
-                        fontSize: 11, color: SahelColors.textSoft)),
+                Text(
+                  date,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: SahelColors.textSoft,
+                  ),
+                ),
               const Spacer(),
               TextButton.icon(
                 onPressed: () => _reply(context, ref),
-                icon: Icon(reply.isEmpty
-                    ? Icons.reply
-                    : Icons.edit_outlined,
-                    size: 16),
+                icon: Icon(
+                  reply.isEmpty ? Icons.reply : Icons.edit_outlined,
+                  size: 16,
+                ),
                 label: Text(reply.isEmpty ? 'الرد على المراجعة' : 'تعديل الرد'),
               ),
             ],
@@ -172,33 +208,37 @@ class _ReviewCard extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('إرسال الرد')),
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('إرسال الرد'),
+          ),
         ],
       ),
     );
     if (text == null || text.isEmpty || !context.mounted) return;
     try {
-      await ref.read(providerRepositoryProvider).replyReview(
-            str(review['id']),
-            text,
-          );
+      await ref
+          .read(providerRepositoryProvider)
+          .replyReview(str(review['id']), text);
       ref.invalidate(providerReviewsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(
-              const SnackBar(content: Text('تم إرسال الرد ✓')));
+          ..showSnackBar(const SnackBar(content: Text('تم إرسال الرد ✓')));
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(const SnackBar(
+          ..showSnackBar(
+            const SnackBar(
               content: Text('تعذر إرسال الرد'),
-              backgroundColor: SahelColors.danger));
+              backgroundColor: SahelColors.danger,
+            ),
+          );
       }
     }
   }

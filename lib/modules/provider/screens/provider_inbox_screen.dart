@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -28,8 +28,7 @@ class ProviderInboxScreen extends ConsumerWidget {
           ),
           error: (e, _) => Center(
             child: TextButton.icon(
-              onPressed: () =>
-                  ref.invalidate(providerConversationsProvider),
+              onPressed: () => ref.invalidate(providerConversationsProvider),
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
             ),
@@ -53,26 +52,48 @@ class ProviderInboxScreen extends ConsumerWidget {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (ctx, i) {
                   final c = items[i];
-                  final other = asMap(
+                  // ConversationResource exposes `participants[]`; pick the
+                  // first non-provider participant as the customer.
+                  final participants = dataList(c['participants']);
+                  Map<String, dynamic> other = const {};
+                  for (final p in participants) {
+                    final m = asMap(p);
+                    final role = str(m['role']);
+                    if (role.isNotEmpty && role != 'provider') {
+                      other = m;
+                      break;
+                    }
+                  }
+                  if (other.isEmpty && participants.isNotEmpty) {
+                    other = asMap(participants.first);
+                  }
+                  if (other.isEmpty) {
+                    other = asMap(
                       c['customer'] ??
                           c['other_party'] ??
                           c['participant'] ??
-                          c['user']);
-                  final name =
-                      str(other['name'] ?? c['title'], 'عميل');
-                  final lastMsg = asMap(c['last_message'] ?? c['latest_message']);
-                  final preview =
-                      str(lastMsg['body'] ?? c['last_message_preview']);
+                          c['user'],
+                    );
+                  }
+                  final name = str(other['name'] ?? c['title'], 'عميل');
+                  final lastMsg = asMap(
+                    c['last_message'] ?? c['latest_message'],
+                  );
+                  final preview = str(
+                    lastMsg['body'] ?? c['last_message_preview'],
+                  );
+                  // The provider resource does not include an unread counter.
                   final unread = toInt(c['unread_count']);
                   final threadId = str(c['id'] ?? c['conversation_id']);
 
                   return ListTile(
                     leading: CircleAvatar(
-                        child:
-                            Text(name.isNotEmpty ? name[0] : '؟')),
-                    title: Text(name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700)),
+                      child: Text(name.isNotEmpty ? name[0] : '؟'),
+                    ),
+                    title: Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     subtitle: Text(
                       preview.isEmpty ? '—' : preview,
                       maxLines: 1,
@@ -81,17 +102,21 @@ class ProviderInboxScreen extends ConsumerWidget {
                     trailing: unread > 0
                         ? Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: SahelColors.primary600,
-                              borderRadius:
-                                  BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Text('$unread',
-                                style: const TextStyle(
-                                    color: SahelColors.onPrimary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800)),
+                            child: Text(
+                              '$unread',
+                              style: const TextStyle(
+                                color: SahelColors.onPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           )
                         : null,
                     onTap: threadId.isEmpty

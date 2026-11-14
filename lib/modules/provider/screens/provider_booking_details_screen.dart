@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -98,12 +98,12 @@ class _BodyState extends ConsumerState<_Body> {
     final reason = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('سبب رفض الحجز'),
+        title: const Text('سبب رفض الحجز (مطلوب)'),
         content: TextField(
           controller: controller,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: 'اكتب سبب الرفض إن وجد',
+            hintText: 'اذكر سبب الرفض — مطلوب من الخادم',
           ),
         ),
         actions: [
@@ -111,9 +111,14 @@ class _BodyState extends ConsumerState<_Body> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('إلغاء'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('تأكيد الرفض'),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (_, value, __) => FilledButton(
+              onPressed: value.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, value.text.trim()),
+              child: const Text('تأكيد الرفض'),
+            ),
           ),
         ],
       ),
@@ -138,9 +143,7 @@ class _BodyState extends ConsumerState<_Body> {
             maxLength: 500,
             maxLines: 3,
             onChanged: (v) => setDialog(() => reason = v.trim()),
-            decoration: const InputDecoration(
-              hintText: 'سبب الإلغاء (مطلوب)',
-            ),
+            decoration: const InputDecoration(hintText: 'سبب الإلغاء (مطلوب)'),
           ),
           actions: [
             TextButton(
@@ -154,8 +157,10 @@ class _BodyState extends ConsumerState<_Body> {
                       confirmed = true;
                       Navigator.pop(ctx);
                     },
-              child: const Text('تأكيد الإلغاء',
-                  style: TextStyle(color: SahelColors.danger)),
+              child: const Text(
+                'تأكيد الإلغاء',
+                style: TextStyle(color: SahelColors.danger),
+              ),
             ),
           ],
         ),
@@ -173,7 +178,9 @@ class _BodyState extends ConsumerState<_Body> {
     final service = asMap(b['service']);
     final customer = asMap(b['customer'] ?? b['user']);
     final address = asMap(b['address']);
-    final phone = str(customer['phone']);
+    // BookingResource does not serialize the customer/user object; only the
+    // address phone is available for contact. The name stays a generic label.
+    final phone = str(customer['phone'] ?? address['phone']);
     final id = widget.bookingId;
 
     return ListView(
@@ -239,11 +246,7 @@ class _BodyState extends ConsumerState<_Body> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  CircleAvatar(
-                    child: Text(
-                      str(customer['name'], 'ع')[0],
-                    ),
-                  ),
+                  CircleAvatar(child: Text(str(customer['name'], 'ع')[0])),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -342,8 +345,10 @@ class _BodyState extends ConsumerState<_Body> {
             TextButton.icon(
               onPressed: () => _cancelBooking(repo, id),
               icon: const Icon(Icons.close, color: SahelColors.danger),
-              label: const Text('إلغاء الحجز',
-                  style: TextStyle(color: SahelColors.danger)),
+              label: const Text(
+                'إلغاء الحجز',
+                style: TextStyle(color: SahelColors.danger),
+              ),
             ),
           if (status == BookingStatus.accepted)
             SahelButton(

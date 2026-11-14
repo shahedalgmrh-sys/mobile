@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
@@ -20,17 +21,16 @@ class CustomerProfileScreen extends ConsumerWidget {
     final auth = ref.watch(authNotifierProvider);
     final wallet = ref.watch(customerWalletProvider).valueOrNull;
     final bookings = ref.watch(customerBookingsProvider(null)).valueOrNull;
+    final bookingsTotal = ref.watch(customerBookingsTotalProvider).valueOrNull;
     final favorites = ref.watch(customerFavoritesProvider).valueOrNull;
 
     final user = auth.user ?? const <String, dynamic>{};
-    final name = str(user['name'], 'مستخدم ساحل');
+    final name = str(user['name'], 'مستخدم سابر');
     final phone = str(user['phone'] ?? user['email']);
     final isVerified = auth.isVerified;
-    final walletBalance =
-        str(wallet?['formatted_balance'] ?? wallet?['balance'], '—');
-    final walletCurrency =
-        str(wallet?['currency'] ?? wallet?['display_currency']).toUpperCase();
-    final bookingsCount = bookings?.length;
+    final walletBalance = formatMoney(wallet?['balance']);
+    final walletCurrency = str(wallet?['currency']).toUpperCase();
+    final bookingsCount = bookingsTotal ?? bookings?.length;
     final favCount = favorites == null
         ? null
         : (dataList(favorites['services']).length +
@@ -101,7 +101,7 @@ class CustomerProfileScreen extends ConsumerWidget {
           onTap: (ctx) => ctx.push('/support')),
       _ProfileTile(
           icon: Icons.gavel,
-          title: 'شكاواي',
+          title: 'شكاوى',
           subtitle: 'سجل الشكاوى وردود الدعم',
           onTap: (ctx) => ctx.push('/profile/complaints')),
     ];
@@ -284,7 +284,7 @@ class CustomerProfileScreen extends ConsumerWidget {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: Text(
-                'ساحل • نسخة 1.0.0',
+                'سابر • نسخة 1.0.0',
                 style: TextStyle(
                     fontSize: 12,
                     color: SahelColors.textSoft,

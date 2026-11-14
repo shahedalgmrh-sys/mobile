@@ -121,6 +121,7 @@ class CatalogRemoteSource {
     String? categoryId,
     String? sort,
     int? page,
+    int? limit,
   }) => _run(
     () => client.get(
       ApiEndpoints.services,
@@ -129,21 +130,39 @@ class CatalogRemoteSource {
         if (categoryId != null) 'category_id': categoryId,
         if (sort != null) 'sort': sort,
         if (page != null) 'page': page,
+        if (limit != null) 'limit': limit,
       },
     ),
   );
-  Future<Response> providers({String? cityId, int? page}) => _run(
+  Future<Response> providers({
+    String? cityId,
+    String? q,
+    String? sort,
+    int? page,
+    int? perPage,
+  }) => _run(
     () => client.get(
       ApiEndpoints.providers,
       queryParameters: {
         if (cityId != null) 'city_id': cityId,
+        if (q != null && q.isNotEmpty) 'q': q,
+        if (sort != null) 'sort': sort,
         if (page != null) 'page': page,
+        if (perPage != null) 'per_page': perPage,
       },
     ),
   );
   Future<Response> providerProfile(String id) =>
       _run(() => client.get(ApiEndpoints.providerProfile(id)));
-  Future<Response> offers() => _run(() => client.get(ApiEndpoints.offers));
+  Future<Response> offers({int? page, int? perPage}) => _run(
+    () => client.get(
+      ApiEndpoints.offers,
+      queryParameters: {
+        if (page != null) 'page': page,
+        if (perPage != null) 'per_page': perPage,
+      },
+    ),
+  );
   Future<Response> cities() => _run(() => client.get(ApiEndpoints.cities));
   Future<Response> cityAreas(String cityId) =>
       _run(() => client.get(ApiEndpoints.cityAreas(cityId)));
@@ -163,10 +182,8 @@ class CatalogRemoteSource {
   Future<Response> showBlog(String slug) =>
       _run(() => client.get(ApiEndpoints.showBlog(slug)));
   Future<Response> storeBlogComment(String blogId, String body) => _run(
-    () => client.post(
-      ApiEndpoints.blogComments(blogId),
-      data: {'body': body},
-    ),
+    () =>
+        client.post(ApiEndpoints.blogComments(blogId), data: {'comment': body}),
   );
   Future<Response> page(String slug) =>
       _run(() => client.get(ApiEndpoints.contentPage(slug)));
@@ -415,8 +432,12 @@ class CustomerRemoteSource {
       queryParameters: {'q': q, if (page != null) 'page': page, ...?filters},
     ),
   );
-  Future<Response> reports(String type) =>
-      _run(() => client.get(ApiEndpoints.customerReport(type)));
+  Future<Response> reports(String type, {String? page}) => _run(
+    () => client.get(
+      ApiEndpoints.customerReport(type),
+      queryParameters: {if (page != null) 'page': page},
+    ),
+  );
 }
 
 class ProviderRemoteSource {
@@ -444,12 +465,13 @@ class ProviderRemoteSource {
       options: Options(contentType: Headers.multipartFormDataContentType),
     ),
   );
-  Future<Response> deleteProviderImage(String kind) => _run(() => client
-      .delete(switch (kind) {
-        'avatar' => ApiEndpoints.providerAvatarDestroy,
-        'logo' => ApiEndpoints.providerLogoDestroy,
-        _ => ApiEndpoints.providerCoverDestroy,
-      }));
+  Future<Response> deleteProviderImage(String kind) => _run(
+    () => client.delete(switch (kind) {
+      'avatar' => ApiEndpoints.providerAvatarDestroy,
+      'logo' => ApiEndpoints.providerLogoDestroy,
+      _ => ApiEndpoints.providerCoverDestroy,
+    }),
+  );
   Future<Response> changePassword(
     String current,
     String password,
@@ -506,6 +528,8 @@ class ProviderRemoteSource {
       _run(() => client.delete(ApiEndpoints.providerService(id)));
   Future<Response> toggleService(String id) =>
       _run(() => client.post(ApiEndpoints.serviceToggleActive(id)));
+  Future<Response> toggleServiceAvailable(String id) =>
+      _run(() => client.post(ApiEndpoints.serviceToggleAvailable(id)));
   Future<Response> duplicateService(String id) =>
       _run(() => client.post(ApiEndpoints.serviceDuplicate(id)));
 

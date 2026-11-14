@@ -31,7 +31,15 @@ class _SubmitComplaintScreenState
     'أخرى',
   ];
 
+  static const _priorities = [
+    ('low', 'منخفضة'),
+    ('medium', 'متوسطة'),
+    ('high', 'عالية'),
+    ('urgent', 'عاجلة'),
+  ];
+
   String? _subject;
+  String _priority = 'medium';
   final _description = TextEditingController();
   bool _submitting = false;
 
@@ -47,15 +55,20 @@ class _SubmitComplaintScreenState
     }
     setState(() => _submitting = true);
     try {
-      await ref.read(customerRepositoryProvider).storeComplaint(
+      final complaint = await ref.read(customerRepositoryProvider).storeComplaint(
             bookingId: widget.id.isEmpty ? null : widget.id,
             subject: _subject!,
             description: _description.text.trim(),
+            priority: _priority,
           );
       ref.invalidate(customerComplaintsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم إرسال البلاغ — سيتواصل معك الدعم')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تم إرسال البلاغ — سيتواصل معك الدعم')));
+      final newId = complaint['id']?.toString() ?? '';
+      if (newId.isNotEmpty) {
+        context.pushReplacement('/complaints/$newId');
+      } else {
         context.pop();
       }
     } catch (_) {
@@ -74,41 +87,64 @@ class _SubmitComplaintScreenState
     return Scaffold(
       appBar: AppBar(title: const Text('إبلاغ عن مشكلة')),
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('ما نوع المشكلة؟',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          children: [
+            const Text('ما نوع المشكلة؟',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final s in _subjects) _chip(s),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text('درجة الأولوية',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (id, label) in _priorities)
+                  _priorityChip(id, label),
+              ],
+            ),
+            if (widget.id.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              const Row(
                 children: [
-                  for (final s in _subjects) _chip(s),
+                  Icon(Icons.link, size: 16, color: SahelColors.textMuted),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text('ستُربط الشكوى بالحجز المفتوح.',
+                        style: TextStyle(
+                            fontSize: 12, color: SahelColors.textMuted)),
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _description,
-                maxLines: 6,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'صف المشكلة بالتفصيل...',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const Spacer(),
-              _submitting
-                  ? const Center(child: CircularProgressIndicator())
-                  : SahelButton(
-                      label: 'إرسال البلاغ',
-                      variant: SahelButtonVariant.danger,
-                      onPressed: canSubmit ? _submit : null,
-                    ),
             ],
-          ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _description,
+              maxLines: 6,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                hintText: 'صف المشكلة بالتفصيل...',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 24),
+            _submitting
+                ? const Center(child: CircularProgressIndicator())
+                : SahelButton(
+                    label: 'إرسال البلاغ',
+                    variant: SahelButtonVariant.danger,
+                    onPressed: canSubmit ? _submit : null,
+                  ),
+          ],
         ),
       ),
     );
@@ -132,6 +168,33 @@ class _SubmitComplaintScreenState
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
                 color: selected ? SahelColors.primary700 : null)),
+      ),
+    );
+  }
+
+  Widget _priorityChip(String id, String label) {
+    final selected = _priority == id;
+    final color = id == 'urgent'
+        ? SahelColors.danger
+        : id == 'high'
+            ? SahelColors.amber700
+            : SahelColors.primary600;
+    return InkWell(
+      onTap: () => setState(() => _priority = id),
+      borderRadius: SahelRadii.pillRadius,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.12) : SahelColors.slate100,
+          borderRadius: SahelRadii.pillRadius,
+          border: Border.all(
+              color: selected ? color : SahelColors.slate200),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: selected ? color : null)),
       ),
     );
   }

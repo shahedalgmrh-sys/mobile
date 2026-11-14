@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -15,9 +15,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
     if (t.contains('review') || t.contains('rating')) {
       return (Icons.reviews_outlined, SahelColors.amber500);
     }
-    if (t.contains('payment') ||
-        t.contains('payout') ||
-        t.contains('wallet')) {
+    if (t.contains('payment') || t.contains('payout') || t.contains('wallet')) {
       return (Icons.payments_outlined, SahelColors.primary600);
     }
     return (Icons.notifications_outlined, SahelColors.primary600);
@@ -68,8 +66,7 @@ class ProviderNotificationsScreen extends ConsumerWidget {
           ),
           error: (e, _) => Center(
             child: TextButton.icon(
-              onPressed: () =>
-                  ref.invalidate(providerNotificationsProvider),
+              onPressed: () => ref.invalidate(providerNotificationsProvider),
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
             ),
@@ -77,10 +74,13 @@ class ProviderNotificationsScreen extends ConsumerWidget {
           data: (items) {
             if (items.isEmpty) {
               return const Center(
-                child: Text('لا توجد إشعارات',
-                    style: TextStyle(
-                        color: SahelColors.muted,
-                        fontWeight: FontWeight.w700)),
+                child: Text(
+                  'لا توجد إشعارات',
+                  style: TextStyle(
+                    color: SahelColors.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               );
             }
             return RefreshIndicator(
@@ -92,62 +92,81 @@ class ProviderNotificationsScreen extends ConsumerWidget {
                 itemBuilder: (ctx, i) {
                   final n = items[i];
                   final data = asMap(n['data']);
-                  final title =
-                      str(data['title'] ?? n['title'], 'إشعار');
-                  final body =
-                      str(data['body'] ?? data['message'] ?? n['body']);
+                  final title = str(data['title'] ?? n['title'], 'إشعار');
+                  final body = str(
+                    data['body'] ?? data['message'] ?? n['body'],
+                  );
                   final (icon, color) = _icon(str(n['type']));
                   final isUnread = n['read_at'] == null;
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isUnread
-                          ? SahelColors.primary50.withValues(alpha: 0.5)
-                          : SahelColors.onPrimary,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: SahelColors.slate200),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
+                  return GestureDetector(
+                    onTap: isUnread
+                        ? () async {
+                            try {
+                              await ref
+                                  .read(providerRepositoryProvider)
+                                  .markNotificationRead(str(n['id']));
+                              ref.invalidate(providerNotificationsProvider);
+                            } catch (_) {}
+                          }
+                        : null,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: isUnread
+                            ? SahelColors.primary50.withValues(alpha: 0.5)
+                            : SahelColors.onPrimary,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: SahelColors.slate200),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
                             radius: 20,
                             backgroundColor: color.withValues(alpha: 0.12),
-                            child: Icon(icon, color: color)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                      child: Text(title,
-                                          style: const TextStyle(
-                                              fontWeight:
-                                                  FontWeight.w700))),
-                                  Text(
+                            child: Icon(icon, color: color),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        title,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
                                       _ago(str(n['created_at'])),
                                       style: const TextStyle(
-                                          fontSize: 11,
-                                          color:
-                                              SahelColors.muted)),
-                                ],
-                              ),
-                              if (body.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(body,
-                                    style: const TextStyle(
+                                        fontSize: 11,
                                         color: SahelColors.muted,
-                                        fontSize: 13,
-                                        height: 1.4)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (body.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    body,
+                                    style: const TextStyle(
+                                      color: SahelColors.muted,
+                                      fontSize: 13,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },

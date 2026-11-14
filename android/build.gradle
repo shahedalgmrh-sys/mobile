@@ -13,6 +13,19 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// flutter_local_notifications requests desugar_jdk_libs 1.2.2 for its lint
+// model. That artifact cannot be fetched in this environment (dl.google.com
+// is unreachable from Gradle's JVM), while the app module already desugars
+// with 2.1.4. Align every module on the cached, newer 2.1.4.
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force "com.android.tools:desugar_jdk_libs:2.1.4"
+            force "com.android.tools:desugar_jdk_libs_configuration:2.1.4"
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

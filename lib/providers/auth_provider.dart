@@ -31,6 +31,22 @@ class AuthState {
     this.errorMessage,
   });
 
+  /// Provider approval state comes from the API's `provider_profile`
+  /// (`is_verified`, and `verification_status` when present). Email
+  /// verification (`isVerified`) is a separate flag and must not be used as
+  /// a substitute for accreditation.
+  bool get needsProviderVerification {
+    if (role != UserRole.provider) return false;
+    final profile = user?['provider_profile'];
+    if (profile is! Map) return true;
+    final map = Map<String, dynamic>.from(profile);
+    final status = str(map['verification_status']).toLowerCase();
+    final verified = toBool(map['is_verified']) ||
+        status == 'verified' ||
+        status == 'approved';
+    return !verified;
+  }
+
   AuthState copyWith({
     bool? isAuthenticated,
     bool? isLoading,
@@ -156,6 +172,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String password,
     required UserRole role,
     String? deviceName,
+    List<String>? documentPaths,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -166,6 +183,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         password: password,
         role: role == UserRole.provider ? 'provider' : 'customer',
         deviceName: deviceName ?? 'flutter_app',
+        documentPaths: documentPaths,
       );
       await _persistAuth(result);
       _applyUser(result.user, token: result.token);

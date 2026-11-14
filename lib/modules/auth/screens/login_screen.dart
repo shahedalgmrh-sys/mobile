@@ -87,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'سجّل الدخول بحسابك للمتابعة إلى ساحل'.t(lang),
+                      'سجّل الدخول بحسابك للمتابعة إلى سابر'.t(lang),
                       style: SahelTextStyles.caption,
                     ),
                     const SizedBox(height: 28),

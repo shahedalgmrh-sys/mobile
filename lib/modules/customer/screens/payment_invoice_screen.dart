@@ -194,7 +194,7 @@ class _InvoiceView extends StatelessWidget {
         ],
 
         const Text(
-          'هذه فاتورة إلكترونية صادرة من تطبيق ساحل',
+          'هذه فاتورة إلكترونية صادرة من تطبيق سابر',
           textAlign: TextAlign.center,
           style: SahelTextStyles.caption,
         ),

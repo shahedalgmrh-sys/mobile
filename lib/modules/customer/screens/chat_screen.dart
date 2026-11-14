@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -12,10 +12,7 @@ import 'package:saber_flutter/app/theme/sahel_theme.dart';
 class ChatScreen extends ConsumerStatefulWidget {
   final String threadId;
 
-  const ChatScreen({
-    super.key,
-    required this.threadId,
-  });
+  const ChatScreen({super.key, required this.threadId});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -67,9 +64,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تعذر إرسال الرسالة')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تعذر إرسال الرسالة')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -92,18 +88,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       appBar: AppBar(
         title: conv.maybeWhen(
           data: (c) {
-            final other = asMap(
-                c['other_party'] ?? c['provider'] ?? c['customer']);
+            final participants = dataList(c['participants']);
+            Map<String, dynamic> other = const {};
+            for (final p in participants) {
+              final m = asMap(p);
+              if (str(m['id']) != myId && str(m['id']).isNotEmpty) {
+                other = m;
+                break;
+              }
+            }
+            if (other.isEmpty) {
+              other = asMap(
+                c['other_party'] ?? c['provider'] ?? c['customer'] ?? c['user'],
+              );
+            }
             final otherUser = asMap(other['user']);
-            final name = str(other['business_name'] ?? otherUser['name'],
-                'محادثة');
+            final name = str(
+              other['business_name'] ?? other['name'] ?? otherUser['name'],
+              'محادثة',
+            );
             return ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
-                  child: Text(name.isNotEmpty ? name[0] : '؟')),
-              title: Text(name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 15)),
+                child: Text(name.isNotEmpty ? name[0] : '؟'),
+              ),
+              title: Text(
+                name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
             );
           },
           orElse: () => const Text('محادثة'),
@@ -136,9 +151,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       c['data'],
                 );
                 if (messages.isEmpty) {
-                  return const Center(
-                    child: Text('ابدأ المحادثة…',
-                        style: TextStyle(color: SahelColors.muted)),
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text(
+                        _isProvider
+                            ? 'لا يعرض الخادم سجل الرسائل السابقة لحساب المزوّد حالياً — يمكنك إرسال رسالة جديدة.'
+                            : 'ابدأ المحادثة…',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: SahelColors.muted),
+                      ),
+                    ),
                   );
                 }
                 return ListView.builder(
@@ -147,9 +170,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemCount: messages.length,
                   itemBuilder: (_, i) {
                     final m = messages[i];
-                    final senderId =
-                        str(m['sender_id'] ?? asMap(m['sender'])['id']);
-                    final isMe = senderId == myId ||
+                    final senderId = str(
+                      m['sender_id'] ?? asMap(m['sender'])['id'],
+                    );
+                    final isMe =
+                        senderId == myId ||
                         toBool(m['is_mine']) ||
                         str(m['sender_type']) ==
                             (_isProvider ? 'provider' : 'customer');
@@ -167,8 +192,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
               color: SahelColors.onPrimary,
-              border:
-                  Border(top: BorderSide(color: SahelColors.slate200)),
+              border: Border(top: BorderSide(color: SahelColors.slate200)),
             ),
             child: SafeArea(
               child: Row(
@@ -179,7 +203,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       decoration: const InputDecoration(
                         hintText: 'اكتب رسالتك...',
                         contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         filled: true,
                         fillColor: SahelColors.slate50,
                         border: OutlineInputBorder(
@@ -198,12 +224,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: SahelColors.onPrimary),
+                              strokeWidth: 2,
+                              color: SahelColors.onPrimary,
+                            ),
                           )
                         : IconButton(
                             onPressed: _send,
-                            icon: const Icon(Icons.send,
-                                color: SahelColors.onPrimary, size: 20),
+                            icon: const Icon(
+                              Icons.send,
+                              color: SahelColors.onPrimary,
+                              size: 20,
+                            ),
                           ),
                   ),
                 ],
@@ -224,14 +255,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _bubble(String text, bool me, String time) {
     return Padding(
       padding: EdgeInsets.only(
-          bottom: 8, left: me ? 60 : 0, right: me ? 0 : 60),
+        bottom: 8,
+        left: me ? 60 : 0,
+        right: me ? 0 : 60,
+      ),
       child: Column(
-        crossAxisAlignment:
-            me ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: me
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: me ? SahelColors.primary600 : SahelColors.slate100,
               borderRadius: BorderRadius.only(
@@ -241,15 +275,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 bottomRight: Radius.circular(me ? 4 : 14),
               ),
             ),
-            child: Text(text,
-                style: TextStyle(
-                    color: me ? SahelColors.onPrimary : SahelColors.text,
-                    height: 1.4)),
+            child: Text(
+              text,
+              style: TextStyle(
+                color: me ? SahelColors.onPrimary : SahelColors.text,
+                height: 1.4,
+              ),
+            ),
           ),
           const SizedBox(height: 4),
-          Text(time,
-              style: const TextStyle(
-                  fontSize: 10, color: SahelColors.muted)),
+          Text(
+            time,
+            style: const TextStyle(fontSize: 10, color: SahelColors.muted),
+          ),
         ],
       ),
     );

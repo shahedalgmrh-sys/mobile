@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/repositories/provider_repository.dart';
@@ -28,6 +29,11 @@ class _ProviderServiceRequestsScreenState
 
     return Scaffold(
       appBar: AppBar(title: const Text('طلباتي (تعاون المزوّدين)')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/p/service-requests/new'),
+        icon: const Icon(Icons.add),
+        label: const Text('طلب جديد'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -184,8 +190,7 @@ class _RequestCard extends ConsumerWidget {
               if (!isOutgoing && status == 'pending') ...[
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _rejectWithReason(
-                        ref, context, str(r['id'])),
+                    onPressed: () => _reject(ref, context, str(r['id'])),
                     child: const Text('رفض',
                         style: TextStyle(color: SahelColors.danger)),
                   ),
@@ -244,35 +249,28 @@ class _RequestCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _rejectWithReason(
+  /// `POST /provider/requests/{id}/reject` stores no reason, so we do not
+  /// pretend to collect one.
+  Future<void> _reject(
       WidgetRef ref, BuildContext context, String id) async {
-    final controller = TextEditingController();
-    final reason = await showDialog<String>(
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('سبب الرفض'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          maxLength: 500,
-          decoration: const InputDecoration(
-            hintText: 'اختياري — يظهر للطرف الآخر',
-          ),
-        ),
+        title: const Text('رفض الطلب؟'),
+        content: const Text('سيُرفض طلب التعاون ولن يتمكن الطرف الآخر من متابعته.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('إلغاء')),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-              child: const Text('رفض الطلب',
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('رفض',
                   style: TextStyle(color: SahelColors.danger))),
         ],
       ),
     );
-    if (reason == null || !context.mounted) return;
-    await _act(
-        ref, context,
-        repo(ref).rejectServiceRequest(id, reason: reason),
+    if (confirmed != true || !context.mounted) return;
+    await _act(ref, context, repo(ref).rejectServiceRequest(id),
         success: 'تم رفض الطلب');
   }
 }

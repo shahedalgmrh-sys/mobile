@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
@@ -27,7 +28,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         } else if (!state.isVerified) {
           context.go('/otp');
         } else if (state.role == UserRole.provider) {
-          context.go('/p/dashboard');
+          context.go(
+            state.needsProviderVerification ? '/p/kyc' : '/p/dashboard',
+          );
         } else {
           context.go('/home');
         }
@@ -63,15 +66,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 borderRadius: BorderRadius.circular(30),
                 border: Border.all(color: SahelColors.onPrimary.withValues(alpha: 0.18)),
               ),
-              child: const Icon(
-                Icons.water_drop,
-                size: 48,
-                color: SahelColors.primary300,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Image.asset(
+                  'assets/images/saber-mark.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(height: 24),
             const Text(
-              'SAHEL',
+              'SABER',
               style: TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.w900,
@@ -81,7 +86,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              'ساحل',
+              'سابر',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -115,12 +120,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Version 1.0.0',
-              style: TextStyle(
-                fontSize: 11,
-                color: Color(0x99FFFFFF),
-              ),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final info = snapshot.data;
+                if (info == null) return const SizedBox.shrink();
+                return Text(
+                  'الإصدار ${info.version} (${info.buildNumber})',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0x99FFFFFF),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 28),
           ],

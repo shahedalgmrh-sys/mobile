@@ -21,37 +21,64 @@ class CategoryItem {
   });
 
   factory CategoryItem.fromJson(Map<String, dynamic> j) => CategoryItem(
-        id: str(j['id']),
-        slug: str(j['slug']),
-        name: str(j['name'] ?? j['title'] ?? j['title_ar']),
-        icon: strOrNull(j['icon']),
-        image: strOrNull(j['image']),
-        servicesCount: toInt(j['services_count']),
-      );
+    id: str(j['id']),
+    slug: str(j['slug']),
+    name: str(j['name'] ?? j['title'] ?? j['title_ar']),
+    icon: strOrNull(j['icon']),
+    image: strOrNull(j['image']),
+    servicesCount: toInt(j['services_count']),
+  );
 }
 
 class OfferItem {
   final String id;
+  final String slug;
   final String title;
   final String? description;
   final String? image;
   final double? discountPercent;
+  final String? discountType;
+  final double? discountValue;
+  final double? minPurchase;
+  final String? startDate;
+  final String? endDate;
+  final bool isRunning;
 
   const OfferItem({
     required this.id,
+    this.slug = '',
     required this.title,
     this.description,
     this.image,
     this.discountPercent,
+    this.discountType,
+    this.discountValue,
+    this.minPurchase,
+    this.startDate,
+    this.endDate,
+    this.isRunning = false,
   });
 
-  factory OfferItem.fromJson(Map<String, dynamic> j) => OfferItem(
-        id: str(j['id']),
-        title: str(j['title'] ?? j['title_ar'] ?? j['name']),
-        description: strOrNull(j['description'] ?? j['description_ar']),
-        image: strOrNull(j['image'] ?? j['image_url']),
-        discountPercent: toDoubleOrNull(j['discount'] ?? j['discount_percent']),
-      );
+  factory OfferItem.fromJson(Map<String, dynamic> j) {
+    final type = str(j['discount_type']).toLowerCase();
+    final value = toDoubleOrNull(j['discount_value'] ?? j['discount']);
+    return OfferItem(
+      id: str(j['id']),
+      slug: str(j['slug']),
+      title: str(j['title'] ?? j['title_ar'] ?? j['name']),
+      description: strOrNull(j['description'] ?? j['description_ar']),
+      image: strOrNull(j['image'] ?? j['image_url']),
+      discountPercent:
+          toDoubleOrNull(j['discount_percent'] ?? j['discount']) ??
+          ((type == 'percentage' || type == 'percent') ? value : null),
+      discountType: type.isEmpty ? null : type,
+      discountValue: value,
+      minPurchase: toDoubleOrNull(j['min_purchase']),
+      startDate: strOrNull(j['start_date']),
+      endDate: strOrNull(j['end_date']),
+      isRunning: toBool(j['is_running']),
+    );
+  }
 }
 
 class BlogItem {
@@ -79,12 +106,15 @@ class BlogItem {
       id: str(j['id']),
       title: str(j['title'] ?? j['title_ar']),
       slug: str(j['slug']),
-      excerpt: strOrNull(j['excerpt'] ??
-          (content.length > 140 ? content.substring(0, 140) : content)),
+      excerpt: strOrNull(
+        j['excerpt'] ??
+            (content.length > 140 ? content.substring(0, 140) : content),
+      ),
       image: strOrNull(j['image']),
       category: strOrNull(j['category']),
       date: strOrNull(
-          j['date_ar'] ?? j['formatted_published_at'] ?? j['published_at']),
+        j['date_ar'] ?? j['formatted_published_at'] ?? j['published_at'],
+      ),
     );
   }
 }
@@ -105,12 +135,12 @@ class AdBanner {
   });
 
   factory AdBanner.fromJson(Map<String, dynamic> j) => AdBanner(
-        id: str(j['id']),
-        title: str(j['title'] ?? j['name']),
-        image: strOrNull(j['image'] ?? j['banner'] ?? j['image_url']),
-        link: strOrNull(j['link'] ?? j['url']),
-        position: strOrNull(j['position']),
-      );
+    id: str(j['id']),
+    title: str(j['title'] ?? j['name']),
+    image: strOrNull(j['image'] ?? j['banner'] ?? j['image_url']),
+    link: strOrNull(j['link'] ?? j['url']),
+    position: strOrNull(j['position']),
+  );
 }
 
 class HomeFeed {
@@ -133,6 +163,31 @@ class HomeFeed {
   });
 }
 
+/// One page of a public catalog list.
+class CatalogPage<T> {
+  const CatalogPage({
+    required this.items,
+    required this.currentPage,
+    required this.hasMore,
+    required this.total,
+  });
+
+  final List<T> items;
+  final int currentPage;
+  final bool hasMore;
+  final int total;
+}
+
+String? _firstImage(dynamic raw) {
+  for (final item in asList(raw)) {
+    final value = item is Map
+        ? str(item['url'] ?? item['image'] ?? item['path'])
+        : str(item);
+    if (value.isNotEmpty) return value;
+  }
+  return null;
+}
+
 Service serviceFromJson(Map<String, dynamic> j) {
   final category = asMap(j['category']);
   return Service(
@@ -144,7 +199,12 @@ Service serviceFromJson(Map<String, dynamic> j) {
     descriptionEn: strOrNull(j['description_en'] ?? j['short_description']),
     basePrice: toDouble(j['display_price'] ?? j['price']),
     currencyCode: str(j['display_currency'] ?? j['currency'], 'yer'),
-    imageUrl: strOrNull(j['image'] ?? j['thumbnail_url'] ?? j['thumbnail']),
+    imageUrl: strOrNull(
+      j['image'] ??
+          j['thumbnail_url'] ??
+          j['thumbnail'] ??
+          _firstImage(j['images']),
+    ),
     ratingAvg: toDouble(j['average_rating'] ?? j['rating_avg']),
     reviewsCount: toInt(j['review_count'] ?? j['reviews_count']),
     discountPercent: toDoubleOrNull(j['discount_percent']),
@@ -163,16 +223,25 @@ ProviderModel providerFromJson(Map<String, dynamic> j) {
     userId: str(j['user_id'] ?? user['id']),
     businessName: str(j['business_name'] ?? user['name'] ?? j['full_name']),
     bio: strOrNull(j['business_description'] ?? j['bio']),
-    avatarUrl: strOrNull(j['business_logo'] ?? user['avatar'] ?? j['avatar_url']),
-    coverImageUrl: strOrNull(j['cover_image'] ?? j['banner']),
+    avatarUrl: strOrNull(
+      j['business_logo'] ?? user['avatar'] ?? j['avatar_url'],
+    ),
+    coverImageUrl: strOrNull(
+      j['cover_image'] ?? j['business_cover'] ?? j['banner'],
+    ),
     ratingAvg: toDouble(j['average_rating'] ?? j['rating_avg']),
     totalReviews: toInt(j['total_reviews'] ?? j['reviews_count']),
-    isVerified: toBool(j['is_verified'] ?? (j['verification_status'] == 'verified')),
+    isVerified: toBool(
+      j['is_verified'] ?? (j['verification_status'] == 'verified'),
+    ),
     isOnline: toBool(j['is_available']),
     lat: toDoubleOrNull(j['latitude']),
     lng: toDoubleOrNull(j['longitude']),
     city: strOrNull(j['city'] ?? j['city_ar']),
-    completedBookings: toInt(j['total_bookings'] ?? j['completed_bookings_count']),
+    completedBookings: toInt(
+      j['total_bookings'] ?? j['completed_bookings_count'],
+    ),
+    servicesCount: toInt(j['services_count']),
     hourlyRate: toDoubleOrNull(j['hourly_rate'] ?? j['hourly_rate_from']),
   );
 }
@@ -186,11 +255,19 @@ class CatalogRepository {
     final d = asMap(apiData(res));
     return HomeFeed(
       categories: dataList(d['categories']).map(CategoryItem.fromJson).toList(),
-      featuredServices: dataList(d['featured_services']).map(serviceFromJson).toList(),
-      popularServices: dataList(d['popular_services']).map(serviceFromJson).toList(),
+      featuredServices: dataList(d['featured_services'])
+          .map(serviceFromJson)
+          .toList(),
+      popularServices: dataList(d['popular_services'])
+          .map(serviceFromJson)
+          .toList(),
       offers: dataList(d['offers']).map(OfferItem.fromJson).toList(),
-      featuredProviders: dataList(d['featured_providers']).map(providerFromJson).toList(),
-      latestBlogs: dataList(d['latest_blogs'] ?? d['blogs']).map(BlogItem.fromJson).toList(),
+      featuredProviders: dataList(d['featured_providers'])
+          .map(providerFromJson)
+          .toList(),
+      latestBlogs: dataList(d['latest_blogs'] ?? d['blogs'])
+          .map(BlogItem.fromJson)
+          .toList(),
       stats: asMap(d['stats']),
     );
   }
@@ -233,19 +310,61 @@ class CatalogRepository {
     }
     final map = asMap(d);
     return dataList(map['queries'] ?? map['terms'] ?? map['popular'])
-        .map((e) => str(asMap(e)['term'] ?? e['term'] ?? e, ''))
+        .map((e) {
+          final item = asMap(e);
+          return str(item['query'] ?? item['term'] ?? e, '');
+        })
         .where((e) => e.isNotEmpty)
         .toList();
   }
 
-  Future<List<Service>> services({String? q, String? categoryId, String? sort, int? page}) async {
-    final res = await source.services(q: q, categoryId: categoryId, sort: sort, page: page);
+  Future<List<Service>> services({
+    String? q,
+    String? categoryId,
+    String? sort,
+    int? page,
+  }) async {
+    // The public endpoint ignores q/category/sort and paginates by `limit`;
+    // ask for a larger first page so detail deep links can still resolve.
+    final res = await source.services(
+      q: q,
+      categoryId: categoryId,
+      sort: sort,
+      page: page,
+      limit: 50,
+    );
     return dataList(apiData(res)).map(serviceFromJson).toList();
   }
 
-  Future<List<ProviderModel>> providers({String? cityId, int? page}) async {
-    final res = await source.providers(cityId: cityId, page: page);
-    return dataList(apiData(res)).map(providerFromJson).toList();
+  /// GET /providers → `{status, data: [...], meta: {current_page, last_page,
+  /// total}}`. The pagination metadata is read before [apiData] unwraps it.
+  Future<CatalogPage<ProviderModel>> providersPage({
+    String? cityId,
+    String? q,
+    String? sort,
+    int page = 1,
+    int perPage = 12,
+  }) async {
+    final res = await source.providers(
+      cityId: cityId,
+      q: q,
+      sort: sort,
+      page: page,
+      perPage: perPage,
+    );
+    final envelope = asMap(res.data);
+    final items = dataList(
+      envelope.containsKey('data') ? envelope['data'] : res.data,
+    );
+    final meta = asMap(envelope['meta']);
+    final current = toInt(meta['current_page'], page);
+    final last = toInt(meta['last_page'], current);
+    return CatalogPage(
+      items: items.map(providerFromJson).toList(),
+      currentPage: current,
+      hasMore: current < last,
+      total: toInt(meta['total'], items.length),
+    );
   }
 
   Future<ProviderModel> providerProfile(String id) async {
@@ -261,9 +380,24 @@ class CatalogRepository {
     return asMap(apiData(res));
   }
 
-  Future<List<OfferItem>> offers() async {
-    final res = await source.offers();
-    return dataList(apiData(res)).map(OfferItem.fromJson).toList();
+  /// GET /offers → `{status, data: [...]}`. The API does not expose pagination
+  /// metadata for this endpoint, so the presence of a full page is the only
+  /// signal that another page may exist.
+  Future<CatalogPage<OfferItem>> offersPage({
+    int page = 1,
+    int perPage = 12,
+  }) async {
+    final res = await source.offers(page: page, perPage: perPage);
+    final envelope = asMap(res.data);
+    final items = dataList(
+      envelope.containsKey('data') ? envelope['data'] : res.data,
+    );
+    return CatalogPage(
+      items: items.map(OfferItem.fromJson).toList(),
+      currentPage: page,
+      hasMore: items.length >= perPage,
+      total: items.length,
+    );
   }
 
   Future<List<Map<String, dynamic>>> cities() async {
@@ -287,12 +421,13 @@ class CatalogRepository {
     String? phone,
     required String subject,
     required String message,
-  }) async =>
-      apiData(await source.contact({
-        'name': name,
-        'email': email,
-        if (phone != null && phone.isNotEmpty) 'phone': phone,
-        'subject': subject,
-        'message': message,
-      }));
+  }) async => apiData(
+    await source.contact({
+      'name': name,
+      'email': email,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+      'subject': subject,
+      'message': message,
+    }),
+  );
 }

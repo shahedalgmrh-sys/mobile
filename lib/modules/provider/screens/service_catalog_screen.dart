@@ -79,26 +79,69 @@ class _ServiceCard extends ConsumerStatefulWidget {
 }
 
 class _ServiceCardState extends ConsumerState<_ServiceCard> {
-  late bool _active = toBool(widget.service['is_active'] ??
-      widget.service['is_available'],
-      true);
-  bool _busy = false;
+  // Two independent server flags:
+  //  - is_active: administrative / provider activation (catalog visibility).
+  //  - is_available: whether new bookings are accepted right now.
+  late bool _active = toBool(widget.service['is_active'], true);
+  late bool _available = toBool(widget.service['is_available'], true);
+  late bool _suspended =
+      toBool(widget.service['is_administratively_suspended'], false);
+  bool _busyActive = false;
+  bool _busyAvailable = false;
+  bool _busyAction = false;
 
-  Future<void> _toggle() async {
-    setState(() => _busy = true);
+  bool get _busy => _busyActive || _busyAvailable || _busyAction;
+
+  void _apply(Map<String, dynamic> result, {required bool fromActivation}) {
+    setState(() {
+      if (result.containsKey('is_active')) {
+        _active = toBool(result['is_active'], _active);
+      }
+      if (result.containsKey('is_available')) {
+        _available = toBool(result['is_available'], _available);
+      }
+      if (fromActivation &&
+          result.containsKey('is_administratively_suspended')) {
+        _suspended = toBool(result['is_administratively_suspended'], false);
+      }
+    });
+  }
+
+  Future<void> _toggleActive() async {
+    if (_busy || _suspended) return;
+    setState(() => _busyActive = true);
     try {
-      await ref
+      final result = await ref
           .read(providerRepositoryProvider)
           .toggleService(str(widget.service['id']));
-      setState(() => _active = !_active);
+      _apply(result, fromActivation: true);
       ref.invalidate(providerServicesProvider);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر تحديث الحالة')));
+            const SnackBar(content: Text('تعذر تحديث حالة التفعيل')));
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyActive = false);
+    }
+  }
+
+  Future<void> _toggleAvailable() async {
+    if (_busy || _suspended) return;
+    setState(() => _busyAvailable = true);
+    try {
+      final result = await ref
+          .read(providerRepositoryProvider)
+          .toggleServiceAvailable(str(widget.service['id']));
+      _apply(result, fromActivation: false);
+      ref.invalidate(providerServicesProvider);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تعذر تحديث الإتاحة للحجز')));
+      }
+    } finally {
+      if (mounted) setState(() => _busyAvailable = false);
     }
   }
 
@@ -144,21 +187,45 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
                   ],
                 ),
               ),
-              _busy
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Switch(
-                      value: _active,
-                      onChanged: (_) => _toggle(),
-                      activeTrackColor: SahelColors.primary200,
-                      activeThumbColor: SahelColors.primary600,
-                    ),
+              if (_busy)
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
             ],
           ),
-          const SizedBox(height: 12),
+          if (_suspended) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: SahelColors.dangerSoft,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'الخدمة موقوفة إدارياً — لا يمكن تغيير حالتها من التطبيق.',
+                style: TextStyle(fontSize: 11, color: SahelColors.danger),
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          _toggleRow(
+            label: 'مفعّلة',
+            hint: 'ظهور الخدمة في الكتالوج',
+            value: _active,
+            busy: _busyActive,
+            onChanged: _suspended ? null : (_) => _toggleActive(),
+          ),
+          _toggleRow(
+            label: 'متاحة للحجز',
+            hint: 'استقبال حجوزات جديدة الآن',
+            value: _available,
+            busy: _busyAvailable,
+            onChanged: _suspended ? null : (_) => _toggleAvailable(),
+          ),
+          const Divider(height: 16),
           Row(
             children: [
               const Icon(Icons.star,
@@ -196,6 +263,49 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
                       width: 0)),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _toggleRow({
+    required String label,
+    required String hint,
+    required bool value,
+    required bool busy,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    return SizedBox(
+      height: 42,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 12.5, fontWeight: FontWeight.w700)),
+                Text(hint,
+                    style: const TextStyle(
+                        fontSize: 10.5, color: SahelColors.muted)),
+              ],
+            ),
+          ),
+          if (busy)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeTrackColor: SahelColors.primary200,
+              activeThumbColor: SahelColors.primary600,
+            ),
         ],
       ),
     );
@@ -242,7 +352,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
     final messenger = ScaffoldMessenger.of(context);
     final id = str(widget.service['id']);
     if (action == 'duplicate') {
-      setState(() => _busy = true);
+      setState(() => _busyAction = true);
       try {
         await repo.duplicateService(id);
         ref.invalidate(providerServicesProvider);
@@ -255,7 +365,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
           );
         }
       } finally {
-        if (mounted) setState(() => _busy = false);
+        if (mounted) setState(() => _busyAction = false);
       }
       return;
     }
@@ -277,7 +387,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
     );
     if (confirmed != true || !context.mounted) return;
     final deleteMessenger = ScaffoldMessenger.of(context);
-    setState(() => _busy = true);
+    setState(() => _busyAction = true);
     try {
       await repo.destroyService(id);
       ref.invalidate(providerServicesProvider);
@@ -290,7 +400,7 @@ class _ServiceCardState extends ConsumerState<_ServiceCard> {
         );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) setState(() => _busyAction = false);
     }
   }
 }

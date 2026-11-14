@@ -15,6 +15,7 @@ class ProviderModel {
   final double? lng;
   final String? city;
   final int completedBookings;
+  final int servicesCount;
   final List<String> serviceIds;
   final double? hourlyRate;
 
@@ -33,6 +34,7 @@ class ProviderModel {
     this.lng,
     this.city,
     this.completedBookings = 0,
+    this.servicesCount = 0,
     this.serviceIds = const [],
     this.hourlyRate,
   });

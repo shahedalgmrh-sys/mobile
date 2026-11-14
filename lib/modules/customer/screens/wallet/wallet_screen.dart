@@ -2,6 +2,7 @@
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
@@ -32,8 +33,22 @@ class WalletScreen extends ConsumerWidget {
               child: wallet.when(
                 loading: () => const CircularProgressIndicator(
                     color: SahelColors.onPrimary, strokeWidth: 2),
-                error: (_, __) => const Text('—',
-                    style: TextStyle(color: SahelColors.onPrimary, fontSize: 32)),
+                error: (_, __) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('—',
+                        style:
+                            TextStyle(color: SahelColors.onPrimary, fontSize: 32)),
+                    TextButton.icon(
+                      onPressed: () => ref.invalidate(customerWalletProvider),
+                      style: TextButton.styleFrom(
+                          foregroundColor: SahelColors.onPrimary),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: Text('إعادة المحاولة'.t(lang),
+                          style: const TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
                 data: (w) => Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -46,7 +61,7 @@ class WalletScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      str(w['formatted_balance'] ?? w['balance'], '0'),
+                      formatMoney(w['balance']),
                       style: const TextStyle(
                           fontSize: 42,
                           fontWeight: FontWeight.w900,
@@ -54,8 +69,7 @@ class WalletScreen extends ConsumerWidget {
                           letterSpacing: -1),
                     ),
                     Text(
-                      str(w['currency'] ?? w['display_currency'],
-                          '').toUpperCase(),
+                      str(w['currency'], '').toUpperCase(),
                       style: const TextStyle(
                           fontSize: 15,
                           color: SahelColors.primary200,
@@ -76,6 +90,9 @@ class WalletScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (wallet.valueOrNull != null)
+              WalletStats(wallet: wallet.value!),
+            if (wallet.valueOrNull != null) const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
@@ -115,11 +132,20 @@ class WalletScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             txs.when(
               loading: () => const ShimmerCard(height: 160),
-              error: (e, _) => const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(
-                  child: Text('تعذر تحميل العمليات',
-                      style: TextStyle(color: SahelColors.textMuted)),
+              error: (e, _) => Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Text('تعذر تحميل العمليات',
+                        style: TextStyle(color: SahelColors.textMuted)),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () =>
+                          ref.invalidate(walletTransactionsProvider),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text('إعادة المحاولة'.t(lang)),
+                    ),
+                  ],
                 ),
               ),
               data: (items) {
@@ -141,6 +167,13 @@ class WalletScreen extends ConsumerWidget {
                   itemBuilder: (ctx, i) => _TxTile(tx: items[i]),
                 );
               },
+            ),
+            const SizedBox(height: 8),
+            const Center(
+              child: Text(
+                'يعرض API آخر 20 عملية فقط.',
+                style: TextStyle(fontSize: 11, color: SahelColors.textMuted),
+              ),
             ),
           ],
         ),
@@ -275,7 +308,7 @@ class WalletScreen extends ConsumerWidget {
       if (!context.mounted || paymentId.isEmpty) return;
       final checkoutUrl = strOrNull(payment['checkout_url']);
       _showPendingPayment(context, ref, paymentId, checkoutUrl,
-          str(payment['formatted_amount'] ?? payment['amount'], '$amount'));
+          formatMoney(payment['amount'] ?? amount));
     } catch (e) {
       if (context.mounted) _snack(context, _failureMessage(e), error: true);
     }
@@ -295,8 +328,22 @@ class WalletScreen extends ConsumerWidget {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('بانتظار إتمام الدفع'),
-        content: Text(
-            'تم إنشاء طلب شحن بقيمة $amount. أكمل الدفع عبر بوابة الدفع ثم أكّد العملية لتُضاف إلى محفظتك.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'تم إنشاء طلب شحن بقيمة $amount. أكمل الدفع عبر بوابة الدفع ثم أكّد العملية لتُضاف إلى محفظتك.'),
+            if (checkoutUrl != null) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'ملاحظة: صفحة الدفع تُفتح في المتصفح وتتطلب تسجيل الدخول إلى الموقع. بعد إتمام الدفع ارجع إلى التطبيق واضغط «تم الدفع — تأكيد».',
+                style: TextStyle(
+                    fontSize: 12, color: SahelColors.textMuted, height: 1.5),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -375,6 +422,65 @@ class WalletScreen extends ConsumerWidget {
   }
 }
 
+/// Real wallet totals from `WalletResource` (pending / credited / debited).
+class WalletStats extends StatelessWidget {
+  final Map<String, dynamic> wallet;
+  const WalletStats({super.key, required this.wallet});
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <(String, String)>[
+      if (wallet.containsKey('pending_balance'))
+        ('معلّق', formatMoney(wallet['pending_balance'])),
+      if (wallet.containsKey('total_credited'))
+        ('إجمالي الإيداعات', formatMoney(wallet['total_credited'])),
+      if (wallet.containsKey('total_debited'))
+        ('إجمالي الخصومات', formatMoney(wallet['total_debited'])),
+    ];
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: SahelColors.surface,
+        borderRadius: SahelRadii.mdRadius,
+        border: Border.all(color: SahelColors.border),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < entries.length; i++) ...[
+            if (i > 0)
+              Container(width: 1, height: 34, color: SahelColors.slate200),
+            Expanded(
+              child: Column(
+                children: [
+                  Text(
+                    entries[i].$2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: SahelColors.primary700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    entries[i].$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 11, color: SahelColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _TxTile extends StatelessWidget {
   final Map<String, dynamic> tx;
   const _TxTile({required this.tx});
@@ -392,9 +498,20 @@ class _TxTile extends StatelessWidget {
     // Type-specific icon + color per Stitch reference _5.
     final (icon, iconColor, iconBg) = _typeStyle(type, isCredit);
 
-    final amount = str(tx['formatted_amount'] ?? tx['amount']);
+    final amount = tx['formatted_amount'] != null
+        ? str(tx['formatted_amount'])
+        : formatMoney(tx['amount']);
     final title = str(tx['description'] ?? tx['title'] ?? type, 'عملية');
-    final subtitle = str(tx['created_at'] ?? tx['date']);
+    final rawDate = tx['created_at'] ?? tx['date'];
+    final formattedDate = formatDateTime(rawDate);
+    final subtitle = formattedDate.isNotEmpty ? formattedDate : str(rawDate);
+    final status = str(tx['status']).toLowerCase();
+    final statusLabel = switch (status) {
+      'pending' => 'قيد المعالجة',
+      'failed' => 'فشلت',
+      'cancelled' || 'canceled' => 'ملغاة',
+      _ => '',
+    };
 
     return Material(
       color: SahelColors.surface,
@@ -413,9 +530,21 @@ class _TxTile extends StatelessWidget {
         title: Text(title,
             style:
                 const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-        subtitle: Text(subtitle,
-            style: const TextStyle(
-                fontSize: 11, color: SahelColors.textMuted)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (subtitle.isNotEmpty)
+              Text(subtitle,
+                  style: const TextStyle(
+                      fontSize: 11, color: SahelColors.textMuted)),
+            if (statusLabel.isNotEmpty)
+              Text(statusLabel,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: SahelColors.amber700)),
+          ],
+        ),
         trailing: Text(
           '${isDebit ? '−' : '+'}$amount',
           style: TextStyle(

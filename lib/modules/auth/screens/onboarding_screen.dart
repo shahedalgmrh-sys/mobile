@@ -223,7 +223,7 @@ class _WelcomeStep extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 30),
-          const _Pill(label: 'أهلاً بك في ساحل', icon: Icons.auto_awesome),
+          const _Pill(label: 'أهلاً بك في سابر', icon: Icons.auto_awesome),
           const SizedBox(height: 18),
           const Text(
             'خدمات منزلك المثالية…',
@@ -525,7 +525,7 @@ class _RoleStep extends StatelessWidget {
           _RoleCard(
             icon: Icons.person,
             title: 'أنا عميل (أبحث عن خدمات)',
-            perks: const ['حجز فوري', 'ضمان ساحل'],
+            perks: const ['حجز فوري', 'ضمان سابر'],
             selected: selected == 'customer',
             onTap: () => onSelect('customer'),
           ),

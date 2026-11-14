@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -55,13 +55,13 @@ class _ProviderServiceFormScreenState
         _title.text = str(e['name'] ?? e['title']);
         _description.text = str(e['description'] ?? e['short_description']);
         _price.text = toDouble(e['price']).toStringAsFixed(
-              toDouble(e['price']) == toDouble(e['price']).roundToDouble()
-                  ? 0
-                  : 2,
-            );
+          toDouble(e['price']) == toDouble(e['price']).roundToDouble() ? 0 : 2,
+        );
         _duration.text = toInt(e['duration_minutes']).toString();
-        _categoryId = strOrNull(e['category_id'] ??
-            (e['category'] is Map ? e['category']['id'] : null));
+        _categoryId = strOrNull(
+          e['category_id'] ??
+              (e['category'] is Map ? e['category']['id'] : null),
+        );
         _isAvailable = toBool(e['is_available'], true);
         _isFeatured = toBool(e['is_featured'], false);
       }
@@ -69,8 +69,7 @@ class _ProviderServiceFormScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text(widget.isEdit ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'),
+        title: Text(widget.isEdit ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'),
       ),
       floatingActionButton: widget.isEdit
           ? null
@@ -92,8 +91,8 @@ class _ProviderServiceFormScreenState
             ),
           ),
           data: (cats) {
-            final validCategory = _categoryId != null &&
-                cats.any((c) => c.id == _categoryId);
+            final validCategory =
+                _categoryId != null && cats.any((c) => c.id == _categoryId);
             if (!validCategory && cats.isNotEmpty && _categoryId != null) {
               _categoryId = null;
             }
@@ -102,15 +101,10 @@ class _ProviderServiceFormScreenState
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: _categoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'التصنيف *',
-                  ),
+                  decoration: const InputDecoration(labelText: 'التصنيف *'),
                   items: [
                     for (final c in cats)
-                      DropdownMenuItem(
-                        value: c.id,
-                        child: Text(c.name),
-                      ),
+                      DropdownMenuItem(value: c.id, child: Text(c.name)),
                   ],
                   onChanged: (v) => setState(() => _categoryId = v),
                 ),
@@ -139,7 +133,8 @@ class _ProviderServiceFormScreenState
                       child: TextField(
                         controller: _price,
                         keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'السعر *',
                           suffixText: '﷼',
@@ -163,23 +158,29 @@ class _ProviderServiceFormScreenState
                 SwitchListTile(
                   value: _isAvailable,
                   onChanged: (v) => setState(() => _isAvailable = v),
-                  title: const Text('متاحة للـحجز',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  title: const Text(
+                    'متاحة للـحجز',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 SwitchListTile(
                   value: _isFeatured,
                   onChanged: (v) => setState(() => _isFeatured = v),
-                  title: const Text('مميّزة (تبدأ في قوائم العرض)',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+                  title: const Text(
+                    'مميّزة (تبدأ في قوائم العرض)',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (widget.isEdit)
                   const Padding(
                     padding: EdgeInsets.all(4),
                     child: Text(
-                      'ملاحظة: صور الحفاظات تغييره من شاشة «صور الأعمال» — تعديل الخدمة لا يرفع صوراً جديدة.',
+                      'ملاحظة: تعديل الخدمة لا يرفع صوراً جديدة — واجهة الـ API الحالية لا تدعم تحديث صور الخدمة.',
                       style: TextStyle(
-                          fontSize: 12, color: SahelColors.textMuted),
+                        fontSize: 12,
+                        color: SahelColors.textMuted,
+                      ),
                     ),
                   ),
                 const SizedBox(height: 20),
@@ -192,12 +193,14 @@ class _ProviderServiceFormScreenState
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: SahelColors.onPrimary),
+                              strokeWidth: 2,
+                              color: SahelColors.onPrimary,
+                            ),
                           )
-                        : Icon(widget.isEdit
-                            ? Icons.save_outlined
-                            : Icons.add),
-                    label: Text(widget.isEdit ? 'حفظ التعديلات' : 'إنشاء الخدمة'),
+                        : Icon(widget.isEdit ? Icons.save_outlined : Icons.add),
+                    label: Text(
+                      widget.isEdit ? 'حفظ التعديلات' : 'إنشاء الخدمة',
+                    ),
                   ),
                 ),
               ],
@@ -240,7 +243,7 @@ class _ProviderServiceFormScreenState
     final repo = ref.read(providerRepositoryProvider);
     final payload = <String, dynamic>{
       'category_id': _categoryId,
-      'title': _title.text.trim(),
+      'name': _title.text.trim(),
       'description': _description.text.trim(),
       'price': double.tryParse(_price.text.trim()) ?? 0,
       'is_available': _isAvailable,
@@ -261,14 +264,20 @@ class _ProviderServiceFormScreenState
       ref.invalidate(providerServicesProvider);
       ref.invalidate(homeFeedProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(widget.isEdit ? 'تم حفظ التعديلات ✓' : 'تم إنشاء الخدمة ✓')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isEdit ? 'تم حفظ التعديلات ✓' : 'تم إنشاء الخدمة ✓',
+            ),
+          ),
+        );
         context.pop();
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر حفظ الخدمة — حاول مجدداً')));
+          const SnackBar(content: Text('تعذر حفظ الخدمة — حاول مجدداً')),
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);

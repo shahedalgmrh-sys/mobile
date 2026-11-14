@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -31,27 +32,34 @@ class CustomerPaymentsScreen extends ConsumerWidget {
               ShimmerCard(height: 90),
             ],
           ),
-          error: (e, _) => ListView(children: [
-            const SizedBox(height: 80),
-            Center(
-              child: TextButton.icon(
-                onPressed: () => ref.invalidate(customerPaymentsProvider),
-                icon: const Icon(Icons.refresh),
-                label: const Text('إعادة المحاولة'),
+          error: (e, _) => ListView(
+            children: [
+              const SizedBox(height: 80),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () => ref.invalidate(customerPaymentsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة المحاولة'),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
           data: (items) {
             if (items.isEmpty) {
-              return ListView(children: const [
-                SizedBox(height: 120),
-                Center(
-                  child: Text('لا توجد مدفوعات بعد',
+              return ListView(
+                children: const [
+                  SizedBox(height: 120),
+                  Center(
+                    child: Text(
+                      'لا توجد مدفوعات بعد',
                       style: TextStyle(
-                          color: SahelColors.muted,
-                          fontWeight: FontWeight.w700)),
-                ),
-              ]);
+                        color: SahelColors.muted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              );
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -73,14 +81,28 @@ class _PaymentTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = str(p['status'] ?? p['payment_status'], 'pending');
-    final isPaid = status == 'completed' || status == 'paid' || status == 'success';
+    final isPaid =
+        status == 'completed' || status == 'paid' || status == 'success';
     final color = isPaid ? SahelColors.success : SahelColors.amber500;
-    final amount = str(p['formatted_amount'] ?? p['amount']);
+    final amount = p['formatted_amount'] != null
+        ? str(p['formatted_amount'])
+        : formatMoney(p['amount']);
     final method = str(p['payment_method'] ?? p['method'], '—');
     final number = str(p['payment_number'] ?? p['number'] ?? p['id']);
-    final date = str(p['date_ar'] ?? p['formatted_created_at'] ?? p['created_at']);
+    final rawDate =
+        p['date_ar'] ?? p['formatted_created_at'] ?? p['created_at'];
+    final formattedDate = formatDateTime(rawDate);
+    final date = formattedDate.isNotEmpty ? formattedDate : str(rawDate);
     final booking = asMap(p['booking']);
-    final serviceName = str(booking['service_name'] ?? booking['service']?['name']);
+    // PaymentResource does not embed the service; fall back to the booking
+    // number so the row is still meaningful instead of a bare payment id.
+    final serviceName = str(
+      booking['service_name'] ??
+          (booking['service'] is Map
+              ? asMap(booking['service'])['name']
+              : booking['service']),
+    );
+    final bookingNumber = str(p['booking_number'] ?? booking['booking_number']);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -113,9 +135,15 @@ class _PaymentTile extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      serviceName.isNotEmpty ? serviceName : 'دفعة #$number',
+                      serviceName.isNotEmpty
+                          ? serviceName
+                          : bookingNumber.isNotEmpty
+                          ? 'حجز $bookingNumber'
+                          : 'دفعة #$number',
                       style: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 14),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -123,7 +151,9 @@ class _PaymentTile extends ConsumerWidget {
                     Text(
                       '$method · $date',
                       style: const TextStyle(
-                          fontSize: 11, color: SahelColors.textMuted),
+                        fontSize: 11,
+                        color: SahelColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -134,17 +164,19 @@ class _PaymentTile extends ConsumerWidget {
                   Text(
                     amount,
                     style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                        color: isPaid
-                            ? SahelColors.success
-                            : SahelColors.text),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: isPaid ? SahelColors.success : SahelColors.text,
+                    ),
                   ),
-                  Text(status,
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: color)),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
                 ],
               ),
             ],

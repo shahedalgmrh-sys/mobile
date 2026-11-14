@@ -1,10 +1,11 @@
-﻿import 'dart:math' show atan2, cos, sin, pi, sqrt;
+import 'dart:math' show atan2, cos, sin, pi, sqrt;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/repositories/customer_repository.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
@@ -16,10 +17,7 @@ import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 
 class _DayAvailability {
-  const _DayAvailability({
-    required this.slots,
-    this.error,
-  });
+  const _DayAvailability({required this.slots, this.error});
 
   final List<Map<String, dynamic>> slots;
   final String? error;
@@ -29,7 +27,12 @@ class _DayAvailability {
 
 class BookingWizardScreen extends ConsumerStatefulWidget {
   final String? serviceId;
-  const BookingWizardScreen({super.key, this.serviceId});
+
+  /// Full service payload passed from the details screen. This avoids
+  /// depending on the public `/services` list, which only returns its first
+  /// page and ignores filters.
+  final Service? initialService;
+  const BookingWizardScreen({super.key, this.serviceId, this.initialService});
 
   @override
   ConsumerState<BookingWizardScreen> createState() =>
@@ -67,6 +70,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   bool _submitting = false;
 
   Service? get _service {
+    if (widget.initialService != null) return widget.initialService;
     final list = ref.read(
       servicesProvider((q: null, categoryId: null, sort: null))
           .select((v) => v.valueOrNull),
@@ -93,6 +97,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     }
     return service.basePrice;
   }
+
   double _appliedDiscount = 0;
   double get _discount => _appliedCoupon == null ? 0 : _appliedDiscount;
 
@@ -134,8 +139,18 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   /// Friendly label for the selected day («الأحد 12 أكتوبر 2026»).
   String _selectedDayLabel() {
     const months = [
-      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
     ];
     const days = ['اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت', 'أحد'];
     final d = _selectedDay;
@@ -180,15 +195,16 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     final monthStart = DateTime(_calMonth.year, _calMonth.month, 1);
     final monthEnd = DateTime(_calMonth.year, _calMonth.month + 1, 0);
     final firstDay = monthStart.isBefore(today) ? today : monthStart;
-    final lastDay =
-        monthEnd.isAfter(today.add(const Duration(days: 90)))
-            ? today.add(const Duration(days: 90))
-            : monthEnd;
+    final lastDay = monthEnd.isAfter(today.add(const Duration(days: 90)))
+        ? today.add(const Duration(days: 90))
+        : monthEnd;
 
     final days = <DateTime>[];
-    for (var d = firstDay;
-        !d.isAfter(lastDay);
-        d = d.add(const Duration(days: 1))) {
+    for (
+      var d = firstDay;
+      !d.isAfter(lastDay);
+      d = d.add(const Duration(days: 1))
+    ) {
       days.add(d);
     }
 
@@ -196,17 +212,14 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
     const chunkSize = 7;
     for (var i = 0; i < days.length; i += chunkSize) {
       final chunk = days.skip(i).take(chunkSize).toList();
-      final results = await Future.wait(
-        [for (final d in chunk) _fetchDay(repo, id, d)],
-      );
+      final results = await Future.wait([
+        for (final d in chunk) _fetchDay(repo, id, d),
+      ]);
       for (final entry in results) {
         loaded[entry.key] = entry.value;
       }
       if (mounted) {
-        setState(() => _availability = {
-              ..._availability,
-              ...loaded,
-            });
+        setState(() => _availability = {..._availability, ...loaded});
       }
     }
 
@@ -317,11 +330,22 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
 
   static String _monthLabel(DateTime d) {
     const months = [
-      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
     ];
     return '${months[d.month - 1]} ${d.year}';
   }
+
   void _prev() {
     if (_step > 0) {
       _pageController.previousPage(
@@ -723,7 +747,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: SahelRadii.pillRadius,
                   side: BorderSide(
-                    color: selected ? SahelColors.primary600 : SahelColors.border,
+                    color: selected
+                        ? SahelColors.primary600
+                        : SahelColors.border,
                   ),
                 ),
                 onSelected: (_) => setState(() => _selectedFrequency = i),
@@ -839,7 +865,8 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
               );
             }
-            _selectedAddressId ??= items
+            _selectedAddressId ??=
+                items
                     .where((a) => toBool(a['is_default'] ?? a['is_primary']))
                     .map((a) => str(a['id']))
                     .firstOrNull ??
@@ -868,7 +895,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
               color: SahelColors.primary600,
               style: BorderStyle.solid,
             ),
-            shape: const RoundedRectangleBorder(borderRadius: SahelRadii.pillRadius),
+            shape: const RoundedRectangleBorder(
+              borderRadius: SahelRadii.pillRadius,
+            ),
           ),
           icon: const Icon(
             Icons.add_location_alt_outlined,
@@ -920,7 +949,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                 ),
                 child: Icon(
                   Icons.location_on,
-                  color: selected ? SahelColors.onPrimary : SahelColors.primary600,
+                  color: selected
+                      ? SahelColors.onPrimary
+                      : SahelColors.primary600,
                   size: 22,
                 ),
               ),
@@ -1007,47 +1038,73 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.calendar_month_outlined,
-                      size: 18, color: SahelColors.primary600),
+                  const Icon(
+                    Icons.calendar_month_outlined,
+                    size: 18,
+                    color: SahelColors.primary600,
+                  ),
                   const SizedBox(width: 6),
-                  const Text('التقويم بالميلادي',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 14)),
+                  const Text(
+                    'التقويم بالميلادي',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
                   const Spacer(),
                   InkWell(
-                    onTap: _calMonth
-                            .isAfter(DateTime(DateTime.now().year,
-                                DateTime.now().month))
+                    onTap:
+                        _calMonth.isAfter(
+                          DateTime(DateTime.now().year, DateTime.now().month),
+                        )
                         ? () => _pageMonth(-1)
                         : null,
                     borderRadius: SahelRadii.smRadius,
-                    child: const Icon(Icons.chevron_right,
-                        size: 20, color: SahelColors.textMuted),
+                    child: const Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: SahelColors.textMuted,
+                    ),
                   ),
                   const SizedBox(width: 4),
-                  Text(_monthLabel(_calMonth),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w900, fontSize: 15)),
+                  Text(
+                    _monthLabel(_calMonth),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(width: 4),
                   InkWell(
                     onTap: () => _pageMonth(1),
                     borderRadius: SahelRadii.smRadius,
-                    child: const Icon(Icons.chevron_left,
-                        size: 20, color: SahelColors.textMuted),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      size: 20,
+                      color: SahelColors.textMuted,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
               Row(
                 children: [
-                  for (final name in const ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'])
+                  for (final name in const [
+                    'أحد',
+                    'اثنين',
+                    'ثلاثاء',
+                    'أربعاء',
+                    'خميس',
+                    'جمعة',
+                    'سبت',
+                  ])
                     Expanded(
                       child: Center(
-                        child: Text(name,
-                            style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: SahelColors.textMuted)),
+                        child: Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: SahelColors.textMuted,
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -1155,8 +1212,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                       color: SahelColors.primary600,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.access_time,
-                        color: SahelColors.onPrimary, size: 30),
+                    child: const Icon(
+                      Icons.access_time,
+                      color: SahelColors.onPrimary,
+                      size: 30,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -1168,19 +1228,22 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                               ? 'اضغط لاختيار الوقت'
                               : 'الوقت المقدم: ${_selectedSlotLabel!}',
                           style: const TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w800),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         const Text(
                           'ساعة تفاعلية بتصميم التطبيق · فترات كل 30 دقيقة',
                           style: TextStyle(
-                              fontSize: 11.5, color: SahelColors.textMuted),
+                            fontSize: 11.5,
+                            color: SahelColors.textMuted,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_left,
-                      color: SahelColors.primary600),
+                  const Icon(Icons.chevron_left, color: SahelColors.primary600),
                 ],
               ),
             ),
@@ -1192,15 +1255,21 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             children: [
               for (final slot in _slots)
                 ChoiceChip(
-                  label: Text(str(slot['label_ar'] ?? slot['label'], str(slot['time'])),
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  label: Text(
+                    str(slot['label_ar'] ?? slot['label'], str(slot['time'])),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
                   labelPadding: const EdgeInsets.symmetric(horizontal: 10),
                   selected: _selectedSlotTime == str(slot['time']),
                   selectedColor: SahelColors.primary600,
                   labelStyle: TextStyle(
-                      color: _selectedSlotTime == str(slot['time'])
-                          ? SahelColors.onPrimary
-                          : SahelColors.text),
+                    color: _selectedSlotTime == str(slot['time'])
+                        ? SahelColors.onPrimary
+                        : SahelColors.text,
+                  ),
                   onSelected: (_) =>
                       setState(() => _selectedSlotTime = str(slot['time'])),
                 ),
@@ -1222,66 +1291,81 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (_) => _ClockTimeSheet(
-          slots: _slots,
-          initialTime: _slots.isNotEmpty
-              ? str(_slots.first['time'], initial)
-              : initial),
+        slots: _slots,
+        initialTime: _slots.isNotEmpty
+            ? str(_slots.first['time'], initial)
+            : initial,
+      ),
     );
     if (picked == null || !mounted) return;
     setState(() => _selectedSlotTime = picked);
   }
+
   Widget _buildStep4() {
     final wallet = ref.watch(customerWalletProvider).valueOrNull;
     final walletBalanceTxt = wallet == null
         ? 'الرصيد المتاح'
-        : str(wallet['formatted_balance'] ?? wallet['balance']);
+        : formatMoney(wallet['balance']);
 
     const payMethod = TextStyle(
-        fontSize: 14, fontWeight: FontWeight.w700, color: SahelColors.text);
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: SahelColors.text,
+    );
     const muted = TextStyle(fontSize: 12, color: SahelColors.textMuted);
 
     Widget invoiceRow(String t, String v, {Color? color, bool strike = false}) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(children: [
-          Text(t, style: muted),
-          const Spacer(),
-          Text(v,
+        child: Row(
+          children: [
+            Text(t, style: muted),
+            const Spacer(),
+            Text(
+              v,
               style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: color,
-                  decoration: strike ? TextDecoration.lineThrough : null)),
-        ]),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: color,
+                decoration: strike ? TextDecoration.lineThrough : null,
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        const Text('طريقة الدفع',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const Text(
+          'طريقة الدفع',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         SegmentedButton<String>(
           segments: const [
             ButtonSegment(
               value: 'cash',
               icon: Icon(Icons.payments_outlined, size: 18),
-              label: Text('كاش',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+              label: Text(
+                'كاش',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+              ),
             ),
             ButtonSegment(
               value: 'pay',
               icon: Icon(Icons.credit_score_outlined, size: 18),
-              label: Text('دفع',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800)),
+              label: Text(
+                'دفع',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+              ),
             ),
           ],
           selected: {_selectedPaymentCode},
           onSelectionChanged: (s) {
             setState(() {
-              _selectedPayment =
-                  s.first == 'cash' ? _cashIndex : _walletIndex;
+              _selectedPayment = s.first == 'cash' ? _cashIndex : _walletIndex;
             });
           },
         ),
@@ -1313,8 +1397,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             borderRadius: SahelRadii.lgRadius,
             child: InkWell(
               borderRadius: SahelRadii.lgRadius,
-              onTap: () => setState(() =>
-                  _selectedPayment = _walletIndex),
+              onTap: () => setState(() => _selectedPayment = _walletIndex),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1326,43 +1409,56 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: SahelColors.onPrimary.withValues(alpha: 0.18),
+                            color: SahelColors.onPrimary.withValues(
+                              alpha: 0.18,
+                            ),
                             borderRadius: SahelRadii.smRadius,
                           ),
-                          child: const Icon(Icons.account_balance_wallet,
-                              color: SahelColors.onPrimary),
+                          child: const Icon(
+                            Icons.account_balance_wallet,
+                            color: SahelColors.onPrimary,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('محفظة المنصة',
-                                style: payMethod.copyWith(
-                                    color: SahelColors.onPrimary)),
+                            Text(
+                              'محفظة المنصة',
+                              style: payMethod.copyWith(
+                                color: SahelColors.onPrimary,
+                              ),
+                            ),
                             const SizedBox(height: 2),
-                            Text('تُخصم فوراً بعد الدفع',
-                                style: muted.copyWith(
-                                    color: SahelColors.onPrimary70, fontSize: 11)),
+                            Text(
+                              'تُخصم فوراً بعد الدفع',
+                              style: muted.copyWith(
+                                color: SahelColors.onPrimary70,
+                                fontSize: 11,
+                              ),
+                            ),
                           ],
                         ),
                         const Spacer(),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(walletBalanceTxt,
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    color: SahelColors.onPrimary)),
                             Text(
-                                str(wallet?['currency'] ??
-                                        wallet?['display_currency'], '')
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color:
-                                        SahelColors.primary200)),
+                              walletBalanceTxt,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: SahelColors.onPrimary,
+                              ),
+                            ),
+                            Text(
+                              str(wallet?['currency'], '').toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: SahelColors.primary200,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -1379,23 +1475,33 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             if (code != 'wallet')
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: SahelColors.surface2,
                   borderRadius: SahelRadii.mdRadius,
                   border: Border.all(
-                      color: SahelColors.border.withValues(alpha: 0.6)),
+                    color: SahelColors.border.withValues(alpha: 0.6),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.credit_card_off_outlined,
-                        size: 20, color: SahelColors.textSoft),
+                    const Icon(
+                      Icons.credit_card_off_outlined,
+                      size: 20,
+                      color: SahelColors.textSoft,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(child: Text(l, style: payMethod)),
-                    Text('غير مفعّلة حالياً',
-                        style: muted.copyWith(
-                            fontSize: 10, color: SahelColors.textSoft)),
+                    Text(
+                      'غير مفعّلة حالياً',
+                      style: muted.copyWith(
+                        fontSize: 10,
+                        color: SahelColors.textSoft,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1411,23 +1517,35 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('ملخص الفاتورة',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              const Text(
+                'ملخص الفاتورة',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 12),
-              invoiceRow('القيمة الأساسية',
-                  '${_subtotal.toStringAsFixed(0)} $_currency'),
+              invoiceRow(
+                'القيمة الأساسية',
+                '${_subtotal.toStringAsFixed(0)} $_currency',
+              ),
               if (_discount > 0)
-                invoiceRow('خصم الكوبون',
-                    '-${_discount.toStringAsFixed(0)} $_currency',
-                    color: SahelColors.success),
-              invoiceRow('رسوم المنصة',
-                  '${_platformFee.toStringAsFixed(0)} $_currency'),
-              invoiceRow('الضريبة 15%',
-                  '${_tax.toStringAsFixed(0)} $_currency'),
+                invoiceRow(
+                  'خصم الكوبون',
+                  '-${_discount.toStringAsFixed(0)} $_currency',
+                  color: SahelColors.success,
+                ),
+              invoiceRow(
+                'رسوم المنصة',
+                '${_platformFee.toStringAsFixed(0)} $_currency',
+              ),
+              invoiceRow(
+                'الضريبة 15%',
+                '${_tax.toStringAsFixed(0)} $_currency',
+              ),
               const Divider(height: 18),
-              invoiceRow('الإجمالي النهائي',
-                  '${_total.toStringAsFixed(0)} $_currency',
-                  color: SahelColors.primary700),
+              invoiceRow(
+                'الإجمالي النهائي',
+                '${_total.toStringAsFixed(0)} $_currency',
+                color: SahelColors.primary700,
+              ),
             ],
           ),
         ),
@@ -1440,8 +1558,11 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           ),
           child: const Row(
             children: [
-              Icon(Icons.verified_user_outlined,
-                  size: 18, color: SahelColors.primary700),
+              Icon(
+                Icons.verified_user_outlined,
+                size: 18,
+                color: SahelColors.primary700,
+              ),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1486,21 +1607,20 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
     var h = int.tryParse(parts.isNotEmpty ? parts[0] : '') ?? 9;
     var m = int.tryParse(parts.length > 1 ? parts[1] : '') ?? 0;
     if (!_minutes.contains(m)) {
-      m = _minutes.reduce((a, b) =>
-          (a - m).abs() <= (b - m).abs() ? a : b);
+      m = _minutes.reduce((a, b) => (a - m).abs() <= (b - m).abs() ? a : b);
     }
     _hour12 = h % 12 == 0 ? 12 : h % 12;
     _am = h < 12;
     _minute = m;
   }
 
-  int get _hour24 => _am ? (_hour12 == 12 ? 0 : _hour12) : (_hour12 == 12 ? 12 : _hour12 + 12);
+  int get _hour24 =>
+      _am ? (_hour12 == 12 ? 0 : _hour12) : (_hour12 == 12 ? 12 : _hour12 + 12);
 
   String get _serverTime =>
       '${_hour24.toString().padLeft(2, '0')}:${_minute.toString().padLeft(2, '0')}';
 
-  bool get _slotValid =>
-      widget.slots.any((s) => str(s['time']) == _serverTime);
+  bool get _slotValid => widget.slots.any((s) => str(s['time']) == _serverTime);
 
   void _setFromTap(Offset center, Size size, Offset tap) {
     final dx = tap.dx - center.dx;
@@ -1514,7 +1634,9 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1522,17 +1644,23 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
             Row(
               children: [
                 const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: Icon(Icons.access_time,
-                        size: 20, color: SahelColors.primary600)),
+                  padding: EdgeInsets.all(14),
+                  child: Icon(
+                    Icons.access_time,
+                    size: 20,
+                    color: SahelColors.primary600,
+                  ),
+                ),
                 const Expanded(
-                    child: Text('اختيار وقت الحجز',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800))),
+                  child: Text(
+                    'اختيار وقت الحجز',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  ),
+                ),
                 IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close,
-                        color: SahelColors.textMuted)),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: SahelColors.textMuted),
+                ),
               ],
             ),
             SizedBox(
@@ -1541,10 +1669,12 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTapUp: (d) => _setFromTap(
-                    const Offset(131, 131), const Size(262, 262), d.localPosition),
+                  const Offset(131, 131),
+                  const Size(262, 262),
+                  d.localPosition,
+                ),
                 child: CustomPaint(
-                  painter: _ClockDialPainter(
-                      hour12: _hour12, minute: _minute),
+                  painter: _ClockDialPainter(hour12: _hour12, minute: _minute),
                 ),
               ),
             ),
@@ -1564,12 +1694,15 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
                 for (final m in _minutes)
                   FilterChip(
                     selected: _minute == m,
-                    label: Text(m.toString().padLeft(2, '0'),
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: _minute == m
-                                ? SahelColors.onPrimary
-                                : SahelColors.text)),
+                    label: Text(
+                      m.toString().padLeft(2, '0'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: _minute == m
+                            ? SahelColors.onPrimary
+                            : SahelColors.text,
+                      ),
+                    ),
                     selectedColor: SahelColors.primary600,
                     checkmarkColor: SahelColors.onPrimary,
                     onSelected: (_) => setState(() => _minute = m),
@@ -1589,13 +1722,12 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
               child: Row(
                 children: [
                   Icon(
-                      _slotValid
-                          ? Icons.check_circle
-                          : Icons.error_outline,
-                      size: 18,
-                      color: _slotValid
-                          ? SahelColors.primary700
-                          : SahelColors.danger),
+                    _slotValid ? Icons.check_circle : Icons.error_outline,
+                    size: 18,
+                    color: _slotValid
+                        ? SahelColors.primary700
+                        : SahelColors.danger,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1603,11 +1735,12 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
                           ? 'الوقت المقدم ${_serverLabel()} — متاح ✓'
                           : 'الوقت المقدم ${_serverLabel()} — خارج الخدمة، اختر وقتاً آخر',
                       style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: _slotValid
-                              ? SahelColors.primary700
-                              : SahelColors.danger),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: _slotValid
+                            ? SahelColors.primary700
+                            : SahelColors.danger,
+                      ),
                     ),
                   ),
                 ],
@@ -1620,8 +1753,9 @@ class _ClockTimeSheetState extends State<_ClockTimeSheet> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('إلغاء')),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('إلغاء'),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1662,58 +1796,67 @@ class _ClockDialPainter extends CustomPainter {
     final radius = size.width / 2 - 10;
 
     canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..color = SahelColors.onPrimary
-          ..style = PaintingStyle.fill);
+      center,
+      radius,
+      Paint()
+        ..color = SahelColors.onPrimary
+        ..style = PaintingStyle.fill,
+    );
     canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..color = SahelColors.border
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2);
+      center,
+      radius,
+      Paint()
+        ..color = SahelColors.border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
     canvas.drawCircle(center, 5, Paint()..color = SahelColors.primary700);
 
     final tp = TextPainter(textDirection: TextDirection.ltr);
     for (var i = 1; i <= 12; i++) {
       final ang = (i * 30 - 90) * pi / 180;
       final p = Offset(
-          center.dx + (radius - 20) * cos(ang),
-          center.dy + (radius - 20) * sin(ang));
+        center.dx + (radius - 20) * cos(ang),
+        center.dy + (radius - 20) * sin(ang),
+      );
       tp.text = TextSpan(
-          text: '$i',
-          style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: i == hour12 ? FontWeight.w900 : FontWeight.w600,
-              color: i == hour12
-                  ? SahelColors.primary700
-                  : SahelColors.textMuted));
+        text: '$i',
+        style: TextStyle(
+          fontSize: 13.5,
+          fontWeight: i == hour12 ? FontWeight.w900 : FontWeight.w600,
+          color: i == hour12 ? SahelColors.primary700 : SahelColors.textMuted,
+        ),
+      );
       tp.layout();
       tp.paint(canvas, p - Offset(tp.width / 2, tp.height / 2));
     }
 
     final hourAngle = (hour12 * 30 + minute / 2 - 90) * pi / 180;
     canvas.drawLine(
-        center,
-        center +
-            Offset((radius - 38) * cos(hourAngle),
-                (radius - 38) * sin(hourAngle)),
-        Paint()
-          ..color = SahelColors.primary700
-          ..strokeWidth = 4
-          ..strokeCap = StrokeCap.round);
+      center,
+      center +
+          Offset(
+            (radius - 38) * cos(hourAngle),
+            (radius - 38) * sin(hourAngle),
+          ),
+      Paint()
+        ..color = SahelColors.primary700
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
     final minuteAngle = (minute * 6 - 90) * pi / 180;
     canvas.drawLine(
-        center,
-        center +
-            Offset((radius - 16) * cos(minuteAngle),
-                (radius - 16) * sin(minuteAngle)),
-        Paint()
-          ..color = SahelColors.amber500
-          ..strokeWidth = 2.5
-          ..strokeCap = StrokeCap.round);
+      center,
+      center +
+          Offset(
+            (radius - 16) * cos(minuteAngle),
+            (radius - 16) * sin(minuteAngle),
+          ),
+      Paint()
+        ..color = SahelColors.amber500
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override
@@ -1769,26 +1912,24 @@ class _MonthCalendarGrid extends StatelessWidget {
           final bg = selected
               ? SahelColors.primary600
               : isPast
-                  ? SahelColors.surface3
-                  : (!known || loading)
-                      ? SahelColors.surface2
-                      : (isAvailable
-                          ? SahelColors.primary50
-                          : SahelColors.surface3);
+              ? SahelColors.surface3
+              : (!known || loading)
+              ? SahelColors.surface2
+              : (isAvailable ? SahelColors.primary50 : SahelColors.surface3);
           final fg = selected
               ? SahelColors.onPrimary
               : isPast
-                  ? SahelColors.textSoft
-                  : (!known)
-                      ? SahelColors.textSoft
-                      : (isAvailable
-                          ? SahelColors.primary700
-                          : SahelColors.danger.withValues(alpha: 0.7));
+              ? SahelColors.textSoft
+              : (!known)
+              ? SahelColors.textSoft
+              : (isAvailable
+                    ? SahelColors.primary700
+                    : SahelColors.danger.withValues(alpha: 0.7));
           final bar = selected
               ? SahelColors.onPrimary
               : (!known)
-                  ? SahelColors.border
-                  : (isAvailable ? SahelColors.success : SahelColors.danger);
+              ? SahelColors.border
+              : (isAvailable ? SahelColors.success : SahelColors.danger);
 
           return Expanded(
             child: Padding(
@@ -1812,11 +1953,14 @@ class _MonthCalendarGrid extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('${d.day}',
-                            style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w900,
-                                color: fg)),
+                        Text(
+                          '${d.day}',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w900,
+                            color: fg,
+                          ),
+                        ),
                         const SizedBox(height: 5),
                         Container(
                           width: 16,
@@ -1839,20 +1983,23 @@ class _MonthCalendarGrid extends StatelessWidget {
     final rows = <Widget>[];
     for (var i = 0; i < cells.length; i += 7) {
       final end = (i + 7) <= cells.length ? i + 7 : cells.length;
-      rows.add(Row(children: [
-        for (var j = i; j < end; j++) cells[j],
-        for (var j = end; j < i + 7; j++) const Expanded(child: SizedBox(height: 1)),
-      ]));
+      rows.add(
+        Row(
+          children: [
+            for (var j = i; j < end; j++) cells[j],
+            for (var j = end; j < i + 7; j++)
+              const Expanded(child: SizedBox(height: 1)),
+          ],
+        ),
+      );
     }
 
     return Column(children: rows);
   }
 }
+
 class _AvailabilityLegend extends StatelessWidget {
-  const _AvailabilityLegend({
-    required this.color,
-    required this.label,
-  });
+  const _AvailabilityLegend({required this.color, required this.label});
 
   final Color color;
   final String label;

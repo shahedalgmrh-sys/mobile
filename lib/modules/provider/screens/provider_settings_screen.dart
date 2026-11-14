@@ -1,18 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/providers/settings_provider.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
-
-final providerCityAreasProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, String>(
-  (ref, cityId) => ref.watch(catalogRepositoryProvider).cityAreas(cityId),
-);
 
 class ProviderSettingsScreen extends ConsumerWidget {
   const ProviderSettingsScreen({super.key});
@@ -20,14 +17,19 @@ class ProviderSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authNotifierProvider);
-    final profile = ref.watch(providerProfileProvider).valueOrNull;
+    final profile = providerProfileFields(
+      ref.watch(providerProfileProvider).valueOrNull,
+    );
     final user = auth.user ?? const <String, dynamic>{};
     final businessName = str(
-        profile?['business_name'] ?? user['name'], 'مزود ساحل');
+      profile['business_name'] ?? user['name'],
+      'مزود سابر',
+    );
     final contact = str(user['phone'] ?? user['email']);
     final isVerified = toBool(
-        profile?['is_verified'] ??
-            (str(profile?['verification_status']) == 'verified'));
+      profile['is_verified'] ??
+          (str(profile['verification_status']) == 'verified'),
+    );
     final language = ref.watch(appSettingsProvider).language;
 
     return Scaffold(
@@ -41,65 +43,100 @@ class ProviderSettingsScreen extends ConsumerWidget {
                 gradient: SahelColors.primaryGradient,
                 borderRadius: BorderRadius.all(Radius.circular(16)),
               ),
-              accountName: Text(businessName,
-                  style:
-                      const TextStyle(fontWeight: FontWeight.w700)),
-              accountEmail: Text(
-                  '$contact${isVerified ? ' · موثق' : ''}'),
+              accountName: Text(
+                businessName,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              accountEmail: Text('$contact${isVerified ? ' · موثق' : ''}'),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: SahelColors.onPrimary,
                 child: Text(
-                    businessName.isNotEmpty ? businessName[0] : 'س',
-                    style: const TextStyle(
-                        color: SahelColors.primary700,
-                        fontWeight: FontWeight.w800)),
+                  businessName.isNotEmpty ? businessName[0] : 'س',
+                  style: const TextStyle(
+                    color: SahelColors.primary700,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
             _g('الملف التجاري', [
-              _t(Icons.badge_outlined, 'المعلومات الأساسية',
-                  () => context.push('/p/settings/basic')),
-              _t(Icons.rate_review_outlined, 'مراجعاتي والردود',
-                  () => context.push('/p/reviews')),
-              _t(Icons.verified_user_outlined, 'التحقق (KYC)',
-                  () => context.push('/p/kyc')),
-              _t(Icons.photo_library_outlined, 'صور الأعمال',
-                  () => context.push('/p/settings/portfolio')),
-              _t(Icons.add_a_photo_outlined, 'صور النشاط (شعار/غلاف)',
-                  () => _manageImages(context, ref)),
-              _t(Icons.category_outlined, 'تصنيفات الخدمات',
-                  () => context.push('/p/services')),
+              _t(
+                Icons.badge_outlined,
+                'المعلومات الأساسية',
+                () => context.push('/p/settings/basic'),
+              ),
+              _t(
+                Icons.rate_review_outlined,
+                'مراجعاتي والردود',
+                () => context.push('/p/reviews'),
+              ),
+              _t(
+                Icons.verified_user_outlined,
+                'التحقق (KYC)',
+                () => context.push('/p/kyc'),
+              ),
+              _t(
+                Icons.photo_library_outlined,
+                'صور الأعمال',
+                () => context.push('/p/settings/portfolio'),
+              ),
+              _t(
+                Icons.add_a_photo_outlined,
+                'صور النشاط (شعار/غلاف)',
+                () => _manageImages(context, ref),
+              ),
+              _t(
+                Icons.category_outlined,
+                'خدماتي (الكتالوج)',
+                () => context.push('/p/services'),
+              ),
             ]),
             _g('العمليات', [
-              _t(Icons.event_available_outlined, 'ساعات العمل',
-                  () => context.push('/p/calendar')),
-              _t(Icons.swap_horiz_outlined, 'طلباتي (تعاون المزوّدين)',
-                  () => context.push('/p/service-requests')),
-              _t(Icons.notifications_active_outlined,
-                  'إشعارات الطلبات',
-                  () => context.push('/p/notifications')),
-              _t(Icons.location_on_outlined, 'مناطق الخدمة',
-                  () => context.push('/p/settings/areas')),
-              _t(Icons.account_balance_wallet_outlined, 'السحوبات',
-                  () => context.push('/p/withdraw')),
+              _t(
+                Icons.event_available_outlined,
+                'ساعات العمل الأسبوعية',
+                () => context.push('/p/working-hours'),
+              ),
+              _t(
+                Icons.swap_horiz_outlined,
+                'طلباتي (تعاون المزوّدين)',
+                () => context.push('/p/service-requests'),
+              ),
+              _t(
+                Icons.notifications_active_outlined,
+                'إشعارات الطلبات',
+                () => context.push('/p/notifications'),
+              ),
+              _t(
+                Icons.location_on_outlined,
+                'مناطق الخدمة',
+                () => context.push('/p/settings/areas'),
+              ),
+              _t(
+                Icons.account_balance_wallet_outlined,
+                'السحوبات',
+                () => context.push('/p/withdraw'),
+              ),
             ]),
             _g('التطبيق', [
               _t(
                 Icons.translate_outlined,
                 'اللغة',
-                () => context.push('/settings/language'),
+                () => context.push('/p/settings/language'),
                 subtitle: language == 'en' ? 'English' : 'العربية',
               ),
             ]),
             _g('الأمان', [
-              _t(Icons.lock_outline, 'تغيير كلمة المرور',
-                  () => _changePassword(context, ref)),
+              _t(
+                Icons.lock_outline,
+                'تغيير كلمة المرور',
+                () => _changePassword(context, ref),
+              ),
             ]),
             _g('الحساب', [
               _t(Icons.logout_outlined, 'تسجيل الخروج', () async {
-                await ref
-                    .read(authNotifierProvider.notifier)
-                    .logout();
+                await ref.read(authNotifierProvider.notifier).logout();
               }),
             ]),
           ],
@@ -109,8 +146,7 @@ class ProviderSettingsScreen extends ConsumerWidget {
   }
 
   /// Mirrors the customer settings flow against `/provider/profile/password`.
-  Future<void> _changePassword(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _changePassword(BuildContext context, WidgetRef ref) async {
     final current = TextEditingController();
     final next = TextEditingController();
     final confirm = TextEditingController();
@@ -122,40 +158,48 @@ class ProviderSettingsScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-                controller: current,
-                obscureText: true,
-                decoration: const InputDecoration(
-                    labelText: 'كلمة المرور الحالية')),
+              controller: current,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'كلمة المرور الحالية',
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(
-                controller: next,
-                obscureText: true,
-                decoration: const InputDecoration(
-                    labelText: 'كلمة المرور الجديدة')),
+              controller: next,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'كلمة المرور الجديدة',
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(
-                controller: confirm,
-                obscureText: true,
-                decoration: const InputDecoration(
-                    labelText: 'تأكيد كلمة المرور')),
+              controller: confirm,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'تأكيد كلمة المرور'),
+            ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('إلغاء')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('حفظ')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حفظ'),
+          ),
         ],
       ),
     );
     if (ok != true) return;
     if (next.text != confirm.text || next.text.length < 8) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content:
-                Text('كلمة المرور يجب أن تكون 8 أحرف على الأقل ومتطابقة')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('كلمة المرور يجب أن تكون 8 أحرف على الأقل ومتطابقة'),
+          ),
+        );
       }
       return;
     }
@@ -164,13 +208,17 @@ class ProviderSettingsScreen extends ConsumerWidget {
           .read(providerRepositoryProvider)
           .changePassword(current.text, next.text, confirm.text);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم تغيير كلمة المرور بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح')),
+        );
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تعذر تغيير كلمة المرور — تحقق من الحالية')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تعذر تغيير كلمة المرور — تحقق من الحالية'),
+          ),
+        );
       }
     }
   }
@@ -182,7 +230,12 @@ class ProviderSettingsScreen extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
         ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(m), backgroundColor: error ? SahelColors.danger : null));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(m),
+            backgroundColor: error ? SahelColors.danger : null,
+          ),
+        );
     }
 
     await showModalBottomSheet<void>(
@@ -196,14 +249,18 @@ class ProviderSettingsScreen extends ConsumerWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text('صور النشاط',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              child: Text(
+                'صور النشاط',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.badge_outlined),
               title: const Text('تغيير شعار النشاط'),
-              subtitle: const Text('JPG أو PNG حتى 4MB',
-                  style: TextStyle(fontSize: 11, color: SahelColors.muted)),
+              subtitle: const Text(
+                'JPG أو PNG حتى 4MB',
+                style: TextStyle(fontSize: 11, color: SahelColors.muted),
+              ),
               onTap: () async {
                 Navigator.pop(ctx);
                 final picked = await ImagePicker().pickImage(
@@ -241,10 +298,14 @@ class ProviderSettingsScreen extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.person_remove_outlined,
-                  color: SahelColors.danger),
-              title: const Text('حذف الصورة الرمزية',
-                  style: TextStyle(color: SahelColors.danger)),
+              leading: const Icon(
+                Icons.person_remove_outlined,
+                color: SahelColors.danger,
+              ),
+              title: const Text(
+                'حذف الصورة الرمزية',
+                style: TextStyle(color: SahelColors.danger),
+              ),
               onTap: () async {
                 Navigator.pop(ctx);
                 try {
@@ -271,11 +332,14 @@ class ProviderSettingsScreen extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-          child: Text(t,
-              style: const TextStyle(
-                  fontSize: 12,
-                  color: SahelColors.muted,
-                  fontWeight: FontWeight.w700)),
+          child: Text(
+            t,
+            style: const TextStyle(
+              fontSize: 12,
+              color: SahelColors.muted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -297,16 +361,13 @@ class ProviderSettingsScreen extends ConsumerWidget {
           ? null
           : Text(
               subtitle,
-              style: const TextStyle(
-                color: SahelColors.muted,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: SahelColors.muted, fontSize: 12),
             ),
-      trailing:
-          const Icon(Icons.chevron_right, color: SahelColors.muted),
+      trailing: const Icon(Icons.chevron_right, color: SahelColors.muted),
       onTap: onTap,
       shape: const Border(
-          bottom: BorderSide(color: SahelColors.slate100, width: 1)),
+        bottom: BorderSide(color: SahelColors.slate100, width: 1),
+      ),
     );
   }
 }
@@ -351,13 +412,14 @@ class _ProviderProfileBasicsScreenState
             ),
           ),
           data: (data) {
+            final fields = providerProfileFields(data);
             if (!_initialized) {
               _initialized = true;
               _businessNameController.text = str(
-                data['business_name'] ?? auth.user?['name'],
+                fields['business_name'] ?? auth.user?['name'],
               );
               _bioController.text = str(
-                data['business_description'] ?? data['bio'],
+                fields['business_description'] ?? fields['bio'],
               );
             }
 
@@ -397,7 +459,9 @@ class _ProviderProfileBasicsScreenState
                         enabled: false,
                         decoration: InputDecoration(
                           labelText: 'رقم التواصل',
-                          hintText: str(auth.user?['phone'] ?? auth.user?['email']),
+                          hintText: str(
+                            auth.user?['phone'] ?? auth.user?['email'],
+                          ),
                         ),
                       ),
                     ],
@@ -426,9 +490,8 @@ class _ProviderProfileBasicsScreenState
     final businessName = _businessNameController.text.trim();
     final bio = _bioController.text.trim();
     if (businessName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أدخل اسم النشاط أولاً')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('أدخل اسم النشاط أولاً')));
       return;
     }
 
@@ -445,9 +508,9 @@ class _ProviderProfileBasicsScreenState
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر حفظ البيانات الآن')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تعذر حفظ البيانات الآن')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -467,6 +530,13 @@ class _ProviderServiceAreasScreenState
   String? _cityId;
   String? _areaId;
   bool _saving = false;
+  final _feeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _feeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -521,19 +591,23 @@ class _ProviderServiceAreasScreenState
                           children: [
                             for (final area in currentAreas)
                               InputChip(
-                                label: Text(
-                                  str(
-                                    area['name'] ??
-                                        asMap(area['area'])['name'],
-                                    'منطقة',
-                                  ),
-                                ),
+                                label: Text(_areaLabel(area)),
                                 onDeleted: () => _deleteArea(
                                   str(area['id'] ?? asMap(area['area'])['id']),
                                 ),
                               ),
                           ],
                         ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'لتعديل رسوم منطقة قائمة احذفها ثم أضفها من جديد — '
+                        'لا يوفر API مسار تعديل مباشر لمناطق التغطية.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: SahelColors.muted,
+                          height: 1.5,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -556,8 +630,9 @@ class _ProviderServiceAreasScreenState
                         data: (items) => DropdownButtonFormField<String>(
                           key: ValueKey(_cityId),
                           initialValue: _cityId,
-                          decoration:
-                              const InputDecoration(labelText: 'المدينة'),
+                          decoration: const InputDecoration(
+                            labelText: 'المدينة',
+                          ),
                           items: [
                             for (final city in items)
                               DropdownMenuItem(
@@ -580,8 +655,9 @@ class _ProviderServiceAreasScreenState
                         data: (areas) => DropdownButtonFormField<String>(
                           key: ValueKey(_areaId),
                           initialValue: _areaId,
-                          decoration:
-                              const InputDecoration(labelText: 'المنطقة'),
+                          decoration: const InputDecoration(
+                            labelText: 'المنطقة',
+                          ),
                           items: [
                             for (final area in areas)
                               DropdownMenuItem(
@@ -589,8 +665,19 @@ class _ProviderServiceAreasScreenState
                                 child: Text(str(area['name'])),
                               ),
                           ],
-                          onChanged: (value) =>
-                              setState(() => _areaId = value),
+                          onChanged: (value) => setState(() => _areaId = value),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: _feeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'رسوم الخدمة في هذه المنطقة (اختياري)',
+                          hintText: '0',
+                          helperText: 'مبلغ إضافي يُحتسب عند خدمة هذه المنطقة',
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -612,31 +699,62 @@ class _ProviderServiceAreasScreenState
     );
   }
 
+  /// `name · رسوم X` only when the API reports a positive fee.
+  String _areaLabel(Map<String, dynamic> area) {
+    final name = str(area['name'] ?? asMap(area['area'])['name'], 'منطقة');
+    final fee = toDouble(area['service_fee']);
+    if (fee <= 0) return name;
+    return '$name · رسوم ${fee.toStringAsFixed(2)}';
+  }
+
   Future<void> _addArea() async {
     final areaId = _areaId;
     if (areaId == null || areaId.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('اختَر المنطقة أولاً')));
+      return;
+    }
+    final feeText = _feeController.text.trim();
+    final fee = feeText.isEmpty ? null : double.tryParse(feeText);
+    if (feeText.isNotEmpty && (fee == null || fee < 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('اختَر المنطقة أولاً')),
+        const SnackBar(content: Text('أدخل رسومًا رقمية صحيحة (0 أو أكثر)')),
       );
       return;
     }
     setState(() => _saving = true);
     try {
-      await ref.read(providerRepositoryProvider).storeArea({'area_id': areaId});
+      await ref.read(providerRepositoryProvider).storeArea({
+        'area_id': areaId,
+        if (fee != null) 'service_fee': fee,
+      });
       ref.invalidate(providerAvailabilityProvider);
       if (!mounted) return;
-      setState(() => _areaId = null);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تمت إضافة منطقة الخدمة')),
-      );
-    } catch (_) {
+      setState(() {
+        _areaId = null;
+        _feeController.clear();
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تمت إضافة منطقة الخدمة')));
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر إضافة المنطقة')),
+        SnackBar(content: Text(_apiMessage(e, 'تعذر إضافة المنطقة'))),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  String _apiMessage(Object error, String fallback) {
+    if (error is ApiException) {
+      final failure = error.failure;
+      if (failure is ServerFailure && failure.message.isNotEmpty) {
+        return failure.message;
+      }
+    }
+    return fallback;
   }
 
   Future<void> _deleteArea(String id) async {
@@ -645,14 +763,12 @@ class _ProviderServiceAreasScreenState
       await ref.read(providerRepositoryProvider).destroyArea(id);
       ref.invalidate(providerAvailabilityProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف المنطقة')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تم حذف المنطقة')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر حذف المنطقة')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تعذر حذف المنطقة')));
     }
   }
 }
@@ -710,9 +826,22 @@ class _ProviderPortfolioScreenState
                 final item = items[index];
                 final title = str(item['title'] ?? item['name'], 'صورة عمل');
                 final description = str(item['description']);
-                final imageUrl = str(
-                  item['image_url'] ?? item['image'] ?? item['url'],
-                );
+                final imageUrl = _imageUrl(ref, item);
+                final category = str(item['category']);
+                final completion = str(item['completion_date']);
+                final client = str(item['client_name']);
+                final location = str(item['location']);
+                final budget = toDoubleOrNull(item['budget']);
+                final featured = toBool(item['is_featured']);
+                final details = <String>[
+                  if (category.isNotEmpty) category,
+                  if (completion.isNotEmpty) completion,
+                  if (client.isNotEmpty) 'لصالح $client',
+                  if (location.isNotEmpty) location,
+                  if (budget != null && budget > 0)
+                    'ميزانية ${budget.toStringAsFixed(2)}',
+                  if (featured) 'مميز',
+                ];
 
                 return _SectionCard(
                   child: Row(
@@ -736,7 +865,9 @@ class _ProviderPortfolioScreenState
                                   width: 88,
                                   height: 88,
                                   color: SahelColors.slate100,
-                                  child: const Icon(Icons.broken_image_outlined),
+                                  child: const Icon(
+                                    Icons.broken_image_outlined,
+                                  ),
                                 ),
                               ),
                       ),
@@ -763,11 +894,37 @@ class _ProviderPortfolioScreenState
                                 ),
                               ),
                             ],
+                            if (details.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  for (final detail in details)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: SahelColors.slate100,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        detail,
+                                        style: const TextStyle(
+                                          fontSize: 10.5,
+                                          color: SahelColors.textMuted,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             TextButton.icon(
-                              onPressed: () => _deletePortfolio(
-                                str(item['id']),
-                              ),
+                              onPressed: () =>
+                                  _deletePortfolio(str(item['id'])),
                               icon: const Icon(
                                 Icons.delete_outline,
                                 color: SahelColors.red600,
@@ -791,71 +948,204 @@ class _ProviderPortfolioScreenState
     );
   }
 
+  /// PortfolioResource returns `storage/...` relative paths; resolve them
+  /// against the configured API origin. Absolute URLs pass through.
+  String _imageUrl(WidgetRef ref, Map<String, dynamic> item) {
+    final raw = str(item['image_url'] ?? item['image'] ?? item['url']);
+    if (raw.isEmpty || raw.startsWith('http')) return raw;
+    final base = Uri.tryParse(ref.read(appConfigProvider).apiBaseUrl);
+    if (base == null || base.host.isEmpty) return raw;
+    final port = base.hasPort ? ':${base.port}' : '';
+    return '${base.scheme}://${base.host}$port/${raw.replaceFirst(RegExp(r'^/+'), '')}';
+  }
+
   Future<void> _pickAndUpload() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (image == null || !mounted) return;
 
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('بيانات صورة العمل'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'العنوان'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'وصف مختصر'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('رفع'),
-          ),
-        ],
-      ),
-    );
-    if (accepted != true || !mounted) return;
+    final categoryController = TextEditingController();
+    final clientController = TextEditingController();
+    final locationController = TextEditingController();
+    final budgetController = TextEditingController();
+    DateTime? completionDate;
+    var featured = false;
 
-    final title = titleController.text.trim().isEmpty
-        ? 'صورة عمل'
-        : titleController.text.trim();
+    // Fields mirror `POST /provider/portfolio` validation exactly.
+    final draft =
+        await showDialog<
+          ({
+            String title,
+            String description,
+            String category,
+            String client,
+            String location,
+            String? completionDate,
+            num? budget,
+            bool featured,
+          })
+        >(
+          context: context,
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setDialogState) => AlertDialog(
+              title: const Text('بيانات صورة العمل'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'العنوان *'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(labelText: 'وصف مختصر'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: categoryController,
+                      decoration: const InputDecoration(
+                        labelText: 'التصنيف (اختياري)',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: completionDate ?? now,
+                            firstDate: DateTime(now.year - 30),
+                            lastDate: now,
+                            helpText: 'تاريخ إنجاز العمل',
+                          );
+                          if (picked == null) return;
+                          setDialogState(() => completionDate = picked);
+                        },
+                        icon: const Icon(Icons.event_outlined, size: 18),
+                        label: Text(
+                          completionDate == null
+                              ? 'تاريخ الإنجاز (اختياري)'
+                              : _formatDate(completionDate!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: clientController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم العميل (اختياري)',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'الموقع (اختياري)',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: budgetController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'الميزانية (اختياري)',
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'إبراز العمل',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                      value: featured,
+                      onChanged: (v) => setDialogState(() => featured = v),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, (
+                    title: titleController.text.trim(),
+                    description: descriptionController.text.trim(),
+                    category: categoryController.text.trim(),
+                    client: clientController.text.trim(),
+                    location: locationController.text.trim(),
+                    completionDate: completionDate == null
+                        ? null
+                        : _formatDate(completionDate!),
+                    budget: num.tryParse(budgetController.text.trim()),
+                    featured: featured,
+                  )),
+                  child: const Text('رفع'),
+                ),
+              ],
+            ),
+          ),
+        );
+    titleController.dispose();
+    descriptionController.dispose();
+    categoryController.dispose();
+    clientController.dispose();
+    locationController.dispose();
+    budgetController.dispose();
+
+    if (draft == null || !mounted) return;
+    if (draft.title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('العنوان مطلوب لرفع صورة العمل')),
+      );
+      return;
+    }
 
     setState(() => _uploading = true);
     try {
-      await ref.read(providerRepositoryProvider).storePortfolio(
-            title: title,
-            description: descriptionController.text.trim(),
+      await ref
+          .read(providerRepositoryProvider)
+          .storePortfolio(
+            title: draft.title,
+            description: draft.description,
+            category: draft.category,
+            completionDate: draft.completionDate,
+            clientName: draft.client,
+            location: draft.location,
+            budget: draft.budget,
+            isFeatured: draft.featured,
             imagePath: image.path,
           );
       ref.invalidate(providerPortfolioProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم رفع صورة العمل')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تم رفع صورة العمل')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر رفع الصورة الآن')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تعذر رفع الصورة الآن')));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
   }
+
+  static String _formatDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 
   Future<void> _deletePortfolio(String id) async {
     if (id.isEmpty) return;
@@ -863,14 +1153,12 @@ class _ProviderPortfolioScreenState
       await ref.read(providerRepositoryProvider).destroyPortfolio(id);
       ref.invalidate(providerPortfolioProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف الصورة')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تم حذف الصورة')));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر حذف الصورة')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('تعذر حذف الصورة')));
     }
   }
 }

@@ -1,7 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -15,9 +18,8 @@ class WithdrawRequestScreen extends ConsumerStatefulWidget {
       _WithdrawRequestScreenState();
 }
 
-class _WithdrawRequestScreenState
-    extends ConsumerState<WithdrawRequestScreen> {
-  String _method = 'bank_transfer';
+class _WithdrawRequestScreenState extends ConsumerState<WithdrawRequestScreen> {
+  String _method = 'bank';
   final _amountController = TextEditingController();
   final _ibanController = TextEditingController();
   final _bankController = TextEditingController();
@@ -31,34 +33,50 @@ class _WithdrawRequestScreenState
     super.dispose();
   }
 
+  String _failureMessage(Object e) {
+    if (e is ApiException) {
+      final failure = e.failure;
+      if (failure is ServerFailure && failure.message.isNotEmpty) {
+        return failure.message;
+      }
+      if (failure is ValidationFailure) {
+        return failure.errors.values.expand((items) => items).join('\n');
+      }
+    }
+    return 'تعذر إرسال الطلب';
+  }
+
   Future<void> _submit() async {
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('أدخل مبلغاً صحيحاً')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('أدخل مبلغاً صحيحاً')));
       return;
     }
     setState(() => _busy = true);
     try {
       await ref.read(providerRepositoryProvider).storeWithdrawal({
         'amount': amount,
-        'method': _method,
-        if (_ibanController.text.trim().isNotEmpty)
+        'transfer_method': _method,
+        if (_ibanController.text.trim().isNotEmpty) ...{
           'iban': _ibanController.text.trim(),
+          'bank_account_number': _ibanController.text.trim(),
+        },
         if (_bankController.text.trim().isNotEmpty)
           'bank_name': _bankController.text.trim(),
       });
       ref.invalidate(providerWithdrawalsProvider);
       ref.invalidate(providerWalletProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('تم إرسال طلب السحب بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرسال طلب السحب بنجاح')),
+        );
         Navigator.of(context).pop();
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تعذر إرسال الطلب')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(_failureMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -69,11 +87,11 @@ class _WithdrawRequestScreenState
   Widget build(BuildContext context) {
     final wallet = ref.watch(providerWalletProvider);
     final balance = wallet.maybeWhen(
-      data: (w) => str(
-          w['formatted_available'] ??
-              w['formatted_balance'] ??
-              w['balance'],
-          '—'),
+      data: (w) {
+        final value = formatMoney(w['balance'] ?? w['available_balance'] ?? 0);
+        final currency = str(w['currency']);
+        return currency.isEmpty ? value : '$value $currency';
+      },
       orElse: () => '—',
     );
 
@@ -89,59 +107,71 @@ class _WithdrawRequestScreenState
                 decoration: BoxDecoration(
                   color: SahelColors.primary50,
                   borderRadius: SahelRadii.mdRadius,
-                  border:
-                      Border.all(color: SahelColors.primary100),
+                  border: Border.all(color: SahelColors.primary100),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.account_balance_wallet,
-                        color: SahelColors.primary600),
+                    const Icon(
+                      Icons.account_balance_wallet,
+                      color: SahelColors.primary600,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: Text('الرصيد المتاح: $balance',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: SahelColors.primary700))),
+                      child: Text(
+                        'رصيد المحفظة: $balance',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: SahelColors.primary700,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                'قد يقل المبلغ القابل للسحب عن الرصيد بسبب المبالغ المحجوزة أو طلبات السحب المعلقة؛ يتحقق الخادم من المبلغ عند الإرسال.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: SahelColors.muted,
+                  height: 1.5,
+                ),
+              ),
               const SizedBox(height: 24),
-              const Text('طريقة السحب',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 16)),
+              const Text(
+                'طريقة السحب',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
               const SizedBox(height: 12),
-              _methodTile('bank_transfer', 'تحويل بنكي',
-                  Icons.account_balance_outlined),
+              _methodTile('bank', 'تحويل بنكي', Icons.account_balance_outlined),
               const SizedBox(height: 10),
-              _methodTile(
-                  'wallet', 'محفظة إلكترونية', Icons.wallet_outlined),
+              _methodTile('wallet', 'محفظة إلكترونية', Icons.wallet_outlined),
               const SizedBox(height: 24),
-              if (_method == 'bank_transfer') ...[
+              if (_method == 'bank') ...[
                 TextField(
                   controller: _bankController,
-                  decoration:
-                      const InputDecoration(labelText: 'اسم البنك'),
+                  decoration: const InputDecoration(labelText: 'اسم البنك'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _ibanController,
                   decoration: const InputDecoration(
-                      labelText: 'IBAN / رقم الحساب'),
+                    labelText: 'IBAN / رقم الحساب',
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
-              const Text('المبلغ',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700, fontSize: 16)),
+              const Text(
+                'المبلغ',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              ),
               const SizedBox(height: 10),
               TextField(
                 controller: _amountController,
-                keyboardType:
-                    const TextInputType.numberWithOptions(
-                        decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'أدخل المبلغ',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
+                decoration: const InputDecoration(labelText: 'أدخل المبلغ'),
               ),
               const SizedBox(height: 32),
               _busy
@@ -168,8 +198,7 @@ class _WithdrawRequestScreenState
           color: SahelColors.onPrimary,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color:
-                sel ? SahelColors.primary500 : SahelColors.slate200,
+            color: sel ? SahelColors.primary500 : SahelColors.slate200,
             width: sel ? 2 : 1,
           ),
         ),
@@ -178,15 +207,21 @@ class _WithdrawRequestScreenState
             Icon(i, color: SahelColors.primary600),
             const SizedBox(width: 12),
             Expanded(
-                child: Text(t,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700))),
+              child: Text(
+                t,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
             if (sel)
               const CircleAvatar(
-                  radius: 10,
-                  backgroundColor: SahelColors.primary500,
-                  child: Icon(Icons.check,
-                      size: 14, color: SahelColors.onPrimary)),
+                radius: 10,
+                backgroundColor: SahelColors.primary500,
+                child: Icon(
+                  Icons.check,
+                  size: 14,
+                  color: SahelColors.onPrimary,
+                ),
+              ),
           ],
         ),
       ),

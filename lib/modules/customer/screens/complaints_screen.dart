@@ -1,16 +1,20 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:saber_flutter/app/theme/sahel_colors.dart';
+import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
-import 'package:saber_flutter/app/theme/sahel_colors.dart';
-import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
-/// Customer complaint history — mirrors the website `/complaints` list.
-/// The server API surface exposes list + store only (thread/reply/close are
-/// web-only routes); this screen therefore renders status + admin response.
+import 'complaints/complaint_helpers.dart';
+
+/// Customer complaint history.
+///
+/// API surface for customers: `GET /customer/complaints` (last 15, messages
+/// included) and `POST /customer/complaints`. Detail/reply/close are web-only
+/// session routes, so the app shows the thread read-only.
 class CustomerComplaintsScreen extends ConsumerWidget {
   const CustomerComplaintsScreen({super.key});
 
@@ -20,11 +24,11 @@ class CustomerComplaintsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('شكاواي'),
+        title: const Text('شكاوى'),
         actions: [
           IconButton(
             tooltip: 'شكوى جديدة',
-            onPressed: () => context.push('/complaint'),
+            onPressed: () => context.push('/complaints/new'),
             icon: const Icon(Icons.add_comment_outlined),
           ),
         ],
@@ -72,11 +76,22 @@ class CustomerComplaintsScreen extends ConsumerWidget {
                 ),
               ]);
             }
-            return ListView.separated(
+            return ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _ComplaintCard(c: items[i]),
+              children: [
+                for (final c in items) ...[
+                  _ComplaintCard(c: c),
+                  const SizedBox(height: 10),
+                ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'يعرض API آخر 15 شكوى — تُدار الردود والإغلاق من فريق الدعم.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, color: SahelColors.textSoft),
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -89,97 +104,113 @@ class _ComplaintCard extends StatelessWidget {
   final Map<String, dynamic> c;
   const _ComplaintCard({required this.c});
 
-  Color _statusColor(String s) {
-    s = s.toLowerCase();
-    if (s.contains('resolved') || s.contains('closed')) {
-      return SahelColors.success;
-    }
-    if (s.contains('open') || s.contains('new')) return SahelColors.info;
-    return SahelColors.amber500;
-  }
-
-  String _statusLabel(String s) {
-    s = s.toLowerCase();
-    if (s.contains('resolved') || s.contains('closed')) return 'تم الحل';
-    if (s.contains('open') || s.contains('new')) return 'مفتوحة';
-    if (s.contains('progress')) return 'قيد المعالجة';
-    return s;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final subject = str(c['subject'] ?? c['title'], 'شكوى');
-    final body = str(c['description'] ?? c['message'] ?? c['body']);
-    final status = str(c['status'], 'pending');
-    final response = str(c['admin_response'] ?? c['response']);
-    final date = str(
-        c['date_ar'] ?? c['formatted_created_at'] ?? c['created_at']);
-    final name = str(c['customer_name']);
+    final id = str(c['id']);
+    final subject = str(c['subject'], 'شكوى');
+    final body = str(c['description']);
+    final status = str(c['status'], 'open');
+    final priority = str(c['priority'], 'medium');
+    final number = str(c['complaint_number']);
+    final date = complaintDate(c['created_at']);
+    final latest = complaintLatestMessage(c);
+    final reply = latest == null ? '' : str(latest['message']);
+    final statusColor = complaintStatusColor(status);
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: SahelColors.surface,
+    return Material(
+      color: SahelColors.surface,
+      borderRadius: SahelRadii.mdRadius,
+      child: InkWell(
         borderRadius: SahelRadii.mdRadius,
-        border: Border.all(color: SahelColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: id.isEmpty ? null : () => context.push('/complaints/$id'),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: SahelRadii.mdRadius,
+            border: Border.all(color: SahelColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(subject,
-                    maxLines: 1,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(subject,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 14)),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: SahelRadii.pillRadius,
+                    ),
+                    child: Text(complaintStatusLabel(status),
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: statusColor)),
+                  ),
+                ],
+              ),
+              if (body.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(body,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 14)),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _statusColor(status).withValues(alpha: 0.12),
-                  borderRadius: SahelRadii.pillRadius,
+                        fontSize: 12, color: SahelColors.textMuted, height: 1.5)),
+              ],
+              if (reply.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: SahelColors.infoSoft,
+                    borderRadius: SahelRadii.smRadius,
+                  ),
+                  child: Text('رد الدعم: $reply',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 12, color: SahelColors.text)),
                 ),
-                child: Text(_statusLabel(status),
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: _statusColor(status))),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: complaintPriorityColor(priority)
+                          .withValues(alpha: 0.10),
+                      borderRadius: SahelRadii.pillRadius,
+                    ),
+                    child: Text(
+                      'أولوية ${complaintPriorityLabel(priority)}',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: complaintPriorityColor(priority)),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    [if (number.isNotEmpty) number, if (date.isNotEmpty) date]
+                        .join(' · '),
+                    style: const TextStyle(
+                        fontSize: 10, color: SahelColors.textSoft),
+                  ),
+                ],
               ),
             ],
           ),
-          if (body.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(body,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 12, color: SahelColors.textMuted, height: 1.5)),
-          ],
-          if (response.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: const BoxDecoration(
-                color: SahelColors.infoSoft,
-                borderRadius: SahelRadii.smRadius,
-              ),
-              child: Text('رد الدعم: $response',
-                  style: const TextStyle(
-                      fontSize: 12, color: SahelColors.text)),
-            ),
-          ],
-          if (name.isNotEmpty || date.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              [if (date.isNotEmpty) date].join(' · '),
-              style: const TextStyle(fontSize: 11, color: SahelColors.textSoft),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

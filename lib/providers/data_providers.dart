@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers.dart';
 import '../data/repositories/catalog_repository.dart';
+import '../data/repositories/parsers.dart';
+import '../models/provider.dart';
 
 // ---------------------------------------------------------------------------
 // Public catalog
@@ -34,13 +36,6 @@ final servicesProvider = FutureProvider.autoDispose
           ),
     );
 
-final providersCatalogProvider = FutureProvider.autoDispose
-    .family<List<dynamic>, ({String? cityId, int? page})>(
-      (ref, params) => ref
-          .watch(catalogRepositoryProvider)
-          .providers(cityId: params.cityId, page: params.page),
-    );
-
 final publicProviderProfileProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>(
       (ref, id) => ref.watch(catalogRepositoryProvider).providerProfileFull(id),
@@ -50,9 +45,193 @@ final citiesProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(catalogRepositoryProvider).cities(),
 );
 
+/// Areas of a city (public `/cities/{id}/areas`).
+final providerCityAreasProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String>(
+      (ref, cityId) => ref.watch(catalogRepositoryProvider).cityAreas(cityId),
+    );
+
 final faqsProvider = FutureProvider<List<Map<String, dynamic>>>(
   (ref) => ref.watch(catalogRepositoryProvider).faqs(),
 );
+
+/// Filters accepted by the providers directory.
+typedef ProviderDirectoryFilters = ({String q, String? cityId});
+
+/// Accumulated providers-directory pages.
+class ProviderDirectoryState {
+  const ProviderDirectoryState({
+    required this.items,
+    required this.currentPage,
+    required this.hasMore,
+    required this.total,
+    this.isLoadingMore = false,
+  });
+
+  final List<ProviderModel> items;
+  final int currentPage;
+  final bool hasMore;
+  final int total;
+  final bool isLoadingMore;
+
+  ProviderDirectoryState copyWith({bool? isLoadingMore}) =>
+      ProviderDirectoryState(
+        items: items,
+        currentPage: currentPage,
+        hasMore: hasMore,
+        total: total,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      );
+}
+
+/// Paginated providers directory (public `/providers` endpoint).
+class ProviderDirectoryController
+    extends
+        AutoDisposeFamilyAsyncNotifier<
+          ProviderDirectoryState,
+          ProviderDirectoryFilters
+        > {
+  bool _disposed = false;
+
+  @override
+  Future<ProviderDirectoryState> build(ProviderDirectoryFilters params) async {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+
+    final page = await ref
+        .watch(catalogRepositoryProvider)
+        .providersPage(q: params.q, cityId: params.cityId);
+
+    return ProviderDirectoryState(
+      items: page.items,
+      currentPage: page.currentPage,
+      hasMore: page.hasMore,
+      total: page.total,
+    );
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore || !current.hasMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    try {
+      final next = await ref
+          .read(catalogRepositoryProvider)
+          .providersPage(
+            q: arg.q,
+            cityId: arg.cityId,
+            page: current.currentPage + 1,
+          );
+
+      if (_disposed) return;
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(
+        ProviderDirectoryState(
+          items: [...latest.items, ...next.items],
+          currentPage: next.currentPage,
+          hasMore: next.hasMore,
+          total: next.total,
+        ),
+      );
+    } catch (_) {
+      if (_disposed) return;
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+      rethrow;
+    }
+  }
+}
+
+final providerDirectoryProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      ProviderDirectoryController,
+      ProviderDirectoryState,
+      ProviderDirectoryFilters
+    >(ProviderDirectoryController.new);
+
+/// Accumulated offers pages.
+class OffersCatalogState {
+  const OffersCatalogState({
+    required this.items,
+    required this.currentPage,
+    required this.hasMore,
+    required this.total,
+    this.isLoadingMore = false,
+  });
+
+  final List<OfferItem> items;
+  final int currentPage;
+  final bool hasMore;
+  final int total;
+  final bool isLoadingMore;
+
+  OffersCatalogState copyWith({bool? isLoadingMore}) => OffersCatalogState(
+    items: items,
+    currentPage: currentPage,
+    hasMore: hasMore,
+    total: total,
+    isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+  );
+}
+
+/// Paginated public offers (`/offers`).
+class OffersCatalogController
+    extends AutoDisposeAsyncNotifier<OffersCatalogState> {
+  static const _perPage = 12;
+  bool _disposed = false;
+
+  @override
+  Future<OffersCatalogState> build() async {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+
+    final page = await ref
+        .watch(catalogRepositoryProvider)
+        .offersPage(perPage: _perPage);
+
+    return OffersCatalogState(
+      items: page.items,
+      currentPage: page.currentPage,
+      hasMore: page.hasMore,
+      total: page.total,
+    );
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore || !current.hasMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    try {
+      final next = await ref
+          .read(catalogRepositoryProvider)
+          .offersPage(page: current.currentPage + 1, perPage: _perPage);
+
+      if (_disposed) return;
+      final latest = state.valueOrNull ?? current;
+      state = AsyncData(
+        OffersCatalogState(
+          items: [...latest.items, ...next.items],
+          currentPage: next.currentPage,
+          hasMore: next.hasMore,
+          total: latest.total + next.items.length,
+        ),
+      );
+    } catch (_) {
+      if (_disposed) return;
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+      rethrow;
+    }
+  }
+}
+
+final offersCatalogProvider =
+    AsyncNotifierProvider.autoDispose<
+      OffersCatalogController,
+      OffersCatalogState
+    >(OffersCatalogController.new);
 
 // ---------------------------------------------------------------------------
 // Customer
@@ -71,6 +250,15 @@ final customerBookingsProvider = FutureProvider.autoDispose
       (ref, status) =>
           ref.watch(customerRepositoryProvider).bookings(status: status),
     );
+
+/// Total booking count from the paginator meta (not just the loaded page).
+final customerBookingsTotalProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
+  final envelope = await ref.watch(customerRepositoryProvider).bookingsPage();
+  final meta = asMap(envelope['meta']);
+  return toInt(meta['total'], dataList(envelope).length);
+});
 
 final customerBookingProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>(
@@ -127,8 +315,8 @@ final customerNotificationsProvider =
       (ref) => ref.watch(customerRepositoryProvider).notifications(),
     );
 
-final unreadNotificationsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).unreadNotifications(),
+final unreadNotificationsProvider = FutureProvider<int>(
+  (ref) => ref.watch(customerRepositoryProvider).unreadNotificationsCount(),
 );
 
 final customerCouponsProvider = FutureProvider<List<Map<String, dynamic>>>(
@@ -257,6 +445,20 @@ final customerSearchProvider = AsyncNotifierProvider.autoDispose
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------
+
+/// `/provider/profile` nests the business record under `data.provider` and
+/// keeps name/contact under a sibling `user`. Normalize both shapes (also
+/// accepts a flat override used in tests) so screens read one map.
+Map<String, dynamic> providerProfileFields(Map<String, dynamic>? data) {
+  final root = asMap(data);
+  final nested = asMap(root['provider']);
+  if (nested.isEmpty) return root;
+  final user = <String, dynamic>{
+    ...asMap(nested['user']),
+    ...asMap(root['user']),
+  };
+  return {...nested, if (user.isNotEmpty) 'user': user, 'provider': nested};
+}
 
 final providerDashboardProvider = FutureProvider<Map<String, dynamic>>(
   (ref) => ref.watch(providerRepositoryProvider).dashboard(),

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -62,6 +64,12 @@ class _TrackingBody extends ConsumerWidget {
   final String bookingId;
   const _TrackingBody({required this.track, required this.bookingId});
 
+  String _stepTime(Map<String, dynamic> step) {
+    final raw = step['time'] ?? step['at'];
+    final formatted = formatDateTime(raw);
+    return formatted.isNotEmpty ? formatted : str(raw);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Newer API shape (rahma's backend): booking + provider_location +
@@ -84,6 +92,7 @@ class _TrackingBody extends ConsumerWidget {
     final status = str(track['status'] ??
         track['current_status'] ??
         booking['status']);
+    final statusLabel = BookingStatusX.fromJson(status).displayNameAr;
     final phone = str(providerUser['phone'] ?? provider['phone']);
     final legacySteps = asMapList(track['steps']);
     // The current backend sends the booking timeline instead of prepared
@@ -93,8 +102,9 @@ class _TrackingBody extends ConsumerWidget {
         ? legacySteps
         : asMapList(booking['timeline'])
             .map((h) => <String, dynamic>{
-                  'label': str(h['new_status']),
-                  'time': str(h['created_at']),
+                  'label': BookingStatusX.fromJson(str(h['new_status']))
+                      .displayNameAr,
+                  'time': formatDateTime(h['created_at']),
                   'done': true,
                 })
             .toList();
@@ -188,7 +198,7 @@ class _TrackingBody extends ConsumerWidget {
                         child: Text(
                           status == 'in_progress'
                               ? 'الفني في الطريق…'
-                              : 'حالة الحجز: $status',
+                              : 'حالة الحجز: $statusLabel',
                           style: const TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ),
@@ -247,7 +257,7 @@ class _TrackingBody extends ConsumerWidget {
                               ),
                             ),
                             Text(
-                              str(s['time'] ?? s['at']),
+                              _stepTime(s),
                               style: const TextStyle(
                                   fontSize: 11,
                                   color: SahelColors.textMuted),

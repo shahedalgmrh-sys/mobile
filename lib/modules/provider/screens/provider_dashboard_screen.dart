@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +18,8 @@ class ProviderDashboardScreen extends ConsumerWidget {
     final lang = Localizations.localeOf(context).languageCode;
     final dash = ref.watch(providerDashboardProvider);
     final bookings = ref.watch(
-        providerBookingsProvider((status: 'pending', date: null)));
+      providerBookingsProvider((status: 'pending', date: null)),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -55,12 +57,19 @@ class ProviderDashboardScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_outlined,
-                  size: 56, color: SahelColors.muted),
+              const Icon(
+                Icons.cloud_off_outlined,
+                size: 56,
+                color: SahelColors.muted,
+              ),
               const SizedBox(height: 12),
-              const Text('تعذر تحميل لوحة التحكم',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w700, color: SahelColors.muted)),
+              const Text(
+                'تعذر تحميل لوحة التحكم',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: SahelColors.muted,
+                ),
+              ),
               TextButton.icon(
                 onPressed: () => ref.invalidate(providerDashboardProvider),
                 icon: const Icon(Icons.refresh),
@@ -70,14 +79,17 @@ class ProviderDashboardScreen extends ConsumerWidget {
           ),
         ),
         data: (d) {
-          final earnings = str(d['formatted_month_earnings'] ??
-              d['month_earnings'] ??
-              d['earnings_month'] ??
-              '0');
-          final totalBookings = str(d['total_bookings'] ?? d['bookings_count']);
-          final rating = str(d['average_rating'] ?? d['rating']);
-          final newCount = str(d['pending_bookings'] ?? d['new_requests']);
-          final isOnline = toBool(d['is_available'] ?? d['is_online']);
+          // The endpoint nests data under `provider` and `metrics`; reading
+          // flat keys silently produced zeros before.
+          final provider = asMap(d['provider']);
+          final metrics = asMap(d['metrics']);
+          final earnings = toDoubleOrNull(metrics['total_earnings']);
+          final totalBookings = str(
+            provider['total_bookings'] ?? metrics['total_bookings'],
+          );
+          final rating = str(provider['average_rating'] ?? metrics['rating']);
+          final newCount = str(metrics['pending_bookings']);
+          final isOnline = toBool(provider['is_available']);
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -99,14 +111,20 @@ class ProviderDashboardScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Expanded(
-                            child: Text('الأرباح الشهرية'.t(lang),
-                                style: const TextStyle(
-                                    color: SahelColors.onPrimary70, fontSize: 13)),
+                          const Expanded(
+                            child: Text(
+                              'إجمالي الأرباح المدفوعة',
+                              style: TextStyle(
+                                color: SahelColors.onPrimary70,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: isOnline
                                   ? SahelColors.onPrimary.withValues(alpha: 0.2)
@@ -116,31 +134,53 @@ class ProviderDashboardScreen extends ConsumerWidget {
                             child: Text(
                               isOnline ? 'متاح'.t(lang) : 'غير متاح'.t(lang),
                               style: const TextStyle(
-                                  color: SahelColors.onPrimary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700),
+                                color: SahelColors.onPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(earnings,
-                          style: const TextStyle(
-                              color: SahelColors.onPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 30)),
+                      Text(
+                        earnings == null
+                            ? 'غير متاح'
+                            : NumberFormat('#,##0.00', 'en').format(earnings),
+                        style: const TextStyle(
+                          color: SahelColors.onPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 30,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'صافي أرباح الحجوزات المدفوعة بعد عمولة المنصة — كل الفترات',
+                        style: TextStyle(
+                          color: SahelColors.onPrimary70,
+                          fontSize: 10.5,
+                        ),
+                      ),
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          _miniStat('الحجوزات'.t(lang),
-                              totalBookings.isEmpty ? '0' : totalBookings,
-                              Icons.calendar_month),
+                          _miniStat(
+                            'الحجوزات'.t(lang),
+                            totalBookings.isEmpty ? '0' : totalBookings,
+                            Icons.calendar_month,
+                          ),
                           const SizedBox(width: 12),
-                          _miniStat('التقييم'.t(lang),
-                              rating.isEmpty ? '-' : rating, Icons.star),
+                          _miniStat(
+                            'التقييم'.t(lang),
+                            rating.isEmpty ? '-' : rating,
+                            Icons.star,
+                          ),
                           const SizedBox(width: 12),
-                          _miniStat('جديدة'.t(lang),
-                              newCount.isEmpty ? '0' : newCount, Icons.bolt),
+                          _miniStat(
+                            'جديدة'.t(lang),
+                            newCount.isEmpty ? '0' : newCount,
+                            Icons.bolt,
+                          ),
                         ],
                       ),
                     ],
@@ -150,55 +190,102 @@ class ProviderDashboardScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Expanded(
-                        child: _card(Icons.list_alt, 'قائمة الخدمات'.t(lang),
-                            () => context.push('/p/services'))),
+                      child: _card(
+                        Icons.list_alt,
+                        'قائمة الخدمات'.t(lang),
+                        () => context.push('/p/services'),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _card(Icons.calendar_today, 'التقويم'.t(lang),
-                            () => context.push('/p/calendar'))),
+                      child: _card(
+                        Icons.calendar_today,
+                        'التقويم'.t(lang),
+                        () => context.push('/p/calendar'),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
-                        child: _card(Icons.account_balance_wallet_outlined,
-                            'سحب الرصيد'.t(lang), () => context.push('/p/withdraw'))),
+                      child: _card(
+                        Icons.account_balance_wallet_outlined,
+                        'سحب الرصيد'.t(lang),
+                        () => context.push('/p/withdraw'),
+                      ),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
-                        child: _card(Icons.verified_user_outlined, 'حالة KYC'.t(lang),
-                            () => context.push('/p/kyc'))),
+                      child: _card(
+                        Icons.verified_user_outlined,
+                        'حالة KYC'.t(lang),
+                        () => context.push('/p/kyc'),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
                     Expanded(
-                      child: Text('طلبات الحجز الجديدة'.t(lang),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700, fontSize: 16)),
+                      child: Text(
+                        'طلبات الحجز الجديدة'.t(lang),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => context.go('/p/requests'),
-                      child: Text('عرض الكل'.t(lang),
-                          style: const TextStyle(
-                              color: SahelColors.primary600,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13)),
+                      child: Text(
+                        'عرض الكل'.t(lang),
+                        style: const TextStyle(
+                          color: SahelColors.primary600,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 bookings.when(
                   loading: () => const ShimmerCard(height: 76),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, __) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'تعذر تحميل الطلبات الجديدة',
+                            style: TextStyle(color: SahelColors.muted),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => ref.invalidate(
+                            providerBookingsProvider((
+                              status: 'pending',
+                              date: null,
+                            )),
+                          ),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
                   data: (items) {
                     if (items.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: Center(
-                          child: Text('لا توجد طلبات جديدة',
-                              style: TextStyle(color: SahelColors.muted)),
+                          child: Text(
+                            'لا توجد طلبات جديدة',
+                            style: TextStyle(color: SahelColors.muted),
+                          ),
                         ),
                       );
                     }
@@ -223,19 +310,28 @@ class ProviderDashboardScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-            color: SahelColors.onPrimary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10)),
+          color: SahelColors.onPrimary.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Column(
           children: [
             Icon(i, size: 16, color: SahelColors.onPrimary),
             const SizedBox(height: 4),
-            Text(v,
-                style: const TextStyle(
-                    color: SahelColors.onPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16)),
-            Text(l,
-                style: const TextStyle(color: SahelColors.onPrimary70, fontSize: 10)),
+            Text(
+              v,
+              style: const TextStyle(
+                color: SahelColors.onPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              l,
+              style: const TextStyle(
+                color: SahelColors.onPrimary70,
+                fontSize: 10,
+              ),
+            ),
           ],
         ),
       ),
@@ -256,9 +352,10 @@ class ProviderDashboardScreen extends ConsumerWidget {
           children: [
             Icon(icon, color: SahelColors.primary600, size: 26),
             const SizedBox(height: 8),
-            Text(label,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 13)),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
           ],
         ),
       ),
@@ -289,34 +386,43 @@ class _BookingPreview extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                  width: 4,
-                  height: 50,
-                  decoration: BoxDecoration(
-                      color: SahelColors.amber500,
-                      borderRadius: BorderRadius.circular(4))),
+                width: 4,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: SahelColors.amber500,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('طلب جديد - ${str(service['name'], 'خدمة')}',
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    Text(
+                      'طلب جديد - ${str(service['name'], 'خدمة')}',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       [
                         str(customer['name']),
-                        str(booking['booking_date'])
+                        str(booking['booking_date']),
                       ].where((e) => e.isNotEmpty).join(' · '),
                       style: const TextStyle(
-                          color: SahelColors.muted, fontSize: 12),
+                        color: SahelColors.muted,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Text(price,
-                  style: const TextStyle(
-                      color: SahelColors.primary700,
-                      fontWeight: FontWeight.w800)),
+              Text(
+                price,
+                style: const TextStyle(
+                  color: SahelColors.primary700,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ],
           ),
         ),

@@ -77,12 +77,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   /// Current filter set. It doubles as the family key of
   /// [customerSearchProvider], so changing any filter reloads page 1.
+  ///
+  /// Bounds equal to the slider extremes are omitted so the default range
+  /// never silently filters out services outside 0–20,000.
   CustomerSearchFilters get _searchParams => (
     q: _query,
     categoryId: _categoryId,
     cityId: _nearbyEnabled ? null : _cityId,
-    minPrice: _priceRange.start,
-    maxPrice: _priceRange.end,
+    minPrice: _priceRange.start > 0 ? _priceRange.start : null,
+    maxPrice: _priceRange.end < 20000 ? _priceRange.end : null,
     minRating: _ratingFilter ? 4.5 : null,
     latitude:
         _nearbyEnabled ? ref.read(appLocationProvider).valueOrNull?.latitude : null,
@@ -516,16 +519,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 );
               }).toList();
               if (items.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 48),
-                  child: Center(
-                    child: Text(
-                      'لا توجد نتائج مطابقة',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: SahelColors.textMuted,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.search_off,
+                          size: 46, color: SahelColors.textSoft),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'لا توجد نتائج مطابقة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: SahelColors.textMuted,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'جرّب كلمة أخرى أو خفّف الفلاتر.',
+                        style: TextStyle(
+                            fontSize: 12, color: SahelColors.textSoft),
+                      ),
+                      const SizedBox(height: 10),
+                      TextButton.icon(
+                        onPressed: _resetFilters,
+                        icon: const Icon(Icons.restart_alt, size: 18),
+                        label: const Text('إعادة ضبط الفلاتر'),
+                      ),
+                    ],
                   ),
                 );
               }

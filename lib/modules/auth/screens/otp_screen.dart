@@ -268,7 +268,7 @@ class _SecurityBadge extends StatelessWidget {
           Icon(Icons.verified_user, size: 16, color: SahelColors.primary),
           SizedBox(width: 6),
           Text(
-            'بوابة أمان ساحل',
+            'بوابة أمان سابر',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,

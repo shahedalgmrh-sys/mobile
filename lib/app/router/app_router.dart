@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/constants/enums.dart';
 import 'package:saber_flutter/models/service.dart';
 import 'package:saber_flutter/providers/auth_provider.dart';
+
 import '../../modules/auth/screens/splash_screen.dart';
 import '../../modules/auth/screens/onboarding_screen.dart';
 import '../../modules/auth/screens/language_select_screen.dart';
@@ -14,6 +15,8 @@ import '../../modules/auth/screens/register_screen.dart';
 import '../../modules/customer/screens/profile_setup_screen.dart';
 import '../../modules/customer/screens/customer_shell.dart';
 import '../../modules/customer/screens/home/home_screen.dart';
+import '../../modules/customer/screens/home/offers_screen.dart';
+import '../../modules/customer/screens/home/providers_directory_screen.dart';
 import '../../modules/customer/screens/home/search_screen.dart';
 import '../../modules/customer/screens/bookings/bookings_list_screen.dart';
 import '../../modules/customer/screens/messages_list_screen.dart';
@@ -27,6 +30,7 @@ import '../../modules/customer/screens/bookings/live_tracking_screen.dart';
 import '../../modules/customer/screens/write_review_screen.dart';
 import '../../modules/customer/screens/submit_complaint_screen.dart';
 import '../../modules/customer/screens/complaints_screen.dart';
+import '../../modules/customer/screens/complaints/complaint_details_screen.dart';
 import '../../modules/customer/screens/chat_screen.dart';
 import '../../modules/customer/screens/notifications/notifications_screen.dart';
 import '../../modules/customer/screens/wallet/wallet_screen.dart';
@@ -56,9 +60,13 @@ import '../../modules/provider/screens/provider_notifications_screen.dart';
 import '../../modules/provider/screens/provider_settings_screen.dart';
 import '../../modules/provider/screens/kyc_status_screen.dart';
 import '../../modules/provider/screens/calendar_screen.dart';
+import '../../modules/provider/screens/working_hours_screen.dart';
+import '../../modules/provider/screens/b2b_request_form_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authListenable = ValueNotifier<AuthState>(ref.read(authNotifierProvider));
+  final authListenable = ValueNotifier<AuthState>(
+    ref.read(authNotifierProvider),
+  );
   ref.listen<AuthState>(authNotifierProvider, (prev, next) {
     authListenable.value = next;
   });
@@ -74,9 +82,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Prefix match also covers the deep link /reset-password/:token.
     '/reset-password',
   ];
-  const customerRoots = ['/home', '/search', '/bookings', '/inbox', '/profile'];
-  String homeFor(UserRole? role) =>
-      role == UserRole.provider ? '/p/dashboard' : '/home';
+  // Providers land on KYC while their accreditation is not verified yet;
+  // the flag comes from the API's `provider_profile.is_verified`.
+  String homeFor(AuthState auth) => auth.role == UserRole.provider
+      ? (auth.needsProviderVerification ? '/p/kyc' : '/p/dashboard')
+      : '/home';
 
   return GoRouter(
     initialLocation: '/splash',
@@ -92,14 +102,21 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Authenticated: keep users inside their role's area.
       final isProviderArea = loc.startsWith('/p/');
-      if (auth.role == UserRole.provider && customerRoots.any((p) => loc.startsWith(p))) {
-        return '/p/dashboard';
+      // A provider must not open customer screens (wallet, bookings, chat,
+      // complaints...) through a deep link: those endpoints are customer-only.
+      if (auth.role == UserRole.provider && !isProviderArea && !isPublic) {
+        return homeFor(auth);
       }
       if (auth.role == UserRole.customer && isProviderArea) {
         return '/home';
       }
       if (isPublic && loc != '/splash') {
-        return homeFor(auth.role);
+        // A newly registered provider still has to verify the emailed OTP
+        // before being routed by accreditation status. Customer routing is
+        // intentionally untouched.
+        final providerAwaitingOtp =
+            auth.role == UserRole.provider && !auth.isVerified && loc == '/otp';
+        if (!providerAwaitingOtp) return homeFor(auth);
       }
       if (auth.isAuthenticated &&
           !auth.isProfileComplete &&
@@ -110,8 +127,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/language', builder: (_, __) => const LanguageSelectScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/language',
+        builder: (_, __) => const LanguageSelectScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/otp', builder: (_, s) => const OtpScreen()),
       GoRoute(
@@ -143,112 +166,176 @@ final routerProvider = Provider<GoRouter>((ref) {
               : null,
         ),
       ),
-      GoRoute(path: '/profile-setup', builder: (_, __) => const ProfileSetupScreen()),
+      GoRoute(
+        path: '/profile-setup',
+        builder: (_, __) => const ProfileSetupScreen(),
+      ),
 
       // ------------------------------------------------ Customer shell
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => CustomerShell(navigationShell: shell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/home',
-              pageBuilder: (_, __) => const NoTransitionPage(child: HomeScreen()),
-              routes: [
-                GoRoute(
-                  path: 'services/:slug',
-                  builder: (_, s) => ServiceDetailsScreen(
-                    slug: s.pathParameters['slug'] ?? '',
-                    service: s.extra is Service ? s.extra as Service : null,
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: HomeScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'services/:slug',
+                    builder: (_, s) => ServiceDetailsScreen(
+                      slug: s.pathParameters['slug'] ?? '',
+                      service: s.extra is Service ? s.extra as Service : null,
+                    ),
                   ),
-                ),
-                GoRoute(
-                  path: 'providers/:id',
-                  builder: (_, s) => ProviderProfileScreen(id: s.pathParameters['id'] ?? ''),
-                ),
-                GoRoute(path: 'favorites', builder: (_, __) => const FavoritesScreen()),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/bookings',
-              pageBuilder: (_, __) => const NoTransitionPage(child: BookingsListScreen()),
-              routes: [
-                GoRoute(
-                  path: 'new',
-                  builder: (_, s) => BookingWizardScreen(
-                    serviceId: s.uri.queryParameters['service_id'],
+                  GoRoute(
+                    path: 'providers/:id',
+                    builder: (_, s) =>
+                        ProviderProfileScreen(id: s.pathParameters['id'] ?? ''),
                   ),
-                ),
-                GoRoute(
-                  path: ':id',
-                  builder: (_, s) => BookingDetailsScreen(id: s.pathParameters['id'] ?? ''),
-                  routes: [
-                    GoRoute(
-                      path: 'track',
-                      builder: (_, s) => LiveTrackingScreen(id: s.pathParameters['id'] ?? ''),
+                  GoRoute(
+                    path: 'providers',
+                    builder: (_, __) => const ProvidersDirectoryScreen(),
+                  ),
+                  GoRoute(
+                    path: 'offers',
+                    builder: (_, __) => const OffersScreen(),
+                  ),
+                  GoRoute(
+                    path: 'favorites',
+                    builder: (_, __) => const FavoritesScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/bookings',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: BookingsListScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (_, s) => BookingWizardScreen(
+                      serviceId: s.uri.queryParameters['service_id'],
+                      initialService: s.extra is Service
+                          ? s.extra as Service
+                          : null,
                     ),
-                    GoRoute(
-                      path: 'review',
-                      builder: (_, s) => WriteReviewScreen(id: s.pathParameters['id'] ?? ''),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, s) =>
+                        BookingDetailsScreen(id: s.pathParameters['id'] ?? ''),
+                    routes: [
+                      GoRoute(
+                        path: 'track',
+                        builder: (_, s) => LiveTrackingScreen(
+                          id: s.pathParameters['id'] ?? '',
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'review',
+                        builder: (_, s) =>
+                            WriteReviewScreen(id: s.pathParameters['id'] ?? ''),
+                      ),
+                      GoRoute(
+                        path: 'complaint',
+                        builder: (_, s) => SubmitComplaintScreen(
+                          id: s.pathParameters['id'] ?? '',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/inbox',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: MessagesListScreen()),
+                routes: [
+                  GoRoute(
+                    path: ':threadId',
+                    builder: (_, s) => ChatScreen(
+                      threadId: s.pathParameters['threadId'] ?? '',
                     ),
-                    GoRoute(
-                      path: 'complaint',
-                      builder: (_, s) => SubmitComplaintScreen(id: s.pathParameters['id'] ?? ''),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/inbox',
-              pageBuilder: (_, __) => const NoTransitionPage(child: MessagesListScreen()),
-              routes: [
-                GoRoute(
-                  path: ':threadId',
-                  builder: (_, s) => ChatScreen(threadId: s.pathParameters['threadId'] ?? ''),
-                ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/profile',
-              pageBuilder: (_, __) => const NoTransitionPage(child: CustomerProfileScreen()),
-            ),
-          ]),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: CustomerProfileScreen()),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
         path: '/search',
         builder: (_, state) {
-          final extra = state.extra is Map ? Map<String, dynamic>.from(state.extra as Map) : const <String, dynamic>{};
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : const <String, dynamic>{};
           return SearchScreen(
-          initialCategory: state.uri.queryParameters['category'],
-          initialNearby: extra['nearby'] == true ||
-              state.uri.queryParameters['nearby'] == '1',
-        );
+            initialCategory: state.uri.queryParameters['category'],
+            initialNearby:
+                extra['nearby'] == true ||
+                state.uri.queryParameters['nearby'] == '1',
+          );
         },
       ),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, __) => const NotificationsScreen(),
+      ),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
       GoRoute(
-          path: '/wallet/statement', builder: (_, __) => const WalletStatementScreen()),
+        path: '/wallet/statement',
+        builder: (_, __) => const WalletStatementScreen(),
+      ),
       GoRoute(
         path: '/settings',
         builder: (_, __) => const SettingsScreen(),
         routes: [
-          GoRoute(path: 'language', builder: (_, __) => const LanguageSettingsScreen()),
-          GoRoute(path: 'currency', builder: (_, __) => const CurrencySettingsScreen()),
+          GoRoute(
+            path: 'language',
+            builder: (_, __) => const LanguageSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'currency',
+            builder: (_, __) => const CurrencySettingsScreen(),
+          ),
         ],
       ),
       GoRoute(path: '/support', builder: (_, __) => const SupportScreen()),
-      GoRoute(path: '/addresses', builder: (_, __) => const AddressBookScreen()),
-      GoRoute(path: '/profile/reviews', builder: (_, __) => const MyReviewsScreen()),
-      GoRoute(path: '/profile/coupons', builder: (_, __) => const CouponsScreen()),
-      GoRoute(path: '/payments', builder: (_, __) => const CustomerPaymentsScreen()),
+      GoRoute(
+        path: '/addresses',
+        builder: (_, __) => const AddressBookScreen(),
+      ),
+      GoRoute(
+        path: '/profile/reviews',
+        builder: (_, __) => const MyReviewsScreen(),
+      ),
+      GoRoute(
+        path: '/profile/coupons',
+        builder: (_, __) => const CouponsScreen(),
+      ),
+      GoRoute(
+        path: '/payments',
+        builder: (_, __) => const CustomerPaymentsScreen(),
+      ),
       // Simplified tax invoice — the Stitch `_5` reference as its own screen.
       GoRoute(
         path: '/payments/:paymentId/invoice',
@@ -256,61 +343,98 @@ final routerProvider = Provider<GoRouter>((ref) {
           paymentId: s.pathParameters['paymentId'] ?? '',
         ),
       ),
-      GoRoute(path: '/profile/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
-      GoRoute(path: '/complaints', builder: (_, __) => const CustomerComplaintsScreen()),
-      GoRoute(path: '/complaints/new', builder: (_, __) => const SubmitComplaintScreen()),
+      GoRoute(
+        path: '/profile/complaints',
+        builder: (_, __) => const CustomerComplaintsScreen(),
+      ),
+      GoRoute(
+        path: '/complaints',
+        builder: (_, __) => const CustomerComplaintsScreen(),
+      ),
+      GoRoute(
+        path: '/complaints/new',
+        builder: (_, __) => const SubmitComplaintScreen(),
+      ),
+      GoRoute(
+        path: '/complaints/:id',
+        builder: (_, s) =>
+            ComplaintDetailsScreen(id: s.pathParameters['id'] ?? ''),
+      ),
 
       // ------------------------------------------------ Provider shell
       StatefulShellRoute.indexedStack(
         builder: (_, __, shell) => ProviderShell(navigationShell: shell),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/p/dashboard',
-              pageBuilder: (_, __) => const NoTransitionPage(child: ProviderDashboardScreen()),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/p/requests',
-              pageBuilder: (_, __) => const NoTransitionPage(child: BookingRequestsFeedScreen()),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/p/bookings',
-              pageBuilder: (_, __) => const NoTransitionPage(child: ProviderBookingsScreen()),
-              routes: [
-                GoRoute(
-                  path: ':id',
-                  builder: (_, s) =>
-                      ProviderBookingDetailsScreen(id: s.pathParameters['id'] ?? ''),
-                ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/p/earnings',
-              pageBuilder: (_, __) => const NoTransitionPage(child: EarningsScreen()),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/p/inbox',
-              pageBuilder: (_, __) => const NoTransitionPage(child: ProviderInboxScreen()),
-              routes: [
-                GoRoute(
-                  path: ':t',
-                  builder: (_, s) => ChatScreen(threadId: s.pathParameters['t'] ?? ''),
-                ),
-              ],
-            ),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/p/dashboard',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: ProviderDashboardScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/p/requests',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: BookingRequestsFeedScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/p/bookings',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: ProviderBookingsScreen()),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (_, s) => ProviderBookingDetailsScreen(
+                      id: s.pathParameters['id'] ?? '',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/p/earnings',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: EarningsScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/p/inbox',
+                pageBuilder: (_, __) =>
+                    const NoTransitionPage(child: ProviderInboxScreen()),
+                routes: [
+                  GoRoute(
+                    path: ':t',
+                    builder: (_, s) =>
+                        ChatScreen(threadId: s.pathParameters['t'] ?? ''),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
-      GoRoute(path: '/p/withdraw', builder: (_, __) => const WithdrawRequestScreen()),
-      GoRoute(path: '/p/services', builder: (_, __) => const ServiceCatalogScreen()),
+      GoRoute(
+        path: '/p/withdraw',
+        builder: (_, __) => const WithdrawRequestScreen(),
+      ),
+      GoRoute(
+        path: '/p/services',
+        builder: (_, __) => const ServiceCatalogScreen(),
+      ),
       GoRoute(
         path: '/p/services/new',
         builder: (_, __) => const ProviderServiceFormScreen(),
@@ -318,16 +442,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/p/services/edit',
         builder: (_, s) {
-          final extra = s.extra is Map ? Map<String, dynamic>.from(s.extra as Map) : const <String, dynamic>{};
+          final extra = s.extra is Map
+              ? Map<String, dynamic>.from(s.extra as Map)
+              : const <String, dynamic>{};
+          // A deep link without the service payload would otherwise PUT to
+          // `/provider/services/` with an empty id. Send it to the catalog.
+          if (extra.isEmpty || extra['id'] == null) {
+            return const ServiceCatalogScreen();
+          }
           return ProviderServiceFormScreen(existing: extra);
         },
       ),
-      GoRoute(path: '/p/notifications', builder: (_, __) => const ProviderNotificationsScreen()),
       GoRoute(
-          path: '/p/service-requests',
-          builder: (_, __) => const ProviderServiceRequestsScreen()),
+        path: '/p/notifications',
+        builder: (_, __) => const ProviderNotificationsScreen(),
+      ),
       GoRoute(
-          path: '/p/reviews', builder: (_, __) => const ProviderReviewsScreen()),
+        path: '/p/service-requests',
+        builder: (_, __) => const ProviderServiceRequestsScreen(),
+      ),
+      GoRoute(
+        path: '/p/service-requests/new',
+        builder: (_, __) => const B2bRequestFormScreen(),
+      ),
+      GoRoute(
+        path: '/p/reviews',
+        builder: (_, __) => const ProviderReviewsScreen(),
+      ),
       GoRoute(
         path: '/p/settings',
         builder: (_, __) => const ProviderSettingsScreen(),
@@ -344,10 +485,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'portfolio',
             builder: (_, __) => const ProviderPortfolioScreen(),
           ),
+          GoRoute(
+            path: 'language',
+            builder: (_, __) => const LanguageSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'currency',
+            builder: (_, __) => const CurrencySettingsScreen(),
+          ),
         ],
       ),
       GoRoute(path: '/p/kyc', builder: (_, __) => const KycStatusScreen()),
       GoRoute(path: '/p/calendar', builder: (_, __) => const CalendarScreen()),
+      GoRoute(
+        path: '/p/working-hours',
+        builder: (_, __) => const WorkingHoursScreen(),
+      ),
     ],
   );
 }, name: 'routerProvider');

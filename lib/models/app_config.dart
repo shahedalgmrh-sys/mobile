@@ -35,12 +35,12 @@ class AppConfig {
   bool get isProvider => initialRole == UserRole.provider;
 
   factory AppConfig.customer() => const AppConfig(
-        appName: 'Sahel',
+        appName: 'Saber',
         initialRole: UserRole.customer,
       );
 
   factory AppConfig.provider() => const AppConfig(
-        appName: 'Sahel Provider',
+        appName: 'Saber Provider',
         initialRole: UserRole.provider,
       );
 }

@@ -60,11 +60,23 @@ class CustomerRepository {
   }) async =>
       dataList(apiData(await source.bookings(status: status, page: page)));
 
+  /// Full envelope for bookings: `data` holds the rows while the paginator
+  /// `meta` is a sibling at the top level (unlike `/customer/reports/{type}`,
+  /// which nests the whole paginator under `data`). Returning the envelope
+  /// keeps both, so callers can paginate and show the real total.
+  Future<Map<String, dynamic>> bookingsPage({String? status, int? page}) async {
+    final response = await source.bookings(status: status, page: page);
+    final body = response.data;
+    return body is Map<String, dynamic> ? body : <String, dynamic>{};
+  }
+
   /// Creates a booking. A fresh UUIDv4 idempotency key is attached on every
   /// client-initiated call so a retried submit cannot create duplicates
   /// (server honors `X-Idempotency-Key` / `idempotency_key`).
   Future<Map<String, dynamic>> createBooking(Map<String, dynamic> data) async =>
-      asMap(apiData(await source.createBooking(data, idempotencyKey: _uuid.v4())));
+      asMap(
+        apiData(await source.createBooking(data, idempotencyKey: _uuid.v4())),
+      );
 
   /// Time slots available for a given service on a specific date.
   /// Server shape: `data: {date, service_id, slots: [...]}` — the inner
@@ -191,7 +203,14 @@ class CustomerRepository {
   Future<Map<String, dynamic>> conversation(String id) async {
     final payload = apiData(await source.conversation(id));
     final map = asMap(payload);
-    return asMap(map['conversation'] ?? map['thread'] ?? payload);
+    final conversation = asMap(map['conversation'] ?? map['thread'] ?? payload);
+    // The API returns `{conversation: {...}, messages: [...]}`. Keep the
+    // sibling message list instead of discarding it, otherwise the thread
+    // always renders as empty.
+    final messages = dataList(
+      map['messages'] ?? conversation['messages'] ?? map['chat_messages'],
+    );
+    return {...conversation, 'messages': messages};
   }
 
   Future<Map<String, dynamic>> sendMessage(String id, String body) async =>
@@ -201,8 +220,12 @@ class CustomerRepository {
   Future<List<Map<String, dynamic>>> notifications({String? page}) async =>
       dataList(apiData(await source.notifications(page: page)));
 
-  Future<List<Map<String, dynamic>>> unreadNotifications() async =>
-      dataList(apiData(await source.unreadNotifications()));
+  /// `/customer/notifications/unread` returns a top-level `unread_count`,
+  /// not a list. Parse it directly so the home badge reflects real data.
+  Future<int> unreadNotificationsCount() async {
+    final body = (await source.unreadNotifications()).data;
+    return body is Map ? toInt(body['unread_count']) : 0;
+  }
 
   Future<void> markNotificationRead(String id) =>
       source.markNotificationRead(id);
@@ -247,8 +270,8 @@ class CustomerRepository {
     );
   }
 
-  Future<Map<String, dynamic>> reports(String type) async =>
-      asMap(apiData(await source.reports(type)));
+  Future<Map<String, dynamic>> reports(String type, {String? page}) async =>
+      asMap(apiData(await source.reports(type, page: page)));
 }
 
 /// One page of `/customer/search` results plus the API's pagination metadata.

@@ -18,17 +18,29 @@ class SupportScreen extends ConsumerStatefulWidget {
 class _SupportScreenState extends ConsumerState<SupportScreen> {
   final _subject = TextEditingController();
   final _message = TextEditingController();
+  final _email = TextEditingController();
   bool _sending = false;
   bool _showFaqs = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = ref.read(authNotifierProvider).user ?? {};
+    _email.text = str(user['email']);
+  }
 
   @override
   void dispose() {
     _subject.dispose();
     _message.dispose();
+    _email.dispose();
     super.dispose();
   }
 
   Future<void> _send() async {
+    final email = _email.text.trim();
+    final emailValid =
+        RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
     if (_subject.text.trim().isEmpty ||
         _message.text.trim().isEmpty ||
         _sending) {
@@ -36,12 +48,17 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
           content: Text('أدخل الموضوع ونص الرسالة')));
       return;
     }
+    if (!emailValid) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('أدخل بريدًا إلكترونيًا صالحًا للرد عليك')));
+      return;
+    }
     setState(() => _sending = true);
     try {
       final user = ref.read(authNotifierProvider).user ?? {};
       await ref.read(catalogRepositoryProvider).sendContactMessage(
             name: str(user['name'], 'مستخدم التطبيق'),
-            email: str(user['email'], 'noreply@sahel.app'),
+            email: email,
             phone: str(user['phone']),
             subject: _subject.text.trim(),
             message: _message.text.trim(),
@@ -165,6 +182,17 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
             ),
             const SizedBox(height: 12),
             TextField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              textDirection: TextDirection.ltr,
+              decoration: const InputDecoration(
+                labelText: 'البريد الإلكتروني',
+                hintText: 'name@example.com',
+                prefixIcon: Icon(Icons.alternate_email),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
               controller: _message,
               maxLines: 5,
               decoration: const InputDecoration(
@@ -189,23 +217,28 @@ class _SupportScreenState extends ConsumerState<SupportScreen> {
   }
 
   Widget _tile(IconData i, String t, String sub, {VoidCallback? onTap}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+    // Material (not a decorated Container) so ListTile ink splashes stay
+    // visible on top of the card colour.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
         color: SahelColors.surface,
-        borderRadius: SahelRadii.mdRadius,
-        border: Border.all(color: SahelColors.border),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(i, color: SahelColors.primary600),
-        title:
-            Text(t, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(sub,
-            style:
-                const TextStyle(color: SahelColors.muted, fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right,
-            color: SahelColors.muted),
+        clipBehavior: Clip.antiAlias,
+        shape: const RoundedRectangleBorder(
+          borderRadius: SahelRadii.mdRadius,
+          side: BorderSide(color: SahelColors.border),
+        ),
+        child: ListTile(
+          onTap: onTap,
+          leading: Icon(i, color: SahelColors.primary600),
+          title:
+              Text(t, style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text(sub,
+              style:
+                  const TextStyle(color: SahelColors.muted, fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right,
+              color: SahelColors.muted),
+        ),
       ),
     );
   }

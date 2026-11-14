@@ -18,7 +18,11 @@ class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   static const _categoryStyles = [
-    (Icons.cleaning_services, SahelColors.primary700, SahelColors.primarySurface),
+    (
+      Icons.cleaning_services,
+      SahelColors.primary700,
+      SahelColors.primarySurface,
+    ),
     (Icons.plumbing, SahelColors.primary600, SahelColors.secondaryContainer),
     (Icons.bolt, SahelColors.amber800, SahelColors.tertiaryFixed),
     (Icons.ac_unit, SahelColors.primary, SahelColors.surfaceInset),
@@ -32,7 +36,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(homeFeedProvider);
     final auth = ref.watch(authNotifierProvider);
-    final unread = ref.watch(unreadNotificationsProvider).valueOrNull;
+    final unread = ref.watch(unreadNotificationsProvider).valueOrNull ?? 0;
     final city = auth.user?['city']?.toString();
 
     return Scaffold(
@@ -41,14 +45,13 @@ class HomeScreen extends ConsumerWidget {
         children: [
           _HomeHeader(
             city: (city != null && city.isNotEmpty) ? city : 'حدد موقعك',
-            hasUnread: (unread?.length ?? 0) > 0,
+            hasUnread: unread > 0,
           ),
           Expanded(
             child: feed.when(
               loading: () => const _HomeLoading(),
-              error: (e, _) => _HomeError(
-                onRetry: () => ref.invalidate(homeFeedProvider),
-              ),
+              error: (e, _) =>
+                  _HomeError(onRetry: () => ref.invalidate(homeFeedProvider)),
               data: (data) => RefreshIndicator(
                 color: SahelColors.primary,
                 onRefresh: () async => ref.invalidate(homeFeedProvider),
@@ -73,9 +76,7 @@ class _HomeHeader extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: SahelColors.surface,
-        border: Border(
-          bottom: BorderSide(color: SahelColors.border),
-        ),
+        border: Border(bottom: BorderSide(color: SahelColors.border)),
         boxShadow: [
           BoxShadow(
             color: SahelColors.shadowSm,
@@ -96,22 +97,18 @@ class _HomeHeader extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: const BoxDecoration(
-                      gradient: SahelColors.primaryGradient,
+                      color: SahelColors.surface,
                       shape: BoxShape.circle,
                     ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      'س',
-                      style: TextStyle(
-                        color: SahelColors.onPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
+                    padding: const EdgeInsets.all(4),
+                    child: Image.asset(
+                      'assets/images/saber-mark.png',
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'ساحل',
+                    'سابر',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -136,8 +133,11 @@ class _HomeHeader extends StatelessWidget {
                         color: SahelColors.primary,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.person,
-                          size: 18, color: SahelColors.onPrimary),
+                      child: const Icon(
+                        Icons.person,
+                        size: 18,
+                        color: SahelColors.onPrimary,
+                      ),
                     ),
                   ),
                 ],
@@ -159,8 +159,11 @@ class _HomeHeader extends StatelessWidget {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.search,
-                                size: 22, color: SahelColors.textMuted),
+                            Icon(
+                              Icons.search,
+                              size: 22,
+                              color: SahelColors.textMuted,
+                            ),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -215,9 +218,7 @@ class _LocationPill extends ConsumerWidget {
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(
-                  error.toString().replaceFirst('Exception: ', ''),
-                ),
+                content: Text(error.toString().replaceFirst('Exception: ', '')),
               ),
             );
           }
@@ -234,7 +235,11 @@ class _LocationPill extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.location_on, size: 16, color: SahelColors.primary),
+              const Icon(
+                Icons.location_on,
+                size: 16,
+                color: SahelColors.primary,
+              ),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
@@ -325,11 +330,35 @@ class _HomeContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        _PromoHero(offer: data.offers.isNotEmpty ? data.offers.first : null),
-        const SizedBox(height: 16),
+        if (data.offers.isNotEmpty) ...[
+          _PromoHero(offer: data.offers.first),
+          const SizedBox(height: 16),
+        ],
         const _AdsStrip(),
         const SizedBox(height: 24),
         _CategoriesSection(categories: data.categories),
+        if (data.offers.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _SectionHeader(
+            title: 'عروض وخصومات'.t(lang),
+            subtitle: 'عروض فعّالة منشورة من الإدارة'.t(lang),
+            actionLabel: 'عرض الكل'.t(lang),
+            onAction: () => context.push('/home/offers'),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 176,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: data.offers.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) => _HomeOfferCard(
+                offer: data.offers[i],
+                onTap: () => context.push('/home/offers'),
+              ),
+            ),
+          ),
+        ],
         if (popular.isNotEmpty) ...[
           const SizedBox(height: 24),
           _SectionHeader(
@@ -357,7 +386,7 @@ class _HomeContent extends StatelessWidget {
             title: 'تعرف على أفضل المزوّدين'.t(lang),
             subtitle: 'مزوّدون معتمدون بتقييمات عالية وخدمة موثوقة'.t(lang),
             actionLabel: 'كل المزوّدين'.t(lang),
-            onAction: () => context.push('/search'),
+            onAction: () => context.push('/home/providers'),
           ),
           const SizedBox(height: 12),
           for (final provider in data.featuredProviders) ...[
@@ -428,8 +457,11 @@ class _SectionHeader extends StatelessWidget {
                     color: SahelColors.primary,
                   ),
                 ),
-                const Icon(Icons.arrow_back,
-                    size: 16, color: SahelColors.primary),
+                const Icon(
+                  Icons.arrow_back,
+                  size: 16,
+                  color: SahelColors.primary,
+                ),
               ],
             ),
           ),
@@ -522,15 +554,21 @@ class _AdsStrip extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(ad.title,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 14)),
+                                Text(
+                                  ad.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                  ),
+                                ),
                                 if (ad.link != null)
-                                  Text(ad.link!,
-                                      style: const TextStyle(
-                                          fontSize: 11,
-                                          color: SahelColors.primary600)),
+                                  Text(
+                                    ad.link!,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: SahelColors.primary600,
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
@@ -547,16 +585,35 @@ class _AdsStrip extends ConsumerWidget {
 }
 
 class _PromoHero extends StatelessWidget {
-  const _PromoHero({this.offer});
+  const _PromoHero({required this.offer});
 
-  final OfferItem? offer;
+  final OfferItem offer;
+
+  String? get _discountLabel {
+    final type = (offer.discountType ?? '').toLowerCase();
+    final value = offer.discountValue;
+    if (type == 'percentage' || type == 'percent') {
+      final percent = offer.discountPercent ?? value;
+      return (percent != null && percent > 0)
+          ? 'خصم ${percent.toStringAsFixed(0)}%'
+          : null;
+    }
+    if (type == 'fixed' || type == 'amount') {
+      return (value != null && value > 0)
+          ? 'خصم ${value.toStringAsFixed(0)}'
+          : null;
+    }
+    final percent = offer.discountPercent;
+    return (percent != null && percent > 0)
+        ? 'خصم ${percent.toStringAsFixed(0)}%'
+        : null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final title = offer?.title ?? 'خصم 20% على باقات التنظيف الشامل';
-    final description = offer?.description ??
-        'استمتع بنظافة استثنائية لمنزلك بأعلى المعايير مع كوادر موثوقة ومضمونة.';
-    final discount = offer?.discountPercent;
+    final title = offer.title.isNotEmpty ? offer.title : 'عرض خاص';
+    final description = offer.description;
+    final discount = _discountLabel;
 
     return Container(
       decoration: const BoxDecoration(
@@ -600,7 +657,9 @@ class _PromoHero extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: SahelColors.onPrimary.withValues(alpha: 0.20),
                         borderRadius: SahelRadii.pillRadius,
@@ -608,8 +667,11 @@ class _PromoHero extends StatelessWidget {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.auto_awesome,
-                              size: 14, color: SahelColors.onPrimary),
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 14,
+                            color: SahelColors.onPrimary,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'عرض الموسم المميّز',
@@ -623,24 +685,25 @@ class _PromoHero extends StatelessWidget {
                       ),
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
-                      decoration: const BoxDecoration(
-                        color: SahelColors.tertiaryFixed,
-                        borderRadius: SahelRadii.pillRadius,
-                      ),
-                      child: Text(
-                        discount != null
-                            ? 'خصم ${discount.toStringAsFixed(0)}%'
-                            : 'كود: SAHEL20',
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: SahelColors.onTertiaryFixed,
+                    if (discount != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: SahelColors.tertiaryFixed,
+                          borderRadius: SahelRadii.pillRadius,
+                        ),
+                        child: Text(
+                          discount,
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: SahelColors.onTertiaryFixed,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -653,17 +716,19 @@ class _PromoHero extends StatelessWidget {
                     color: SahelColors.onPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: SahelColors.onPrimary.withValues(alpha: 0.85),
+                if (description != null && description.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: SahelColors.onPrimary.withValues(alpha: 0.85),
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -674,8 +739,11 @@ class _PromoHero extends StatelessWidget {
                         color: SahelColors.secondaryContainer,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.verified,
-                          size: 14, color: SahelColors.onSecondaryContainer),
+                      child: const Icon(
+                        Icons.verified,
+                        size: 14,
+                        color: SahelColors.onSecondaryContainer,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     const Expanded(
@@ -689,9 +757,9 @@ class _PromoHero extends StatelessWidget {
                       ),
                     ),
                     SahelButton.whiteBgPrimaryText(
-                      label: 'احجز الآن',
-                      width: 120,
-                      onPressed: () => context.push('/search'),
+                      label: 'عرض التفاصيل',
+                      width: 130,
+                      onPressed: () => context.push('/home/offers'),
                     ),
                   ],
                 ),
@@ -699,6 +767,135 @@ class _PromoHero extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact offer preview used in the home offers strip.
+class _HomeOfferCard extends StatelessWidget {
+  const _HomeOfferCard({required this.offer, required this.onTap});
+
+  final OfferItem offer;
+  final VoidCallback onTap;
+
+  String? get _discountLabel {
+    final type = (offer.discountType ?? '').toLowerCase();
+    final value = offer.discountValue;
+    if (type == 'percentage' || type == 'percent') {
+      final percent = offer.discountPercent ?? value;
+      return (percent != null && percent > 0)
+          ? '-${percent.toStringAsFixed(0)}%'
+          : null;
+    }
+    if (type == 'fixed' || type == 'amount') {
+      return (value != null && value > 0)
+          ? 'خصم ${value.toStringAsFixed(0)}'
+          : null;
+    }
+    final percent = offer.discountPercent;
+    return (percent != null && percent > 0)
+        ? '-${percent.toStringAsFixed(0)}%'
+        : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final discount = _discountLabel;
+    final hasImage = offer.image != null && offer.image!.isNotEmpty;
+
+    return SizedBox(
+      width: 240,
+      child: Material(
+        color: SahelColors.surface,
+        borderRadius: SahelRadii.mdRadius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: SahelRadii.mdRadius,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: SahelColors.surface,
+              borderRadius: SahelRadii.mdRadius,
+              border: Border.all(color: SahelColors.border),
+              boxShadow: SahelElevations.xs,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(15),
+                        ),
+                        child: hasImage
+                            ? Image.network(
+                                offer.image!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    const _OfferPreviewFallback(),
+                              )
+                            : const _OfferPreviewFallback(),
+                      ),
+                      if (discount != null)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: const BoxDecoration(
+                              color: SahelColors.red600,
+                              borderRadius: SahelRadii.pillRadius,
+                            ),
+                            child: Text(
+                              discount,
+                              style: const TextStyle(
+                                color: SahelColors.onPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    offer.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: SahelTextStyles.titleCard,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OfferPreviewFallback extends StatelessWidget {
+  const _OfferPreviewFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: SahelColors.surfaceInset,
+      child: const Center(
+        child: Icon(
+          Icons.local_offer_outlined,
+          size: 32,
+          color: SahelColors.primary200,
+        ),
       ),
     );
   }
@@ -758,8 +955,11 @@ class _ProviderCard extends StatelessWidget {
                             color: SahelColors.primarySurface,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.home_repair_service,
-                              size: 32, color: SahelColors.primary),
+                          child: const Icon(
+                            Icons.home_repair_service,
+                            size: 32,
+                            color: SahelColors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -783,48 +983,55 @@ class _ProviderCard extends StatelessWidget {
                         ),
                         if (provider.isVerified) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.verified,
-                              size: 18, color: SahelColors.primary),
+                          const Icon(
+                            Icons.verified,
+                            size: 18,
+                            color: SahelColors.primary,
+                          ),
                         ],
                       ],
                     ),
                     if (provider.city != null) ...[
                       const SizedBox(height: 2),
-                      Text(
-                        provider.city!,
-                        style: SahelTextStyles.caption,
+                      Text(provider.city!, style: SahelTextStyles.caption),
+                    ],
+                    if (provider.totalReviews > 0) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 3,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: SahelColors.amber50,
+                          borderRadius: SahelRadii.pillRadius,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              size: 16,
+                              color: SahelColors.amber500,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              provider.ratingAvg.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: SahelColors.amber800,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${provider.totalReviews} تقييم)',
+                              style: SahelTextStyles.caption,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 3),
-                      decoration: const BoxDecoration(
-                        color: SahelColors.amber50,
-                        borderRadius: SahelRadii.pillRadius,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star,
-                              size: 16, color: SahelColors.amber500),
-                          const SizedBox(width: 4),
-                          Text(
-                            provider.ratingAvg.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: SahelColors.amber800,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '(${provider.totalReviews} تقييم)',
-                            style: SahelTextStyles.caption,
-                          ),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -839,7 +1046,7 @@ class _ProviderCard extends StatelessWidget {
                             label: 'حجز ناجح',
                           ),
                           _ProviderStat(
-                            value: '${provider.serviceIds.length}',
+                            value: '${provider.servicesCount}',
                             label: 'خدمات نشطة',
                           ),
                           _ProviderStat(
@@ -895,10 +1102,7 @@ class _ProviderStat extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              color: SahelColors.textMuted,
-            ),
+            style: const TextStyle(fontSize: 12, color: SahelColors.textMuted),
           ),
         ],
       ),
@@ -926,8 +1130,11 @@ class _AssuranceStrip extends StatelessWidget {
               color: SahelColors.primary.withValues(alpha: 0.10),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.verified_user,
-                size: 22, color: SahelColors.primary),
+            child: const Icon(
+              Icons.verified_user,
+              size: 22,
+              color: SahelColors.primary,
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -935,7 +1142,7 @@ class _AssuranceStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'ضمان ساحل الماسي',
+                  'ضمان سابر الماسي',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1011,13 +1218,18 @@ class _HomeError extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_outlined,
-              size: 56, color: SahelColors.textMuted),
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 56,
+            color: SahelColors.textMuted,
+          ),
           const SizedBox(height: 12),
           const Text(
             'تعذر تحميل المحتوى',
             style: TextStyle(
-                fontWeight: FontWeight.w700, color: SahelColors.textMuted),
+              fontWeight: FontWeight.w700,
+              color: SahelColors.textMuted,
+            ),
           ),
           const SizedBox(height: 12),
           TextButton.icon(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/errors/failures.dart';
@@ -18,8 +18,9 @@ class BookingRequestsFeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pending =
-        ref.watch(providerBookingsProvider((status: 'pending', date: null)));
+    final pending = ref.watch(
+      providerBookingsProvider((status: 'pending', date: null)),
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('طلبات الحجز')),
@@ -37,8 +38,11 @@ class BookingRequestsFeedScreen extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off_outlined,
-                    size: 56, color: SahelColors.muted),
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 56,
+                  color: SahelColors.muted,
+                ),
                 const SizedBox(height: 12),
                 TextButton.icon(
                   onPressed: () => ref.invalidate(providerBookingsProvider),
@@ -58,14 +62,20 @@ class BookingRequestsFeedScreen extends ConsumerWidget {
                       Center(
                         child: Column(
                           children: [
-                            Icon(Icons.inbox_outlined,
-                                size: 56, color: SahelColors.muted),
+                            Icon(
+                              Icons.inbox_outlined,
+                              size: 56,
+                              color: SahelColors.muted,
+                            ),
                             SizedBox(height: 12),
-                            Text('لا توجد طلبات جديدة',
-                                style: TextStyle(
-                                    color: SahelColors.muted,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700)),
+                            Text(
+                              'لا توجد طلبات جديدة',
+                              style: TextStyle(
+                                color: SahelColors.muted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -75,8 +85,7 @@ class BookingRequestsFeedScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     itemCount: items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) =>
-                        _RequestCard(booking: items[i]),
+                    itemBuilder: (_, i) => _RequestCard(booking: items[i]),
                   ),
           ),
         ),
@@ -131,15 +140,13 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
         );
         // After accepting, open the booking details view directly.
         if (action == 'accept') {
-          context.push('/p/bookings/$id',
-              extra: widget.booking);
+          context.push('/p/bookings/$id', extra: widget.booking);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_failureMessage(e))),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(_failureMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -151,12 +158,12 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('سبب الرفض'),
+        title: const Text('سبب الرفض (مطلوب)'),
         content: TextField(
           controller: controller,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: 'اكتب سبب الرفض إن وجد',
+            hintText: 'اذكر سبب رفض الطلب — مطلوب من الخادم',
           ),
         ),
         actions: [
@@ -164,9 +171,14 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('إلغاء'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('تأكيد الرفض'),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (_, value, __) => FilledButton(
+              onPressed: value.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, value.text.trim()),
+              child: const Text('تأكيد الرفض'),
+            ),
           ),
         ],
       ),
@@ -202,27 +214,29 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                child: Text(name.isNotEmpty ? name[0] : '؟'),
-              ),
+              CircleAvatar(child: Text(name.isNotEmpty ? name[0] : '؟')),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        style:
-                            const TextStyle(fontWeight: FontWeight.w700)),
+                    Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     if (loc.isNotEmpty)
-                      Text(loc,
-                          style: const TextStyle(
-                              color: SahelColors.muted, fontSize: 12)),
+                      Text(
+                        loc,
+                        style: const TextStyle(
+                          color: SahelColors.muted,
+                          fontSize: 12,
+                        ),
+                      ),
                   ],
                 ),
               ),
               BookingStatusPill(
-                status: BookingStatusX.fromJson(
-                    str(b['status'], 'pending')),
+                status: BookingStatusX.fromJson(str(b['status'], 'pending')),
               ),
             ],
           ),
@@ -235,30 +249,40 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.home_repair_service,
-                    color: SahelColors.primary600),
+                const Icon(
+                  Icons.home_repair_service,
+                  color: SahelColors.primary600,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(svc,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w700)),
+                      Text(
+                        svc,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       if (time.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Text(time,
-                            style: const TextStyle(
-                                color: SahelColors.muted, fontSize: 12)),
+                        Text(
+                          time,
+                          style: const TextStyle(
+                            color: SahelColors.muted,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ],
                   ),
                 ),
-                Text(price,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: SahelColors.primary700,
-                        fontSize: 16)),
+                Text(
+                  price,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: SahelColors.primary700,
+                    fontSize: 16,
+                  ),
+                ),
               ],
             ),
           ),
@@ -267,9 +291,10 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
             children: [
               Expanded(
                 child: SahelButton.soft(
-                    label: 'رفض',
-                    onTap: _busy ? null : () => _act('reject'),
-                    height: 40),
+                  label: 'رفض',
+                  onTap: _busy ? null : () => _act('reject'),
+                  height: 40,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -281,8 +306,7 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
                           child: SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
                       )
@@ -290,7 +314,8 @@ class _RequestCardState extends ConsumerState<_RequestCard> {
                         label: 'قبول الطلب',
                         variant: SahelButtonVariant.gradient,
                         onPressed: () => _act('accept'),
-                        height: 40),
+                        height: 40,
+                      ),
               ),
             ],
           ),

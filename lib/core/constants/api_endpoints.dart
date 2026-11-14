@@ -94,6 +94,8 @@ class ApiEndpoints {
   static const String providerServices = '/provider/services';
   static String providerService(String id) => '/provider/services/$id';
   static String serviceToggleActive(String id) => '/provider/services/$id/toggle-active';
+  static String serviceToggleAvailable(String id) =>
+      '/provider/services/$id/toggle-available';
   static String serviceDuplicate(String id) => '/provider/services/$id/duplicate';
 
   static const String providerBookings = '/provider/bookings';
