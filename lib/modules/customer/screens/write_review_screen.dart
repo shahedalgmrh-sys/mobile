@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 
@@ -31,12 +32,14 @@ class _WriteReviewScreenState extends ConsumerState<WriteReviewScreen> {
   Future<void> _submit() async {
     if (_overall < 1 || _submitting) return;
     setState(() => _submitting = true);
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref.read(customerRepositoryProvider).storeReview(
             bookingId: widget.id,
             rating: _overall.round(),
             comment: _comment.text.trim().isEmpty ? null : _comment.text.trim(),
           );
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('شكراً لك — تم نشر تقييمك')));

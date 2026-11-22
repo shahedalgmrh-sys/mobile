@@ -9,6 +9,7 @@ import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -211,16 +212,20 @@ class _BookingDetailsBody extends ConsumerWidget {
                           fontSize: 14,
                         ),
                       ),
-                      const Spacer(),
-                      ProviderMiniCard(
-                        businessName: str(
-                          provider['business_name'] ?? providerUser['name'],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ProviderMiniCard(
+                          businessName: str(
+                            provider['business_name'] ?? providerUser['name'],
+                          ),
+                          avatarUrl: strOrNull(
+                            provider['business_logo'] ?? providerUser['avatar'],
+                          ),
+                          ratingAvg: toDoubleOrNull(
+                            provider['average_rating'],
+                          ),
+                          isVerified: toBool(provider['is_verified']),
                         ),
-                        avatarUrl: strOrNull(
-                          provider['business_logo'] ?? providerUser['avatar'],
-                        ),
-                        ratingAvg: toDoubleOrNull(provider['average_rating']),
-                        isVerified: toBool(provider['is_verified']),
                       ),
                     ],
                   ),
@@ -523,10 +528,12 @@ class _BookingDetailsBody extends ConsumerWidget {
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
     final reason = await _askReason(context);
     if (reason == null || !context.mounted) return;
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref
           .read(customerRepositoryProvider)
           .cancelBooking(bookingId, reason);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerBookingProvider(bookingId));
       ref.invalidate(customerBookingsProvider);
     } catch (_) {
@@ -538,8 +545,10 @@ class _BookingDetailsBody extends ConsumerWidget {
   }
 
   Future<void> _rebook(BuildContext context, WidgetRef ref) async {
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref.read(customerRepositoryProvider).rebook(bookingId);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerBookingsProvider);
       if (context.mounted) context.go('/bookings');
     } catch (_) {
@@ -646,10 +655,12 @@ class _BookingDetailsBody extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(const SnackBar(content: Text('جاري تحديث الموعد…')));
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref
           .read(customerRepositoryProvider)
           .rescheduleBooking(bookingId, _fmtDate(pickedDate), timeStr);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerBookingProvider(bookingId));
       ref.invalidate(customerBookingsProvider);
       if (context.mounted) {
@@ -708,8 +719,10 @@ class _BookingDetailsBody extends ConsumerWidget {
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(const SnackBar(content: Text('جاري معالجة الدفع…')));
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref.read(customerRepositoryProvider).payBooking(bookingId, method);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerBookingProvider(bookingId));
       ref.invalidate(customerPaymentsProvider);
       ref.invalidate(walletTransactionsProvider);

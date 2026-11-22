@@ -5,6 +5,7 @@ import 'package:saber_flutter/data/repositories/catalog_repository.dart';
 import 'package:saber_flutter/modules/customer/screens/home/offers_screen.dart';
 import 'package:saber_flutter/modules/customer/screens/home/providers_directory_screen.dart';
 import 'package:saber_flutter/modules/customer/screens/provider_profile_screen.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 
 class _FakeOffers extends OffersCatalogController {
@@ -26,8 +27,24 @@ class _FakeDirectory extends ProviderDirectoryController {
       _state;
 }
 
+/// Empty, already-loaded favorites so the provider card renders without a
+/// signed-in session (the profile screen only looks the state up).
+class _EmptyFavorites extends CustomerFavoritesController {
+  @override
+  AsyncValue<Map<String, dynamic>> build() => const AsyncData(
+    <String, dynamic>{'providers': <dynamic>[], 'services': <dynamic>[]},
+  );
+}
+
 Widget _wrap(List<Override> overrides, Widget child) => ProviderScope(
-      overrides: overrides,
+      overrides: [
+        // The favorite heart resolves its lock keys from the account session;
+        // these screens do not need a real login.
+        sessionScopeProvider.overrideWithValue(
+          const SessionScope(isAuthenticated: false),
+        ),
+        ...overrides,
+      ],
       child: MaterialApp(home: child),
     );
 
@@ -150,9 +167,7 @@ void main() {
       _wrap(
         [
           publicProviderProfileProvider.overrideWith((ref, id) async => profile),
-          customerFavoritesProvider.overrideWith(
-            (ref) async => <String, dynamic>{'providers': [], 'services': []},
-          ),
+          customerFavoritesProvider.overrideWith(_EmptyFavorites.new),
         ],
         const ProviderProfileScreen(id: 'p1'),
       ),

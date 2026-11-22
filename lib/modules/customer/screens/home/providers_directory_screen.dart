@@ -10,6 +10,7 @@ import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/models/provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/empty_state.dart';
+import 'package:saber_flutter/shared/widgets/favorite_toggle_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
 
 /// Public providers directory backed by `GET /providers` (verified providers
@@ -453,6 +454,11 @@ class _ProviderDirectoryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
+              FavoriteToggleButton(
+                id: provider.id,
+                isProvider: true,
+                size: 36,
+              ),
               const Icon(Icons.chevron_left, color: SahelColors.textSoft),
             ],
           ),

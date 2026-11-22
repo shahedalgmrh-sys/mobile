@@ -26,6 +26,45 @@ import 'package:saber_flutter/modules/customer/screens/wallet/wallet_statement_s
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/providers/location_provider.dart';
 
+/// Session-scoped controllers are overridden at the controller level; these
+/// stubs expose fixed data without touching the network.
+class _StubComplaints extends CustomerComplaintsController {
+  _StubComplaints(this._value);
+  final List<Map<String, dynamic>> _value;
+  @override
+  AsyncValue<List<Map<String, dynamic>>> build() => AsyncData(_value);
+}
+
+class _StubWallet extends CustomerWalletController {
+  _StubWallet(this._value);
+  final Map<String, dynamic> _value;
+  @override
+  AsyncValue<Map<String, dynamic>> build() => AsyncData(_value);
+}
+
+class _FailingWallet extends CustomerWalletController {
+  _FailingWallet(this._error);
+  final Object _error;
+  @override
+  AsyncValue<Map<String, dynamic>> build() =>
+      AsyncError(_error, StackTrace.current);
+}
+
+class _StubWalletTransactions extends WalletTransactionsController {
+  _StubWalletTransactions(this._value);
+  final List<Map<String, dynamic>> _value;
+  @override
+  AsyncValue<List<Map<String, dynamic>>> build() => AsyncData(_value);
+}
+
+class _FailingWalletTransactions extends WalletTransactionsController {
+  _FailingWalletTransactions(this._error);
+  final Object _error;
+  @override
+  AsyncValue<List<Map<String, dynamic>>> build() =>
+      AsyncError(_error, StackTrace.current);
+}
+
 class _RecordingAdapter implements HttpClientAdapter {
   _RecordingAdapter(this.body);
 
@@ -220,7 +259,9 @@ void main() {
         tester,
         const CustomerComplaintsScreen(),
         overrides: [
-          customerComplaintsProvider.overrideWith((ref) async => [complaint]),
+          customerComplaintsProvider.overrideWith(
+            () => _StubComplaints([complaint]),
+          ),
         ],
       );
 
@@ -242,7 +283,9 @@ void main() {
         tester,
         const ComplaintDetailsScreen(id: 'cmp-1'),
         overrides: [
-          customerComplaintsProvider.overrideWith((ref) async => [complaint]),
+          customerComplaintsProvider.overrideWith(
+            () => _StubComplaints([complaint]),
+          ),
         ],
       );
 
@@ -365,7 +408,7 @@ void main() {
         const WalletScreen(),
         overrides: [
           customerWalletProvider.overrideWith(
-            (ref) async => {
+            () => _StubWallet({
               'id': 'w-1',
               'balance': 1234.5,
               'pending_balance': 25,
@@ -373,10 +416,10 @@ void main() {
               'total_debited': 3790.5,
               'currency': 'SAR',
               'is_active': true,
-            },
+            }),
           ),
           walletTransactionsProvider.overrideWith(
-            (ref) async => [
+            () => _StubWalletTransactions([
               {
                 'id': 't-1',
                 'transaction_number': 'WT-1',
@@ -388,7 +431,7 @@ void main() {
                 'status': 'pending',
                 'created_at': '2026-11-10T10:00:00Z',
               },
-            ],
+            ]),
           ),
         ],
       );
@@ -412,10 +455,12 @@ void main() {
         tester,
         const WalletScreen(),
         overrides: [
-          customerWalletProvider
-              .overrideWith((ref) async => throw Exception('wallet')),
-          walletTransactionsProvider
-              .overrideWith((ref) async => throw Exception('txs')),
+          customerWalletProvider.overrideWith(
+            () => _FailingWallet(Exception('wallet')),
+          ),
+          walletTransactionsProvider.overrideWith(
+            () => _FailingWalletTransactions(Exception('txs')),
+          ),
         ],
       );
 
@@ -455,14 +500,14 @@ void main() {
         overrides: [
           customerRepositoryProvider.overrideWithValue(repository),
           customerWalletProvider.overrideWith(
-            (ref) async => {
+            () => _StubWallet({
               'id': 'w-1',
               'balance': 1234.5,
               'pending_balance': 0,
               'total_credited': 5000,
               'total_debited': 3790.5,
               'currency': 'SAR',
-            },
+            }),
           ),
         ],
       );

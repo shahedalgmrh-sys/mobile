@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/service.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
+import 'favorite_toggle_button.dart';
 import 'sahel_button.dart';
 
 /// Base white card plane: hairline border + ultra-subtle shadow, per the
@@ -245,6 +246,7 @@ class ServiceCard extends StatelessWidget {
                     icon: icon,
                     eyebrow: eyebrow,
                     discountPercent: _discountPercent,
+                    serviceId: service?.id,
                     isFavorite: isFavorite,
                     onFavorite: onFavorite,
                   ),
@@ -273,6 +275,7 @@ class _Media extends StatelessWidget {
     this.icon,
     required this.eyebrow,
     this.discountPercent,
+    this.serviceId,
     this.isFavorite = false,
     this.onFavorite,
   });
@@ -281,6 +284,11 @@ class _Media extends StatelessWidget {
   final IconData? icon;
   final String eyebrow;
   final double? discountPercent;
+
+  /// Real service identifier: when present the card uses the central
+  /// [FavoriteToggleButton] (favorites key `service:{id}`), otherwise it falls
+  /// back to the legacy static heart for display-only cards.
+  final String? serviceId;
   final bool isFavorite;
   final VoidCallback? onFavorite;
 
@@ -362,7 +370,17 @@ class _Media extends StatelessWidget {
                   ),
                 ),
               ),
-            if (onFavorite != null)
+            if (serviceId != null && serviceId!.isNotEmpty)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: FavoriteToggleButton(
+                  id: serviceId!,
+                  size: 36,
+                  backgroundColor: SahelColors.slate900.withValues(alpha: 0.25),
+                ),
+              )
+            else if (onFavorite != null)
               Positioned(
                 top: 12,
                 left: 12,

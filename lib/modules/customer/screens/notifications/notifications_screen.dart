@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -68,12 +69,21 @@ class NotificationsScreen extends ConsumerWidget {
                     ref.read(customerNotificationsProvider).valueOrNull ??
                         const <Map<String, dynamic>>[];
                 final repo = ref.read(customerRepositoryProvider);
+                final session = ref.read(sessionScopeProvider);
                 for (final n in items) {
+                  if (!ref.read(sessionScopeProvider).sameSession(session)) {
+                    break;
+                  }
                   if (n['read_at'] == null) {
                     try {
                       await repo.markNotificationRead(str(n['id']));
                     } catch (_) {}
                   }
+                }
+                // The requests already ran, but their local confirmation must
+                // not reload a newer account's list.
+                if (!ref.read(sessionScopeProvider).sameSession(session)) {
+                  return;
                 }
                 ref.invalidate(customerNotificationsProvider);
                 ref.invalidate(unreadNotificationsProvider);
@@ -183,10 +193,16 @@ class _NotificationList extends ConsumerWidget {
             child: InkWell(
               onTap: () async {
                 if (isUnread) {
+                  final session = ref.read(sessionScopeProvider);
                   try {
                     await ref
                         .read(customerRepositoryProvider)
                         .markNotificationRead(str(n['id']));
+                    if (!ref
+                        .read(sessionScopeProvider)
+                        .sameSession(session)) {
+                      return;
+                    }
                     ref.invalidate(customerNotificationsProvider);
                     ref.invalidate(unreadNotificationsProvider);
                   } catch (_) {}

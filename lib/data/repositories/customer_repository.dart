@@ -150,11 +150,26 @@ class CustomerRepository {
   Future<Map<String, dynamic>> favorites() async =>
       asMap(apiData(await source.favorites()));
 
-  Future<void> toggleServiceFavorite(String serviceId) =>
-      source.toggleServiceFavorite(serviceId);
+  Future<bool> toggleServiceFavorite(String serviceId) async {
+    final response = await source.toggleServiceFavorite(serviceId);
+    return _favoritedFrom(response);
+  }
 
-  Future<void> toggleProviderFavorite(String providerId) =>
-      source.toggleProviderFavorite(providerId);
+  Future<bool> toggleProviderFavorite(String providerId) async {
+    final response = await source.toggleProviderFavorite(providerId);
+    return _favoritedFrom(response);
+  }
+
+  /// The toggle endpoints answer `{status, favorited, message}` at the top
+  /// level (no `data` envelope), so the boolean must be read from the raw
+  /// response. A successful response without a boolean is a protocol error:
+  /// never infer the new state by flipping the previous one.
+  static bool _favoritedFrom(Response response) {
+    final body = response.data;
+    final value = body is Map ? body['favorited'] : null;
+    if (value is bool) return value;
+    throw const InvalidFavoriteResponseException();
+  }
 
   // Reviews & complaints
   Future<List<Map<String, dynamic>>> reviews() async =>
@@ -272,6 +287,15 @@ class CustomerRepository {
 
   Future<Map<String, dynamic>> reports(String type, {String? page}) async =>
       asMap(apiData(await source.reports(type, page: page)));
+}
+
+/// Thrown when a favorite toggle reports success without the boolean
+/// `favorited` flag, so callers never guess the resulting state.
+class InvalidFavoriteResponseException implements Exception {
+  const InvalidFavoriteResponseException();
+
+  @override
+  String toString() => 'InvalidFavoriteResponseException';
 }
 
 /// One page of `/customer/search` results plus the API's pagination metadata.

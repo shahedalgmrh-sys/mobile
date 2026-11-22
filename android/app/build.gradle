@@ -35,6 +35,27 @@ if (project.hasProperty("dart-defines")) {
 }
 def googleMapsApiKey = dartDefines.get("GOOGLE_MAPS_API_KEY", "")
 
+// Release signing material lives OUTSIDE version control.
+// Drop android/key.properties next to this project (ignored by .gitignore):
+//   storePassword=...
+//   keyPassword=...
+//   keyAlias=...
+//   storeFile=../upload-keystore.jks  (relative to android/app/)
+// Never commit key.properties, the keystore, or its passwords.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+def hasReleaseSigning = keystorePropertiesFile.exists()
+if (hasReleaseSigning) {
+    keystorePropertiesFile.withReader("UTF-8") { reader ->
+        keystoreProperties.load(reader)
+    }
+} else {
+    logger.warn(
+        "WARNING: android/key.properties is missing. Release builds will fall " +
+        "back to the DEBUG keystore and must NOT be published as an official APK."
+    )
+}
+
 android {
     namespace = "com.sahel.app.saber_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -64,11 +85,27 @@ android {
         manifestPlaceholders += [GOOGLE_MAPS_API_KEY: googleMapsApiKey]
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                keyAlias = keystoreProperties["keyAlias"]
+                keyPassword = keystoreProperties["keyPassword"]
+                storeFile = keystoreProperties["storeFile"] ? file(keystoreProperties["storeFile"]) : null
+                storePassword = keystoreProperties["storePassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            // Use the release keystore when key.properties is provided.
+            // The debug fallback exists only so local --release builds still
+            // work; an APK signed that way must never be published.
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.release
+            } else {
+                signingConfig = signingConfigs.debug
+            }
         }
     }
 }

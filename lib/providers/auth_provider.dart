@@ -19,6 +19,15 @@ class AuthState {
   final Map<String, dynamic>? user;
   final String? errorMessage;
 
+  /// Monotonic login-session counter.
+  ///
+  /// It starts a new value on every successful login/registration/session
+  /// restore and on every sign-out or expired session, and is never reset.
+  /// Account-scoped providers use it (together with [userId]) to recognize
+  /// results that belong to a previous session — including an old request
+  /// that finishes after the same user logged in again.
+  final int sessionGeneration;
+
   const AuthState({
     this.isAuthenticated = false,
     this.isLoading = false,
@@ -29,6 +38,7 @@ class AuthState {
     this.isProfileComplete = false,
     this.user,
     this.errorMessage,
+    this.sessionGeneration = 0,
   });
 
   /// Provider approval state comes from the API's `provider_profile`
@@ -59,6 +69,7 @@ class AuthState {
     String? errorMessage,
     bool clearError = false,
     bool clearUser = false,
+    int? sessionGeneration,
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -70,9 +81,60 @@ class AuthState {
       isProfileComplete: isProfileComplete ?? this.isProfileComplete,
       user: clearUser ? null : (user ?? this.user),
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      sessionGeneration: sessionGeneration ?? this.sessionGeneration,
     );
   }
 }
+
+/// Identity of the account session that owns a piece of data.
+///
+/// Unlike a user id it changes on *every* sign-in, so a delayed response from
+/// an earlier session of the same user is still recognized as stale.
+class SessionScope {
+  const SessionScope({
+    required this.isAuthenticated,
+    this.userId,
+    this.role,
+    this.generation = 0,
+  });
+
+  factory SessionScope.of(AuthState state) => SessionScope(
+    isAuthenticated: state.isAuthenticated,
+    userId: state.userId,
+    role: state.role,
+    generation: state.sessionGeneration,
+  );
+
+  final bool isAuthenticated;
+  final String? userId;
+  final UserRole? role;
+  final int generation;
+
+  bool get hasSession =>
+      isAuthenticated && userId != null && userId!.isNotEmpty;
+
+  bool sameSession(SessionScope other) =>
+      isAuthenticated == other.isAuthenticated &&
+      generation == other.generation &&
+      userId == other.userId;
+
+  /// Stable key that changes on logout, account switch and same-user relogin.
+  String get key => hasSession ? '$userId#$generation' : 'signed-out#$generation';
+
+  @override
+  bool operator ==(Object other) =>
+      other is SessionScope && sameSession(other);
+
+  @override
+  int get hashCode => Object.hash(isAuthenticated, userId, generation);
+}
+
+/// Current account session, re-evaluated only when identity changes (not on
+/// loading/error flags), so account-scoped providers rebuild exactly once per
+/// login/logout.
+final sessionScopeProvider = Provider<SessionScope>(
+  (ref) => ref.watch(authNotifierProvider.select(SessionScope.of)),
+);
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
@@ -108,7 +170,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _storage.writeUser(result.user);
   }
 
-  void _applyUser(Map<String, dynamic> user, {String? token}) {
+  /// Signs the app out locally while keeping the session counter monotonic;
+  /// every already-running request becomes stale from this point on.
+  void _setSignedOut({String? errorMessage}) {
+    state = AuthState(
+      sessionGeneration: state.sessionGeneration + 1,
+      errorMessage: errorMessage,
+    );
+  }
+
+  /// [newSession] starts a new identity (login, registration, restored
+  /// session); refreshes of the same identity must not change it.
+  void _applyUser(
+    Map<String, dynamic> user, {
+    String? token,
+    bool newSession = false,
+  }) {
     final roleStr = str(user['role'], 'customer');
     final role = roleStr == 'provider' ? UserRole.provider : UserRole.customer;
     final verified = toBool(user['is_verified'] ?? user['email_verified_at'] != null);
@@ -121,6 +198,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       isProfileComplete: true,
       user: user,
       clearError: true,
+      sessionGeneration:
+          newSession ? state.sessionGeneration + 1 : state.sessionGeneration,
     );
   }
 
@@ -128,18 +207,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> checkSession() async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
-      state = const AuthState();
+      _setSignedOut();
       return;
     }
     try {
       final user = await _repo.me();
       if (user.isEmpty) throw const ApiException(UnauthorizedFailure());
       await _storage.writeUser(user);
-      _applyUser(user, token: token);
+      _applyUser(user, token: token, newSession: true);
     } catch (_) {
       await _storage.deleteToken();
       await _storage.deleteUser();
-      state = const AuthState();
+      _setSignedOut();
     }
   }
 
@@ -156,7 +235,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         deviceName: deviceName ?? 'flutter_app',
       );
       await _persistAuth(result);
-      _applyUser(result.user, token: result.token);
+      _applyUser(result.user, token: result.token, newSession: true);
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
@@ -186,7 +265,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         documentPaths: documentPaths,
       );
       await _persistAuth(result);
-      _applyUser(result.user, token: result.token);
+      _applyUser(result.user, token: result.token, newSession: true);
       state = state.copyWith(isLoading: false);
       return true;
     } catch (e) {
@@ -268,7 +347,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Keep the stable device id so headers stay consistent across sessions.
     await _storage.deleteToken();
     await _storage.deleteUser();
-    state = const AuthState();
+    _setSignedOut();
   }
 
   /// Invoked by the API client when a request is rejected with HTTP 401.
@@ -276,8 +355,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// already invalid) and lets the router redirect to the login screen.
   void handleSessionExpired() {
     if (!state.isAuthenticated && state.token == null) return;
-    state = const AuthState(
-      errorMessage: 'انتهت الجلسة. سجّل الدخول مجدداً.',
-    );
+    _setSignedOut(errorMessage: 'انتهت الجلسة. سجّل الدخول مجدداً.');
   }
 }

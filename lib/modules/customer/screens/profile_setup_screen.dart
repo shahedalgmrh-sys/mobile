@@ -47,6 +47,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (_saving) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
+    final session = ref.read(sessionScopeProvider);
     try {
       final name = _nameController.text.trim();
       final parts = name.split(RegExp(r'\s+'));
@@ -58,6 +59,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
         if (_bioController.text.trim().isNotEmpty)
           'bio': _bioController.text.trim(),
       });
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       await ref.read(authNotifierProvider.notifier).refreshUser();
       if (mounted) context.go('/home');
     } catch (_) {

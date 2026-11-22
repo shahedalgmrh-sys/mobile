@@ -11,6 +11,7 @@ import 'package:saber_flutter/data/repositories/customer_repository.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
 import 'package:saber_flutter/core/constants/payment_methods.dart';
 import 'package:saber_flutter/models/service.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -359,10 +360,12 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   Future<void> _applyCoupon() async {
     final code = _couponController.text.trim();
     if (code.isEmpty) return;
+    final session = ref.read(sessionScopeProvider);
     try {
       final res = await ref
           .read(customerRepositoryProvider)
           .validateCoupon(code, subtotal: _subtotal, serviceId: _serviceId);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (!toBool(res['valid'], true)) {
         setState(() {
           _appliedCoupon = null;
@@ -390,6 +393,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
             .showSnackBar(const SnackBar(content: Text('تم تطبيق الكوبون')));
       }
     } catch (_) {
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       setState(() {
         _appliedCoupon = null;
         _appliedDiscount = 0;
@@ -404,6 +408,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
   Future<void> _submit() async {
     if (_submitting) return;
     setState(() => _submitting = true);
+    final session = ref.read(sessionScopeProvider);
     try {
       final serviceId = _serviceId;
       final selectedTime = _selectedSlotTime;
@@ -416,6 +421,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       final refreshedSlots = await ref
           .read(customerRepositoryProvider)
           .availableSlots(serviceId: serviceId, date: _dateParam(_selectedDay));
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       final slotStillAvailable = refreshedSlots.any(
         (slot) => str(slot['time']) == selectedTime,
       );
@@ -450,6 +456,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
         if (_appliedCoupon != null)
           'coupon_code': _couponController.text.trim(),
       });
+      // The booking belongs to the session that created it. If the account
+      // changed meanwhile, never pay/navigate under the new identity.
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (!mounted) return;
       ref.invalidate(customerBookingsProvider);
       final newId = booking['id'] ?? booking['booking_id'];
@@ -457,7 +466,9 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
       // cash pays no API call (settled with the provider); wallet and
       // electronic methods attempt /pay — electronic may fail locally with a
       // gateway-not-configured message which we surface verbatim.
-      if (newId != null && _selectedPaymentCode != 'cash') {
+      if (newId != null &&
+          _selectedPaymentCode != 'cash' &&
+          ref.read(sessionScopeProvider).sameSession(session)) {
         try {
           await ref
               .read(customerRepositoryProvider)
@@ -469,6 +480,7 @@ class _BookingWizardScreenState extends ConsumerState<BookingWizardScreen> {
           );
         }
       }
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (!mounted) return;
       if (newId != null) {
         context.pushReplacement('/bookings/$newId');
@@ -1936,15 +1948,14 @@ class _MonthCalendarGrid extends StatelessWidget {
               padding: const EdgeInsets.all(2.5),
               child: Material(
                 color: bg,
-                borderRadius: BorderRadius.circular(12),
-                shape: selected
-                    ? null
-                    : RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: selected
+                      ? BorderSide.none
+                      : BorderSide(
                           color: SahelColors.border.withValues(alpha: 0.6),
                         ),
-                      ),
+                ),
                 child: InkWell(
                   onTap: selectable ? () => onDayTap(d) : null,
                   borderRadius: BorderRadius.circular(12),

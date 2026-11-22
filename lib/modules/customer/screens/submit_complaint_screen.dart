@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber_flutter/core/providers.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -54,6 +55,7 @@ class _SubmitComplaintScreenState
       return;
     }
     setState(() => _submitting = true);
+    final session = ref.read(sessionScopeProvider);
     try {
       final complaint = await ref.read(customerRepositoryProvider).storeComplaint(
             bookingId: widget.id.isEmpty ? null : widget.id,
@@ -61,6 +63,7 @@ class _SubmitComplaintScreenState
             description: _description.text.trim(),
             priority: _priority,
           );
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerComplaintsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

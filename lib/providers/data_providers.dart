@@ -4,6 +4,7 @@ import '../core/providers.dart';
 import '../data/repositories/catalog_repository.dart';
 import '../data/repositories/parsers.dart';
 import '../models/provider.dart';
+import 'auth_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Public catalog
@@ -234,94 +235,457 @@ final offersCatalogProvider =
     >(OffersCatalogController.new);
 
 // ---------------------------------------------------------------------------
-// Customer
+// Customer — account-scoped data
 // ---------------------------------------------------------------------------
+//
+// Everything below belongs to the signed-in customer. Each provider is rebuilt
+// from scratch for every login session:
+//   * signed out -> an explicit empty value and no customer API request,
+//   * account switch -> no previous value survives into the new loading state,
+//   * a response is applied only while the session that started it is still
+//     current (logout, switch, 401/session expiry or same-user re-login),
+//   * within one session an older request can never overwrite a newer one.
+// The public catalog providers above are intentionally left untouched.
 
-final customerMeProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) => ref.watch(customerRepositoryProvider).me(),
-);
+/// Thrown when a response arrives after the account session it belongs to has
+/// ended. Such a payload must never be rendered as the current account data.
+class StaleSessionException implements Exception {
+  const StaleSessionException();
 
-final customerAddressesProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).addresses(),
-);
+  @override
+  String toString() => 'StaleSessionException';
+}
 
-final customerBookingsProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, String?>(
-      (ref, status) =>
-          ref.watch(customerRepositoryProvider).bookings(status: status),
+/// Account-scoped provider state.
+///
+/// The provider instance stays stable for consumers, but its state is rebuilt
+/// from scratch for every login session: the previous account's data is
+/// dropped (not even kept as "previous value while loading"), a request that
+/// finishes after logout/switch/re-login is ignored even when the server
+/// answered successfully, and a signed-out app holds no data at all.
+abstract class _SessionScopedController<T> extends Notifier<AsyncValue<T>> {
+  int _requestId = 0;
+  bool _disposed = false;
+
+  T get emptyValue;
+  Future<T> fetch();
+
+  @override
+  AsyncValue<T> build() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+
+    final session = ref.watch(sessionScopeProvider);
+    final requestId = ++_requestId;
+    if (!session.hasSession) return AsyncData<T>(emptyValue);
+
+    Future<void>.microtask(() => _load(session, requestId));
+    return AsyncLoading<T>();
+  }
+
+  /// Refetches for the current session. Returns `null` without touching the
+  /// provider when [expectedSession] already ended, so a slow toggle from an
+  /// old account cannot refresh (or repopulate) a newer account's list.
+  Future<T?> refresh({SessionScope? expectedSession}) async {
+    if (_disposed) return null;
+    final session = ref.read(sessionScopeProvider);
+    if (expectedSession != null && !session.sameSession(expectedSession)) {
+      return null;
+    }
+
+    final requestId = ++_requestId;
+    if (!session.hasSession) {
+      state = AsyncData<T>(emptyValue);
+      return emptyValue;
+    }
+
+    try {
+      final data = await fetch();
+      if (!_isCurrent(session, requestId)) return null;
+      state = AsyncData<T>(data);
+      return data;
+    } catch (error, stackTrace) {
+      // A background refresh must not replace already visible data; only an
+      // empty state turns into an error.
+      if (_isCurrent(session, requestId) && !state.hasValue) {
+        state = AsyncError<T>(error, stackTrace);
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _load(SessionScope session, int requestId) async {
+    // Already superseded (e.g. an explicit refresh started first): do not
+    // issue a duplicate request.
+    if (!_isCurrent(session, requestId)) return;
+    try {
+      final data = await fetch();
+      if (!_isCurrent(session, requestId)) return;
+      state = AsyncData<T>(data);
+    } catch (error, stackTrace) {
+      if (!_isCurrent(session, requestId)) return;
+      state = AsyncError<T>(error, stackTrace);
+    }
+  }
+
+  bool _isCurrent(SessionScope session, int requestId) {
+    if (_disposed || requestId != _requestId) return false;
+    return ref.read(sessionScopeProvider).sameSession(session);
+  }
+}
+
+/// Same guarantees as [_SessionScopedController] for parameterized providers
+/// (booking details, invoices, tracked bookings...).
+abstract class _SessionScopedFamilyController<T, Arg>
+    extends AutoDisposeFamilyNotifier<AsyncValue<T>, Arg> {
+  int _requestId = 0;
+  bool _disposed = false;
+
+  T get emptyValue;
+  Future<T> fetch(Arg arg);
+
+  @override
+  AsyncValue<T> build(Arg arg) {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+
+    final session = ref.watch(sessionScopeProvider);
+    final requestId = ++_requestId;
+    if (!session.hasSession) return AsyncData<T>(emptyValue);
+
+    Future<void>.microtask(() => _load(arg, session, requestId));
+    return AsyncLoading<T>();
+  }
+
+  Future<void> _load(Arg arg, SessionScope session, int requestId) async {
+    if (!_isCurrent(session, requestId)) return;
+    try {
+      final data = await fetch(arg);
+      if (!_isCurrent(session, requestId)) return;
+      state = AsyncData<T>(data);
+    } catch (error, stackTrace) {
+      if (!_isCurrent(session, requestId)) return;
+      state = AsyncError<T>(error, stackTrace);
+    }
+  }
+
+  bool _isCurrent(SessionScope session, int requestId) {
+    if (_disposed || requestId != _requestId) return false;
+    return ref.read(sessionScopeProvider).sameSession(session);
+  }
+}
+
+final customerMeProvider =
+    NotifierProvider<CustomerMeController, AsyncValue<Map<String, dynamic>>>(
+      CustomerMeController.new,
     );
+
+class CustomerMeController
+    extends _SessionScopedController<Map<String, dynamic>> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
+
+  @override
+  Future<Map<String, dynamic>> fetch() =>
+      ref.read(customerRepositoryProvider).me();
+}
+
+final customerAddressesProvider =
+    NotifierProvider<
+      CustomerAddressesController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerAddressesController.new);
+
+class CustomerAddressesController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).addresses();
+}
+
+final customerBookingsProvider =
+    NotifierProvider.autoDispose.family<
+      CustomerBookingsController,
+      AsyncValue<List<Map<String, dynamic>>>,
+      String?
+    >(CustomerBookingsController.new);
+
+class CustomerBookingsController
+    extends _SessionScopedFamilyController<List<Map<String, dynamic>>, String?> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch(String? status) =>
+      ref.read(customerRepositoryProvider).bookings(status: status);
+}
 
 /// Total booking count from the paginator meta (not just the loaded page).
-final customerBookingsTotalProvider = FutureProvider.autoDispose<int>((
-  ref,
-) async {
-  final envelope = await ref.watch(customerRepositoryProvider).bookingsPage();
-  final meta = asMap(envelope['meta']);
-  return toInt(meta['total'], dataList(envelope).length);
-});
-
-final customerBookingProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, id) => ref.watch(customerRepositoryProvider).booking(id),
+final customerBookingsTotalProvider =
+    NotifierProvider<CustomerBookingsTotalController, AsyncValue<int>>(
+      CustomerBookingsTotalController.new,
     );
 
-final bookingTrackProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, id) => ref.watch(customerRepositoryProvider).trackBooking(id),
+class CustomerBookingsTotalController
+    extends _SessionScopedController<int> {
+  @override
+  int get emptyValue => 0;
+
+  @override
+  Future<int> fetch() async {
+    final envelope = await ref
+        .read(customerRepositoryProvider)
+        .bookingsPage();
+    final meta = asMap(envelope['meta']);
+    return toInt(meta['total'], dataList(envelope).length);
+  }
+}
+
+final customerBookingProvider =
+    NotifierProvider.autoDispose.family<
+      CustomerBookingController,
+      AsyncValue<Map<String, dynamic>>,
+      String
+    >(CustomerBookingController.new);
+
+class CustomerBookingController
+    extends _SessionScopedFamilyController<Map<String, dynamic>, String> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
+
+  @override
+  Future<Map<String, dynamic>> fetch(String id) =>
+      ref.read(customerRepositoryProvider).booking(id);
+}
+
+final bookingTrackProvider =
+    NotifierProvider.autoDispose.family<
+      BookingTrackController,
+      AsyncValue<Map<String, dynamic>>,
+      String
+    >(BookingTrackController.new);
+
+class BookingTrackController
+    extends _SessionScopedFamilyController<Map<String, dynamic>, String> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
+
+  @override
+  Future<Map<String, dynamic>> fetch(String id) =>
+      ref.read(customerRepositoryProvider).trackBooking(id);
+}
+
+final customerPaymentsProvider =
+    NotifierProvider<
+      CustomerPaymentsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerPaymentsController.new);
+
+class CustomerPaymentsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).payments();
+}
+
+final paymentInvoiceProvider =
+    NotifierProvider.autoDispose.family<
+      PaymentInvoiceController,
+      AsyncValue<Map<String, dynamic>>,
+      String
+    >(PaymentInvoiceController.new);
+
+class PaymentInvoiceController
+    extends _SessionScopedFamilyController<Map<String, dynamic>, String> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
+
+  @override
+  Future<Map<String, dynamic>> fetch(String paymentId) =>
+      ref.read(customerRepositoryProvider).invoice(paymentId);
+}
+
+final customerWalletProvider =
+    NotifierProvider<CustomerWalletController, AsyncValue<Map<String, dynamic>>>(
+      CustomerWalletController.new,
     );
 
-final customerPaymentsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).payments(),
-);
+class CustomerWalletController
+    extends _SessionScopedController<Map<String, dynamic>> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
 
-final paymentInvoiceProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, paymentId) =>
-          ref.watch(customerRepositoryProvider).invoice(paymentId),
-    );
+  @override
+  Future<Map<String, dynamic>> fetch() =>
+      ref.read(customerRepositoryProvider).wallet();
+}
 
-final customerWalletProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) => ref.watch(customerRepositoryProvider).wallet(),
-);
+final walletTransactionsProvider =
+    NotifierProvider<
+      WalletTransactionsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(WalletTransactionsController.new);
 
-final walletTransactionsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).walletTransactions(),
-);
+class WalletTransactionsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
 
-final customerFavoritesProvider = FutureProvider<Map<String, dynamic>>(
-  (ref) => ref.watch(customerRepositoryProvider).favorites(),
-);
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).walletTransactions();
+}
 
-final customerReviewsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).reviews(),
-);
+final customerFavoritesProvider =
+    NotifierProvider<
+      CustomerFavoritesController,
+      AsyncValue<Map<String, dynamic>>
+    >(CustomerFavoritesController.new);
 
-final customerComplaintsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).complaints(),
-);
+class CustomerFavoritesController
+    extends _SessionScopedController<Map<String, dynamic>> {
+  @override
+  Map<String, dynamic> get emptyValue => const <String, dynamic>{};
+
+  @override
+  Future<Map<String, dynamic>> fetch() =>
+      ref.read(customerRepositoryProvider).favorites();
+}
+
+final customerReviewsProvider =
+    NotifierProvider<
+      CustomerReviewsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerReviewsController.new);
+
+class CustomerReviewsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).reviews();
+}
+
+final customerComplaintsProvider =
+    NotifierProvider<
+      CustomerComplaintsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerComplaintsController.new);
+
+class CustomerComplaintsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).complaints();
+}
 
 final customerConversationsProvider =
-    FutureProvider<List<Map<String, dynamic>>>(
-      (ref) => ref.watch(customerRepositoryProvider).conversations(),
-    );
+    NotifierProvider<
+      CustomerConversationsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerConversationsController.new);
 
+class CustomerConversationsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).conversations();
+}
+
+/// Conversation thread detail.
+///
+/// Kept as a [FutureProvider] because the chat screen awaits `.future`; the
+/// body still watches the account session and rejects a payload whose session
+/// ended while the request was running.
 final customerConversationProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>(
-      (ref, id) => ref.watch(customerRepositoryProvider).conversation(id),
-    );
+    .family<Map<String, dynamic>, String>((ref, id) async {
+      final session = ref.watch(sessionScopeProvider);
+      if (!session.hasSession) return <String, dynamic>{};
+
+      final data = await ref
+          .watch(customerRepositoryProvider)
+          .conversation(id);
+
+      var sameSession = false;
+      try {
+        sameSession = ref.read(sessionScopeProvider).sameSession(session);
+      } catch (_) {
+        // The provider was disposed while the request was in flight; the
+        // result is discarded by the container anyway.
+        sameSession = false;
+      }
+      if (!sameSession) throw const StaleSessionException();
+      return data;
+    });
 
 final customerNotificationsProvider =
-    FutureProvider<List<Map<String, dynamic>>>(
-      (ref) => ref.watch(customerRepositoryProvider).notifications(),
+    NotifierProvider<
+      CustomerNotificationsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerNotificationsController.new);
+
+class CustomerNotificationsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).notifications();
+}
+
+final unreadNotificationsProvider =
+    NotifierProvider<UnreadNotificationsController, AsyncValue<int>>(
+      UnreadNotificationsController.new,
     );
 
-final unreadNotificationsProvider = FutureProvider<int>(
-  (ref) => ref.watch(customerRepositoryProvider).unreadNotificationsCount(),
-);
+class UnreadNotificationsController extends _SessionScopedController<int> {
+  @override
+  int get emptyValue => 0;
 
-final customerCouponsProvider = FutureProvider<List<Map<String, dynamic>>>(
-  (ref) => ref.watch(customerRepositoryProvider).coupons(),
-);
+  @override
+  Future<int> fetch() =>
+      ref.read(customerRepositoryProvider).unreadNotificationsCount();
+}
+
+final customerCouponsProvider =
+    NotifierProvider<
+      CustomerCouponsController,
+      AsyncValue<List<Map<String, dynamic>>>
+    >(CustomerCouponsController.new);
+
+class CustomerCouponsController
+    extends _SessionScopedController<List<Map<String, dynamic>>> {
+  @override
+  List<Map<String, dynamic>> get emptyValue =>
+      const <Map<String, dynamic>>[];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() =>
+      ref.read(customerRepositoryProvider).coupons();
+}
 
 /// Filters accepted by the customer search screen.
 typedef CustomerSearchFilters = ({

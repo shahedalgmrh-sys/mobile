@@ -124,10 +124,12 @@ class SettingsScreen extends ConsumerWidget {
       }
       return;
     }
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref
           .read(customerRepositoryProvider)
           .changePassword(current.text, next.text, confirm.text);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('تم تغيير كلمة المرور بنجاح')));
@@ -171,10 +173,14 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
     if (ok != true || password.text.isEmpty) return;
+    final session = ref.read(sessionScopeProvider);
     try {
       await ref
           .read(customerRepositoryProvider)
           .destroyAccount(password.text);
+      // Never sign out or navigate a different session that replaced the one
+      // that asked for the deletion.
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       await ref.read(authNotifierProvider.notifier).logout();
       if (context.mounted) context.go('/login');
     } catch (_) {

@@ -7,6 +7,7 @@ import 'package:saber_flutter/core/errors/failures.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
 import 'package:saber_flutter/data/sources/remote_sources.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
@@ -300,15 +301,17 @@ class WalletScreen extends ConsumerWidget {
       return;
     }
     _snack(context, 'جاري إنشاء طلب الشحن…');
+    final session = ref.read(sessionScopeProvider);
     try {
       final payment = await ref
           .read(customerRepositoryProvider)
           .addFunds(amount, method);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       final paymentId = str(payment['payment_id'] ?? payment['id']);
       if (!context.mounted || paymentId.isEmpty) return;
       final checkoutUrl = strOrNull(payment['checkout_url']);
       _showPendingPayment(context, ref, paymentId, checkoutUrl,
-          formatMoney(payment['amount'] ?? amount));
+          formatMoney(payment['amount'] ?? amount), session);
     } catch (e) {
       if (context.mounted) _snack(context, _failureMessage(e), error: true);
     }
@@ -322,6 +325,7 @@ class WalletScreen extends ConsumerWidget {
     String paymentId,
     String? checkoutUrl,
     String amount,
+    SessionScope session,
   ) {
     showDialog<void>(
       context: context,
@@ -360,7 +364,7 @@ class WalletScreen extends ConsumerWidget {
           FilledButton.icon(
             onPressed: () async {
               Navigator.pop(ctx);
-              await _confirmTopUp(context, ref, paymentId);
+              await _confirmTopUp(context, ref, paymentId, session);
             },
             icon: const Icon(Icons.verified_outlined, size: 18),
             label: const Text('تم الدفع — تأكيد'),
@@ -374,12 +378,17 @@ class WalletScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String paymentId,
+    SessionScope session,
   ) async {
+    // The pending top-up was created by [session]; confirming it under a
+    // different session would address another account's payment.
+    if (!ref.read(sessionScopeProvider).sameSession(session)) return;
     _snack(context, 'جاري تأكيد الدفع…');
     try {
       await ref
           .read(customerRepositoryProvider)
           .confirmWalletPayment(paymentId);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerWalletProvider);
       ref.invalidate(walletTransactionsProvider);
       ref.invalidate(customerPaymentsProvider);

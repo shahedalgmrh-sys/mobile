@@ -4,6 +4,7 @@ import 'package:saber_flutter/core/i18n/sahel_i18n.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/core/utils/format.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
@@ -55,6 +56,7 @@ class _WalletStatementScreenState extends ConsumerState<WalletStatementScreen> {
 
   Future<void> _load({required int page}) async {
     final append = page > 1;
+    final session = ref.read(sessionScopeProvider);
     setState(() {
       if (append) {
         _loadingMore = true;
@@ -72,6 +74,7 @@ class _WalletStatementScreenState extends ConsumerState<WalletStatementScreen> {
       final current = toInt(raw['current_page'], page);
       final last = toInt(raw['last_page'], current);
       final total = toInt(raw['total'], _items.length + items.length);
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (!mounted) return;
       setState(() {
         if (!append) _items.clear();
@@ -85,6 +88,7 @@ class _WalletStatementScreenState extends ConsumerState<WalletStatementScreen> {
         _moreError = false;
       });
     } catch (_) {
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       if (!mounted) return;
       setState(() {
         _loading = false;

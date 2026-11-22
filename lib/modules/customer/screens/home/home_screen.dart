@@ -10,6 +10,7 @@ import 'package:saber_flutter/providers/location_provider.dart';
 import 'package:saber_flutter/app/theme/sahel_colors.dart';
 import 'package:saber_flutter/app/theme/sahel_theme.dart';
 import 'package:saber_flutter/shared/widgets/category_tile.dart';
+import 'package:saber_flutter/shared/widgets/favorite_toggle_button.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/service_card.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
@@ -936,6 +937,18 @@ class _ProviderCard extends StatelessWidget {
                         gradient: SahelColors.primaryGradient,
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(15),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: FavoriteToggleButton(
+                        id: provider.id,
+                        isProvider: true,
+                        size: 36,
+                        backgroundColor: SahelColors.slate900.withValues(
+                          alpha: 0.25,
                         ),
                       ),
                     ),

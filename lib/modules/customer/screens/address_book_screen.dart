@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saber_flutter/core/providers.dart';
 import 'package:saber_flutter/data/repositories/parsers.dart';
+import 'package:saber_flutter/providers/auth_provider.dart';
 import 'package:saber_flutter/providers/data_providers.dart';
 import 'package:saber_flutter/shared/widgets/sahel_button.dart';
 import 'package:saber_flutter/shared/widgets/shimmer_card.dart';
@@ -60,6 +61,7 @@ class AddressBookScreen extends ConsumerWidget {
   }
 
   void _addAddress(BuildContext context, WidgetRef ref) {
+    final session = ref.read(sessionScopeProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -71,7 +73,13 @@ class AddressBookScreen extends ConsumerWidget {
             20, 20, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
         child: const _AddressForm(),
       ),
-    ).then((_) => ref.invalidate(customerAddressesProvider));
+    ).then((_) {
+      // A sheet that belonged to a previous session must not trigger a reload
+      // for the current account.
+      if (ref.read(sessionScopeProvider).sameSession(session)) {
+        ref.invalidate(customerAddressesProvider);
+      }
+    });
   }
 }
 
@@ -106,6 +114,7 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
       return;
     }
     setState(() => _busy = true);
+    final session = ref.read(sessionScopeProvider);
     final payload = {
       'label': _label.text.trim().isEmpty ? 'المنزل' : _label.text.trim(),
       'address_line_1': _address.text.trim(),
@@ -124,6 +133,9 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
             .read(customerRepositoryProvider)
             .storeAddress(payload);
       }
+      // The write already reached the server, but its local confirmation must
+      // not touch the screen of a newer account session.
+      if (!ref.read(sessionScopeProvider).sameSession(session)) return;
       ref.invalidate(customerAddressesProvider);
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -235,6 +247,7 @@ class _AddressTile extends ConsumerWidget {
   const _AddressTile({required this.address});
 
   void _editAddress(BuildContext context, WidgetRef ref) {
+    final session = ref.read(sessionScopeProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -246,7 +259,11 @@ class _AddressTile extends ConsumerWidget {
             20, 20, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
         child: _AddressForm(existing: address),
       ),
-    ).then((_) => ref.invalidate(customerAddressesProvider));
+    ).then((_) {
+      if (ref.read(sessionScopeProvider).sameSession(session)) {
+        ref.invalidate(customerAddressesProvider);
+      }
+    });
   }
 
   @override
@@ -323,10 +340,16 @@ class _AddressTile extends ConsumerWidget {
                 ),
                 IconButton(
                   onPressed: () async {
+                    final session = ref.read(sessionScopeProvider);
                     try {
                       await ref
                           .read(customerRepositoryProvider)
                           .destroyAddress(id);
+                      if (!ref
+                          .read(sessionScopeProvider)
+                          .sameSession(session)) {
+                        return;
+                      }
                       ref.invalidate(customerAddressesProvider);
                     } catch (_) {
                       if (context.mounted) {
